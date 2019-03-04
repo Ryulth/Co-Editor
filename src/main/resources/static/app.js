@@ -69,12 +69,15 @@ function showContent(message) {
     var input = $( "#docs-text" );
     input.val( message );
     $("textarea.autosize").height(1).height( $("textarea.autosize").prop('scrollHeight')+12 );
+
 }
 
 $(function () {
     $("textarea.autosize").on('input', function () {
+
         $(this).height(1).height( $(this).prop('scrollHeight')+12 );
-        sendContent()
+        sendContent();
+
     });
     $("form").on('submit', function (e) {
         e.preventDefault();
@@ -88,3 +91,4 @@ $(function () {
         window.location.href = 'docs.html?'+this.id;
     });
 });
+

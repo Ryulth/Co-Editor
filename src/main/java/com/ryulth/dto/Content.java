@@ -6,5 +6,7 @@ import lombok.Data;
 public class Content {
     public Content(){
     }
+    private String type;
     private String text;
+    private int position;
 }

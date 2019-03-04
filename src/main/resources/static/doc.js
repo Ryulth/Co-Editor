@@ -20,13 +20,14 @@ function getDocs(){
     });
 }
 function updateDocs(){
-     var reqBody = {}
+    $("#save-text").text("저장중")
+     let reqBody = {}
      reqBody["id"] = docId;
      reqBody["title"] = "temp";
      reqBody["content"] = $("#docs-text").val();
     $.ajax({
       async: true, // false 일 경우 동기 요청으로 변경
-      type: "POST",
+      type: "PUT",
       contentType: "application/json",
       url: baseUrl,
       data: JSON.stringify(reqBody),
@@ -35,6 +36,7 @@ function updateDocs(){
          console.log(response);
        }
     });
+    $("#save-text").text("저장완료")
 }
 function setConnected(connected) {
     $("#connect").prop("disabled", connected);
@@ -55,10 +57,10 @@ function connect() {
         setConnected(true);
         console.log("Connected" + frame);
         clientSessionId = /\/([^\/]+)\/websocket/.exec(socket._transport.url)[1];
-        stompClient.subscribe('/topic/docs', function (greeting) {
-            let receiveSessionId = JSON.parse(greeting.body).sessionId;
+        stompClient.subscribe('/topic/docs'+"/"+docId, function (content) {
+            let receiveSessionId = JSON.parse(content.body).sessionId;
             if(receiveSessionId!=clientSessionId){
-            showContent(JSON.parse(greeting.body).text);
+            showContent(JSON.parse(content.body));
             }
         });
     });
@@ -71,35 +73,68 @@ function disconnect() {
     setConnected(false);
     console.log("Disconnected");
 }
-
-function sendName() {
-    stompClient.send("/app/docs", {}, JSON.stringify({'name': $("#name").val()}));
-}
-function sendContent() {
-    stompClient.send("/app/docs", {}, JSON.stringify({'text': $("#docs-text").val()}));
+function sendContent(diff) {
+    let input = $( "#docs-text" );
+    let cursorPos= input.prop('selectionStart');
+    let type = diff[0];
+    let text = diff[1];
+    let position = (type=='Insert') ? cursorPos-text.length : cursorPos+text.length;
+    console.log(position +" , "+ type)
+    stompClient.send("/app/docs"+"/"+docId, {}, JSON.stringify({'type': type,
+                                                       'text' : text,
+                                                       'position' : position}));
 }
 
 function showContent(message) {
     let input = $( "#docs-text" );
-    input.val( message );
+    let type = message.type;
+    let index = message.position;
+    let text = message.text;
+    let result = (type=='Insert') ? insert(input.val(),index,text) : del(input.val(),index,text);
+    input.val( result );
     $("textarea.autosize").height(1).height( $("textarea.autosize").prop('scrollHeight')+12 );
 }
-
+function insert(str, index, value) {
+    return str.substr(0, index) + value + str.substr(index);
+}
+function del(str,index,value){
+    return str.slice(0, index-value.length) + str.slice(index);
+}
 $(function () {
-    $("textarea.autosize").on('input', function () {
+    let input = $ ('#docs-text');
+    input.on('keydown', function(){
+        $(this).data('val', $(this).val());
+    });
+    input.on('input', function(){
+        let prev = $(this).data('val');
+        let current = $(this).val();
+        let diff = text_diff(prev,current);
+        diff = (diff == "") ? ["Delete",text_diff(current,prev)] : ["Insert",diff];
         $(this).height(1).height( $(this).prop('scrollHeight')+12 );
-        sendContent()
+        sendContent(diff);
         updateDocs();
     });
+
     $("form").on('submit', function (e) {
         e.preventDefault();
     });
-
     $( "#connect" ).click(function() { connect(); });
     $( "#disconnect" ).click(function() { disconnect(); });
-    $( "#send" ).click(function() { sendName(); });
 
     $(document).on('click', 'a', function () {
         window.location.href = 'docs.html?'+this.id;
     });
 });
+function text_diff(first, second) { // SECOND 가 커야함
+
+        let start = 0;
+        while (start < first.length && first[start] == second[start]) {
+            ++start;
+        }
+        let end = 0;
+        while (first.length - end > start && first[first.length - end - 1] == second[second.length - end - 1]) {
+            ++end;
+        }
+        end = second.length - end;
+        return second.substr(start, end - start);
+    }

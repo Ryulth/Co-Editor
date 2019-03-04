@@ -11,6 +11,7 @@ import com.ryulth.service.DocsService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
@@ -18,6 +19,8 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.HtmlUtils;
 
+import javax.servlet.http.HttpSession;
+import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -30,13 +33,15 @@ public class DocsController{
     @Autowired
     DocsService docsService;
 
-    @MessageMapping("/docs") // 받아오는 곳
-    @SendTo("/topic/docs") // 이 주제에 전송 이주제를 구독하고 있는 사용자는 바로 받아볼 수 있음
-    public ResponseContent getContent (Content content, SimpMessageHeaderAccessor headerAccessor) throws Exception{
+    @MessageMapping("/docs/{docsId}") // 받아오는 곳
+    @SendTo("/topic/docs/{docsId}") // 이 주제에 전송 이주제를 구독하고 있는 사용자는 바로 받아볼 수 있음
+    public ResponseContent getContent (@DestinationVariable String docsId,Content content, SimpMessageHeaderAccessor headerAccessor) throws Exception{
         String sessionId = headerAccessor.getSessionId();
-        //Thread.sleep(500);
         logger.info("SessionId {}",sessionId);
-        return new ResponseContent(HtmlUtils.htmlEscape(content.getText()),sessionId);
+        return ResponseContent.builder().text(content.getText())
+                .position(content.getPosition())
+                .type(content.getType())
+                .sessionId(sessionId).build();
     }
     @GetMapping("/docs")
     public ResponseDocs getDocs(){
@@ -48,12 +53,15 @@ public class DocsController{
 
         return docsRepository.findById(id).orElse(null);
     }
-    @Async
-    @PostMapping("/docs")
-    public ResponseStatus saveDocs(@RequestBody Docs docs){
-        if(docsService.saveDocs(docs))
-            return new ResponseStatus("success");
-        return new ResponseStatus("fail");
+
+    @PutMapping("/docs")
+    public ResponseStatus updateDocs(@RequestBody Docs docs, HttpSession session) throws Exception{
+        String sessionId = session.getId();
+        logger.info("SessionId {}",sessionId);
+        Future<Boolean> executor = docsService.updateDocs(docs);
+        while (!executor.isDone()) {
+        }
+        return new ResponseStatus(executor.get().toString());
     }
 
 }
