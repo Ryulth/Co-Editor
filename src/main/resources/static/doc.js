@@ -33,7 +33,7 @@ function updateDocs(){
       data: JSON.stringify(reqBody),
       dataType: 'json',
       success: function(response){
-         console.log(response);
+         console.log("save "+response);
        }
     });
     $("#save-text").text("저장완료")
@@ -78,11 +78,16 @@ function sendContent(diff) {
     let cursorPos= input.prop('selectionStart');
     let type = diff[0];
     let text = diff[1];
-    let position = (type=='Insert') ? cursorPos-text.length : cursorPos+text.length;
-    console.log(position +" , "+ type)
-    stompClient.send("/app/docs"+"/"+docId, {}, JSON.stringify({'type': type,
-                                                       'text' : text,
-                                                       'position' : position}));
+    let times = parseInt(text.length/65500)+1;
+    let i;
+    for(i = 0; i<times;i++){
+        let shift = i * 65500
+        let position = (type=='Insert') ? cursorPos-text.length-shift : cursorPos+text.length+shift;
+        console.log(position +" , "+ type)
+        stompClient.send("/app/docs"+"/"+docId, {}, JSON.stringify({'type': type,
+                                                               'text' : text,
+                                                               'position' : position}));
+    }
 }
 
 function showContent(message) {
