@@ -73,19 +73,19 @@ function disconnect() {
     setConnected(false);
     console.log("Disconnected");
 }
-function sendContent(diff,diff2) {
+function sendContent(diff,diff2,cursorPos) {
     let input = $( "#docs-text" );
-    let cursorPos= input.prop('selectionStart');
-    if(escape(diff.charAt(0)).length == 6){
-        cursorPos ++;
-   }
+//    let cursorPos= input.prop('selectionStart');
+    //if(escape(diff.charAt(0)).length == 6){
+     //   cursorPos ++;
+   //}
     let times = parseInt(diff.length/65500)+1;
     let i;
     for(i = 0; i<times;i++){
         let shift = i * 65500
         console.log(cursorPos +" , " +diff+" , "+diff2 )
         stompClient.send("/app/docs"+"/"+docId, {}, JSON.stringify({'insertString':diff,
-                                                                       'insertPos' : cursorPos-diff.length-shift,
+                                                                       'insertPos' : cursorPos-shift,
                                                                        'deleteLength' : diff2.length,
                                                                        'deletePos' : cursorPos+shift
                                                                         }));
@@ -99,8 +99,9 @@ function showContent(message) {
     let deleteLength = message.deleteLength;
     let deletePos = message.deletePos;
     let result = input.val();
-    result = insert(result,insertPos,insertString);
     result = del(result,deletePos,deleteLength);
+    result = insert(result,insertPos,insertString);
+
     input.val( result );
     $("textarea.autosize").height(1).height( $("textarea.autosize").prop('scrollHeight')+12 );
 }
@@ -118,9 +119,11 @@ $(function () {
     input.on("input", function(){
         let prev = $(this).data('val');
         let current = $(this).val();
-        let diff = text_diff(prev,current);
-        let diff2 = text_diff(current,prev);
-        sendContent(diff,diff2)
+        let temp_diff = text_diff(prev,current);
+        let cursorPos = temp_diff[0];
+        let diff = temp_diff[1];
+        let diff2 = text_diff(current,prev)[1];
+        sendContent(diff,diff2,cursorPos);
         console.log("diff = " + diff)
         console.log("diff2 = " + diff2)
         $(this).height(1).height( $(this).prop('scrollHeight')+12 );
@@ -148,5 +151,5 @@ function text_diff(first, second) { // SECOND 가 커야함
             ++end;
         }
         end = second.length - end;
-        return second.substr(start, end - start);
+        return [start,second.substr(start, end - start)];
     }
