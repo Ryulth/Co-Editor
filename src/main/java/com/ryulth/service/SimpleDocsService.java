@@ -37,10 +37,6 @@ public class SimpleDocsService implements DocsService {
 
     @Override
     public ResponseContent transform(Content content, String sessionId) {
-
-
-
-
         return ResponseContent.builder().insertString(content.getInsertString())
                 .insertPos(content.getInsertPos())
                 .deleteLength(content.getDeleteLength())

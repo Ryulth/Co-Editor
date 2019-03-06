@@ -124,8 +124,6 @@ $(function () {
         let diff = temp_diff[1];
         let diff2 = text_diff(current,prev)[1];
         sendContent(diff,diff2,cursorPos);
-        console.log("diff = " + diff)
-        console.log("diff2 = " + diff2)
         $(this).height(1).height( $(this).prop('scrollHeight')+12 );
         updateDocs();
     });
