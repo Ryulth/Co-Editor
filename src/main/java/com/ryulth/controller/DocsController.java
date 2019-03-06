@@ -1,7 +1,7 @@
 package com.ryulth.controller;
 
 
-import com.ryulth.dto.Content;
+import com.ryulth.pojo.request.Content;
 import com.ryulth.dto.Docs;
 import com.ryulth.pojo.response.ResponseContent;
 import com.ryulth.pojo.response.ResponseDocs;
@@ -15,9 +15,7 @@ import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.util.HtmlUtils;
 
 import javax.servlet.http.HttpSession;
 import java.util.concurrent.Future;
@@ -38,10 +36,7 @@ public class DocsController{
     public ResponseContent getContent (@DestinationVariable String docsId,Content content, SimpMessageHeaderAccessor headerAccessor) throws Exception{
         String sessionId = headerAccessor.getSessionId();
         logger.info("SessionId {}",sessionId);
-        return ResponseContent.builder().text(content.getText())
-                .position(content.getPosition())
-                .type(content.getType())
-                .sessionId(sessionId).build();
+        return docsService.transform(content,sessionId);
     }
     @GetMapping("/docs")
     public ResponseDocs getDocs(){

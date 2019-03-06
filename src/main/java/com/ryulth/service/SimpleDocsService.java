@@ -1,7 +1,9 @@
 package com.ryulth.service;
 
 import com.ryulth.controller.DocsController;
+import com.ryulth.pojo.request.Content;
 import com.ryulth.dto.Docs;
+import com.ryulth.pojo.response.ResponseContent;
 import com.ryulth.repository.DocsRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,5 +33,18 @@ public class SimpleDocsService implements DocsService {
             return new AsyncResult<Boolean>(true);
         }
         return new AsyncResult<Boolean>(false);
+    }
+
+    @Override
+    public ResponseContent transform(Content content, String sessionId) {
+
+
+
+
+        return ResponseContent.builder().insertString(content.getInsertString())
+                .insertPos(content.getInsertPos())
+                .deleteLength(content.getDeleteLength())
+                .deletePos(content.getDeletePos())
+                .sessionId(sessionId).build();
     }
 }

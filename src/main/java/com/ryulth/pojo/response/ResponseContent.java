@@ -14,7 +14,8 @@ public class ResponseContent {
     }
 
     private String sessionId;
-    private String type;
-    private String text;
-    private int position;
+    private String insertString;
+    private int insertPos;
+    private int deleteLength;
+    private int deletePos;
 }

@@ -73,50 +73,57 @@ function disconnect() {
     setConnected(false);
     console.log("Disconnected");
 }
-function sendContent(diff) {
+function sendContent(diff,diff2) {
     let input = $( "#docs-text" );
     let cursorPos= input.prop('selectionStart');
-    let type = diff[0];
-    let text = diff[1];
-    let times = parseInt(text.length/65500)+1;
+    if(escape(diff.charAt(0)).length == 6){
+        cursorPos ++;
+   }
+    let times = parseInt(diff.length/65500)+1;
     let i;
     for(i = 0; i<times;i++){
         let shift = i * 65500
-        let position = (type=='Insert') ? cursorPos-text.length-shift : cursorPos+text.length+shift;
-        console.log(position +" , "+ type)
-        stompClient.send("/app/docs"+"/"+docId, {}, JSON.stringify({'type': type,
-                                                               'text' : text,
-                                                               'position' : position}));
+        console.log(cursorPos +" , " +diff+" , "+diff2 )
+        stompClient.send("/app/docs"+"/"+docId, {}, JSON.stringify({'insertString':diff,
+                                                                       'insertPos' : cursorPos-diff.length-shift,
+                                                                       'deleteLength' : diff2.length,
+                                                                       'deletePos' : cursorPos+shift
+                                                                        }));
     }
 }
 
 function showContent(message) {
     let input = $( "#docs-text" );
-    let type = message.type;
-    let index = message.position;
-    let text = message.text;
-    let result = (type=='Insert') ? insert(input.val(),index,text) : del(input.val(),index,text);
+    let insertString = message.insertString;
+    let insertPos = message.insertPos;
+    let deleteLength = message.deleteLength;
+    let deletePos = message.deletePos;
+    let result = input.val();
+    result = insert(result,insertPos,insertString);
+    result = del(result,deletePos,deleteLength);
     input.val( result );
     $("textarea.autosize").height(1).height( $("textarea.autosize").prop('scrollHeight')+12 );
 }
 function insert(str, index, value) {
     return str.substr(0, index) + value + str.substr(index);
 }
-function del(str,index,value){
-    return str.slice(0, index-value.length) + str.slice(index);
+function del(str,index,length){
+    return str.slice(0, index) + str.slice(index+length);
 }
 $(function () {
     let input = $ ('#docs-text');
     input.on('keydown', function(){
         $(this).data('val', $(this).val());
     });
-    input.on('input', function(){
+    input.on("input", function(){
         let prev = $(this).data('val');
         let current = $(this).val();
         let diff = text_diff(prev,current);
-        diff = (diff == "") ? ["Delete",text_diff(current,prev)] : ["Insert",diff];
+        let diff2 = text_diff(current,prev);
+        sendContent(diff,diff2)
+        console.log("diff = " + diff)
+        console.log("diff2 = " + diff2)
         $(this).height(1).height( $(this).prop('scrollHeight')+12 );
-        sendContent(diff);
         updateDocs();
     });
 
