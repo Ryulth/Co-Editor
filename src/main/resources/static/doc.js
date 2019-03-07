@@ -1,7 +1,7 @@
 let stompClient = null;
 let clientSessionId = null;
 let docId = location.href.substr(location.href.lastIndexOf('?') + 1);
-let baseUrl ="http://10.77.34.204:8080/docs";
+let baseUrl ="http://localhost:8080/docs";
 $(document).ready(function() {
 getDocs();
 connect();
