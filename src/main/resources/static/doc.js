@@ -1,7 +1,7 @@
 let stompClient = null;
 let clientSessionId = null;
 let docId = location.href.substr(location.href.lastIndexOf('?') + 1);
-let baseUrl ="http://localhost:8080/docs";
+let baseUrl ="http://10.77.34.204:8080/docs";
 $(document).ready(function() {
 getDocs();
 connect();
@@ -75,16 +75,16 @@ function disconnect() {
 }
 function sendContent(diff,diff2,cursorPos) {
     let input = $( "#docs-text" );
-//    let cursorPos= input.prop('selectionStart');
     //if(escape(diff.charAt(0)).length == 6){
      //   cursorPos ++;
    //}
-    let times = parseInt(diff.length/65500)+1;
+    let times = parseInt(diff.length/60000)+1;
     let i;
     for(i = 0; i<times;i++){
-        let shift = i * 65500
+        let shift = i * 60000
+        let sendDiff = diff.substr(shift,shift+60000);
         console.log(cursorPos +" , " +diff+" , "+diff2 )
-        stompClient.send("/app/docs"+"/"+docId, {}, JSON.stringify({'insertString':diff,
+        stompClient.send("/app/docs"+"/"+docId, {}, JSON.stringify({'insertString':sendDiff,
                                                                        'insertPos' : cursorPos-shift,
                                                                        'deleteLength' : diff2.length,
                                                                        'deletePos' : cursorPos+shift
@@ -94,6 +94,7 @@ function sendContent(diff,diff2,cursorPos) {
 
 function showContent(message) {
     let input = $( "#docs-text" );
+    let cursorPos= input.prop('selectionStart');
     let insertString = message.insertString;
     let insertPos = message.insertPos;
     let deleteLength = message.deleteLength;
@@ -101,8 +102,9 @@ function showContent(message) {
     let result = input.val();
     result = del(result,deletePos,deleteLength);
     result = insert(result,insertPos,insertString);
-
     input.val( result );
+    input.prop('selectionStart', cursorPos+insertString.length-deleteLength);
+    input.prop('selectionEnd', cursorPos+insertString.length-deleteLength);
     $("textarea.autosize").height(1).height( $("textarea.autosize").prop('scrollHeight')+12 );
 }
 function insert(str, index, value) {
@@ -113,7 +115,7 @@ function del(str,index,length){
 }
 $(function () {
     let input = $ ('#docs-text');
-    input.on('keydown', function(){
+    input.on('keydown mousedown', function(){
         $(this).data('val', $(this).val());
     });
     input.on("input", function(){
