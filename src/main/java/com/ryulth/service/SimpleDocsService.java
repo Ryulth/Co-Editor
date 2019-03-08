@@ -1,8 +1,12 @@
 package com.ryulth.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ryulth.controller.DocsController;
-import com.ryulth.pojo.request.Content;
 import com.ryulth.dto.Docs;
+import com.ryulth.pojo.model.Delete;
+import com.ryulth.pojo.model.Insert;
+import com.ryulth.pojo.request.RequestCommand;
 import com.ryulth.pojo.response.ResponseContent;
 import com.ryulth.repository.DocsRepository;
 import org.slf4j.Logger;
@@ -12,18 +16,22 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.AsyncResult;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.Future;
 
 @Component
 public class SimpleDocsService implements DocsService {
     private static Logger logger = LoggerFactory.getLogger(DocsController.class);
-
+    private final Map<Long,Docs> cacheDocs = new HashMap<Long, Docs>();
+    @Autowired
+    ObjectMapper mapper;
     @Autowired
     DocsRepository docsRepository;
 
     @Override
     @Async
-    public Future<Boolean> updateDocs(Docs docs) {
+    public Future<Boolean> saveDocs(Docs docs) {
         Docs tempDocs = docsRepository.findById(docs.getId()).orElse(null);
         if(tempDocs != null) {
             logger.info("save Start");
@@ -36,11 +44,43 @@ public class SimpleDocsService implements DocsService {
     }
 
     @Override
-    public ResponseContent transform(Content content, String sessionId) {
-        return ResponseContent.builder().insertString(content.getInsertString())
-                .insertPos(content.getInsertPos())
-                .deleteLength(content.getDeleteLength())
-                .deletePos(content.getDeletePos())
+    public ResponseContent transform(RequestCommand requestCommand, String sessionId) {
+        Insert insert = requestCommand.getCommands().getInsert();
+        Delete delete = requestCommand.getCommands().getDelete();
+        return ResponseContent.builder().insertString(insert.getText())
+                .insertPos(insert.getIndex())
+                .deleteLength(delete.getSize())
+                .deletePos(delete.getIndex())
                 .sessionId(sessionId).build();
+    }
+
+    @Override
+    public Docs getDocs(Long docsId) {
+        Docs docs = docsRepository.findById(docsId).orElse(null);
+        addCacheDocs(docsId,docs);
+        return docs;
+    }
+
+
+    private void addCacheDocs(Long docsId, Docs docs) {
+        if (cacheDocs.get(docsId)==null){
+            synchronized(cacheDocs){
+                cacheDocs.put(docsId,docs);
+            }
+        }
+    }
+
+    @Override
+    public String putDocs(RequestCommand requestCommand) throws JsonProcessingException {
+        logger.info("DocsId {} SessionId {} ", requestCommand.getDocsId(),requestCommand.getSessionId());
+
+        Insert insert = requestCommand.getCommands().getInsert();
+        Delete delete = requestCommand.getCommands().getDelete();
+        ResponseContent responseContent = ResponseContent.builder().insertString(insert.getText())
+                .insertPos(insert.getIndex())
+                .deleteLength(delete.getSize())
+                .deletePos(delete.getIndex())
+                .sessionId(requestCommand.getSessionId()).build();
+        return mapper.writeValueAsString(responseContent);
     }
 }

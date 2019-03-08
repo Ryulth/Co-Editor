@@ -10,4 +10,5 @@ public class Content {
     private int insertPos;
     private int deleteLength;
     private int deletePos;
+    private int originalLength;
 }

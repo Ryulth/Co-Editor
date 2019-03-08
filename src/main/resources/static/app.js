@@ -1,6 +1,6 @@
 let stompClient = null;
 let clientSessionId = null;
-let baseUrl ="http://localhost:8080/docs";
+let baseUrl ="http://10.77.34.204:8080/docs";
 $(document).ready(function() {
 getDocs();
 $("textarea.autosize").height(1).height( $("textarea.autosize").prop('scrollHeight')+12 );

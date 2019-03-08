@@ -1,15 +1,48 @@
 let stompClient = null;
 let clientSessionId = null;
-let docId = location.href.substr(location.href.lastIndexOf('?') + 1);
-let baseUrl ="http://localhost:8080/docs";
+let docsId = location.href.substr(location.href.lastIndexOf('?') + 1);
+let baseUrl ="http://10.77.34.204:8080/docs";
 $(document).ready(function() {
 getDocs();
 connect();
 });
+$(function () {
+    let input = $ ('#docs-text');
+
+    input.on('keydown mousedown', function(){
+        $(this).data('val', $(this).val());
+    });
+    input.on("input", function(){
+        let prev = $(this).data('val');
+        let current = $(this).val();
+        let temp_diff = text_diff(prev,current);
+        let cursorPos = temp_diff[0];
+        let diff = temp_diff[1];
+        let diff2 = text_diff(current,prev)[1];
+        console.log("prev" + prev);
+        console.log("current" + current);
+        console.log("diff 1" + diff);
+        console.log("diff 2" + diff2);
+        sendContentPost(diff,diff2,cursorPos,prev.length);
+        $(this).height(1).height( $(this).prop('scrollHeight')+12 );
+        updateDocs();
+        $(this).data('val', current);
+    });
+
+    $("form").on('submit', function (e) {
+        e.preventDefault();
+    });
+    $( "#connect" ).click(function() { connect(); });
+    $( "#disconnect" ).click(function() { disconnect(); });
+
+    $(document).on('click', 'a', function () {
+        window.location.href = 'docs.html?'+this.id;
+    });
+});
 function getDocs(){
     $.ajax({
       type: "GET",
-      url: baseUrl+"/"+docId,
+      url: baseUrl+"/"+docsId,
       cache: false,
       success: function(response){
          let trHTML = '';
@@ -22,7 +55,7 @@ function getDocs(){
 function updateDocs(){
     $("#save-text").text("저장중")
      let reqBody = {}
-     reqBody["id"] = docId;
+     reqBody["id"] = docsId;
      reqBody["title"] = "temp";
      reqBody["content"] = $("#docs-text").val();
     $.ajax({
@@ -57,7 +90,7 @@ function connect() {
         setConnected(true);
         console.log("Connected" + frame);
         clientSessionId = /\/([^\/]+)\/websocket/.exec(socket._transport.url)[1];
-        stompClient.subscribe('/topic/docs'+"/"+docId, function (content) {
+        stompClient.subscribe('/topic/docs'+"/"+docsId, function (content) {
             let receiveSessionId = JSON.parse(content.body).sessionId;
             if(receiveSessionId!=clientSessionId){
             showContent(JSON.parse(content.body));
@@ -73,8 +106,8 @@ function disconnect() {
     setConnected(false);
     console.log("Disconnected");
 }
-function sendContent(diff,diff2,cursorPos) {
-    let input = $( "#docs-text" );
+function sendContent(diff,diff2,cursorPos,originalLength) {
+    //let input = $( "#docs-text" );
     //if(escape(diff.charAt(0)).length == 6){
      //   cursorPos ++;
    //}
@@ -84,14 +117,52 @@ function sendContent(diff,diff2,cursorPos) {
         let shift = i * 60000
         let sendDiff = diff.substr(shift,shift+60000);
         console.log(cursorPos +" , " +diff+" , "+diff2 )
-        stompClient.send("/app/docs"+"/"+docId, {}, JSON.stringify({'insertString':sendDiff,
-                                                                       'insertPos' : cursorPos-shift,
-                                                                       'deleteLength' : diff2.length,
-                                                                       'deletePos' : cursorPos+shift
-                                                                        }));
+        stompClient.send("/app/docs"+"/"+docsId, {}, JSON.stringify(
+        {
+          "commands": {
+            "delete": {
+              "index": cursorPos+shift,
+              "size": diff2.length
+            },
+            "insert": {
+              "index": cursorPos-shift,
+              "text": sendDiff
+            },
+            "originalLength": originalLength
+          },
+
+        }
+       ));
     }
 }
-
+function sendContentPost(diff,diff2,cursorPos,originalLength){
+    console.log(cursorPos +" , " +diff+" , "+diff2 )
+    let reqBody = {
+                "commands": {
+                    "delete": {
+                        "index": cursorPos,
+                        "size": diff2.length
+                        },
+                    "insert": {
+                        "index": cursorPos,
+                        "text": diff
+                        },
+                    "originalLength": originalLength
+                    },
+                    "sessionId" : clientSessionId,
+                    "docsId" : docsId
+                }
+    $.ajax({
+      async: true, // false 일 경우 동기 요청으로 변경
+      type: "POST",
+      contentType: "application/json",
+      url: baseUrl +"/"+docsId,
+      data: JSON.stringify(reqBody),
+      dataType: 'json',
+      success: function(response){
+       }
+    });
+    }
 function showContent(message) {
     let input = $( "#docs-text" );
     let cursorPos= input.prop('selectionStart');
@@ -113,33 +184,7 @@ function insert(str, index, value) {
 function del(str,index,length){
     return str.slice(0, index) + str.slice(index+length);
 }
-$(function () {
-    let input = $ ('#docs-text');
-    input.on('keydown mousedown', function(){
-        $(this).data('val', $(this).val());
-    });
-    input.on("input", function(){
-        let prev = $(this).data('val');
-        let current = $(this).val();
-        let temp_diff = text_diff(prev,current);
-        let cursorPos = temp_diff[0];
-        let diff = temp_diff[1];
-        let diff2 = text_diff(current,prev)[1];
-        sendContent(diff,diff2,cursorPos);
-        $(this).height(1).height( $(this).prop('scrollHeight')+12 );
-        updateDocs();
-    });
 
-    $("form").on('submit', function (e) {
-        e.preventDefault();
-    });
-    $( "#connect" ).click(function() { connect(); });
-    $( "#disconnect" ).click(function() { disconnect(); });
-
-    $(document).on('click', 'a', function () {
-        window.location.href = 'docs.html?'+this.id;
-    });
-});
 function text_diff(first, second) { // SECOND 가 커야함
 
         let start = 0;
