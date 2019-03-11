@@ -13,4 +13,5 @@ public class Commands {
     @JsonProperty("insert")
     Insert insert;
     int originalLength;
+    DocsStyle docsStyle;
 }
