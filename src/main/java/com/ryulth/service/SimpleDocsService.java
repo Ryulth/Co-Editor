@@ -18,12 +18,14 @@ import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Future;
 
 @Component
 public class SimpleDocsService implements DocsService {
     private static Logger logger = LoggerFactory.getLogger(DocsController.class);
     private final Map<Long,Docs> cacheDocs = new HashMap<Long, Docs>();
+    private static RequestCommand cacheRequestCommand;
     @Autowired
     ObjectMapper mapper;
     @Autowired
@@ -73,7 +75,12 @@ public class SimpleDocsService implements DocsService {
     @Override
     public String putDocs(RequestCommand requestCommand) throws JsonProcessingException {
         logger.info("DocsId {} SessionId {} ", requestCommand.getDocsId(),requestCommand.getSessionId());
-
+        if(Objects.isNull(cacheRequestCommand)){
+            requestCommand.setCommands(ContentIndexer.calculateIndex(requestCommand.getCommands()));
+        } else{
+            requestCommand.setCommands(ContentIndexer.calculateIndex(cacheRequestCommand.getCommands(), requestCommand.getCommands()));
+        }
+        cacheRequestCommand = requestCommand;
         Insert insert = requestCommand.getCommands().getInsert();
         Delete delete = requestCommand.getCommands().getDelete();
         ResponseContent responseContent = ResponseContent.builder().insertString(insert.getText())
