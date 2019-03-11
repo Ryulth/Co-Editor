@@ -12,5 +12,5 @@ public class Commands {
     Delete delete;
     @JsonProperty("insert")
     Insert insert;
-    String originalLength;
+    int originalLength;
 }

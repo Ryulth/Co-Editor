@@ -1,7 +1,7 @@
 let stompClient = null;
 let clientSessionId = null;
 let docsId = location.href.substr(location.href.lastIndexOf('?') + 1);
-let baseUrl ="http://localhost:8080/docs";
+let baseUrl ="http://10.77.34.204:8080/docs";
 $(document).ready(function() {
 getDocs();
 connect();
@@ -108,9 +108,7 @@ function disconnect() {
 }
 function sendContent(diff,diff2,cursorPos,originalLength) {
     //let input = $( "#docs-text" );
-    //if(escape(diff.charAt(0)).length == 6){
-     //   cursorPos ++;
-   //}
+
     let times = parseInt(diff.length/60000)+1;
     let i;
     for(i = 0; i<times;i++){
@@ -174,8 +172,24 @@ function showContent(message) {
     result = del(result,deletePos,deleteLength);
     result = insert(result,insertPos,insertString);
     input.val( result );
-    input.prop('selectionStart', cursorPos+insertString.length-deleteLength);
-    input.prop('selectionEnd', cursorPos+insertString.length-deleteLength);
+    console.log(insertPos)
+    console.log(cursorPos)
+    let insertLength = insertString.length
+   // if(escape(insertString.charAt(0)).length == 6){
+     //    insertLength = insertLength/2
+    //}
+    if(insertPos > cursorPos && deleteLength == 0){
+    input.prop('selectionStart', cursorPos-deleteLength);
+    input.prop('selectionEnd', cursorPos-deleteLength);
+    }
+    else if(deletePos > cursorPos ){
+    input.prop('selectionStart', cursorPos+insertLength);
+    input.prop('selectionEnd', cursorPos+insertLength);
+    }
+    else{
+    input.prop('selectionStart', cursorPos+insertLength-deleteLength);
+    input.prop('selectionEnd', cursorPos+insertLength-deleteLength);
+    }
     $("textarea.autosize").height(1).height( $("textarea.autosize").prop('scrollHeight')+12 );
 }
 function insert(str, index, value) {
