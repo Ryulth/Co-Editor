@@ -1,6 +1,7 @@
 package com.ryulth.pojo.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.ryulth.dto.Docs;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,8 +15,9 @@ public class ResponseContent {
     }
 
     private String sessionId;
-    private String insertString;
+    private int insertLength;
     private int insertPos;
     private int deleteLength;
     private int deletePos;
+    private Docs docs;
 }

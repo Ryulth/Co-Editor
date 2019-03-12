@@ -158,17 +158,17 @@ function sendContentPost(res,originalLength){
 function showContent(message) {
     let input = $( "#docs-text" );
     let cursorPos= input.prop('selectionStart');
-    let insertString = message.insertString;
+    let insertLength = message.insertLength;
     let insertPos = message.insertPos;
     let deleteLength = message.deleteLength;
     let deletePos = message.deletePos;
-    let result = input.val();
-    result = del(result,deletePos,deleteLength);
-    result = insert(result,insertPos,insertString);
-    input.val( result );
+    let content = message.docs.content;
+    //let result = input.val();
+    //result = del(result,deletePos,deleteLength);
+    //result = insert(result,insertPos,insertString);
+    input.val( content );
     console.log(insertPos)
     console.log(cursorPos)
-    let insertLength = insertString.length
    // if(escape(insertString.charAt(0)).length == 6){
      //    insertLength = insertLength/2
     //}
