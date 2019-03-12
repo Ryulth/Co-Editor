@@ -1,32 +1,27 @@
+let dmp = null;
 let stompClient = null;
 let clientSessionId = null;
 let docsId = location.href.substr(location.href.lastIndexOf('?') + 1);
 let baseUrl ="http://10.77.34.204:8080/docs";
 $(document).ready(function() {
+dmp = new diff_match_patch();
 getDocs();
 connect();
 });
 $(function () {
     let input = $ ('#docs-text');
-
-    input.on('keydown mousedown', function(){
-        $(this).data('val', $(this).val());
+    input.on("beforeinput", function(){
+          $(this).data('val', $(this).val());
     });
     input.on("input", function(){
         let prev = $(this).data('val');
         let current = $(this).val();
-        let temp_diff = text_diff(prev,current);
-        let cursorPos = temp_diff[0];
-        let diff = temp_diff[1];
-        let diff2 = text_diff(current,prev)[1];
-        console.log("prev" + prev);
-        console.log("current" + current);
-        console.log("diff 1" + diff);
-        console.log("diff 2" + diff2);
-        sendContentPost(diff,diff2,cursorPos,prev.length);
+        let diff = dmp.diff_main(prev, current);
+        dmp.diff_cleanupSemantic(diff);
+        res = setDiffString(diff);
+        sendContentPost(res,prev.length);
         $(this).height(1).height( $(this).prop('scrollHeight')+12 );
         updateDocs();
-        $(this).data('val', current);
     });
 
     $("form").on('submit', function (e) {
@@ -35,10 +30,33 @@ $(function () {
     $( "#connect" ).click(function() { connect(); });
     $( "#disconnect" ).click(function() { disconnect(); });
 
-    $(document).on('click', 'a', function () {
-        window.location.href = 'docs.html?'+this.id;
-    });
 });
+function setDiffString(diff){
+    let idx = 0;
+    let insertString = "";
+    let deleteString = "";
+    let flag = true;
+    diff.forEach(function(element) {
+      console.log(element);
+      switch (element[0]){
+        case 0 : // retain
+            if(flag){
+                idx += element[1].length;
+            }
+            break;
+        case -1 : // delete
+            flag = false;
+            deleteString = element[1];
+            break;
+        case 1 : // insert
+            flag = false;
+            insertString = element[1];
+            break;
+      }
+    });
+    return [idx,insertString,deleteString]
+}
+
 function getDocs(){
     $.ajax({
       type: "GET",
@@ -106,44 +124,20 @@ function disconnect() {
     setConnected(false);
     console.log("Disconnected");
 }
-function sendContent(diff,diff2,cursorPos,originalLength) {
-    //let input = $( "#docs-text" );
-
-    let times = parseInt(diff.length/60000)+1;
-    let i;
-    for(i = 0; i<times;i++){
-        let shift = i * 60000
-        let sendDiff = diff.substr(shift,shift+60000);
-        console.log(cursorPos +" , " +diff+" , "+diff2 )
-        stompClient.send("/app/docs"+"/"+docsId, {}, JSON.stringify(
-        {
-          "commands": {
-            "delete": {
-              "index": cursorPos+shift,
-              "size": diff2.length
-            },
-            "insert": {
-              "index": cursorPos-shift,
-              "text": sendDiff
-            },
-            "originalLength": originalLength
-          },
-
-        }
-       ));
-    }
-}
-function sendContentPost(diff,diff2,cursorPos,originalLength){
-    console.log(cursorPos +" , " +diff+" , "+diff2 )
+function sendContentPost(res,originalLength){
+    //console.log(cursorPos +" , " +diff+" , "+diff2 )
+    let cursorPos = res[0];
+    let insertString = res[1];
+    let deleteString = res[2];
     let reqBody = {
                 "commands": {
                     "delete": {
                         "index": cursorPos,
-                        "size": diff2.length
+                        "size": deleteString.length
                         },
                     "insert": {
                         "index": cursorPos,
-                        "text": diff
+                        "text": insertString
                         },
                     "originalLength": originalLength
                     },
@@ -212,3 +206,10 @@ function text_diff(first, second) { // SECOND 가 커야함
         end = second.length - end;
         return [start,second.substr(start, end - start)];
     }
+
+
+
+
+
+
+
