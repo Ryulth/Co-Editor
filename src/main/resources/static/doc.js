@@ -5,6 +5,7 @@ let docsId = location.href.substr(location.href.lastIndexOf('?') + 1);
 let baseUrl ="http://10.77.34.204:8080/docs";
 let prev;
 let version;
+let receiveFlag = true;
 $(document).ready(function() {
 dmp = new diff_match_patch();
 getDocs();
@@ -24,25 +25,27 @@ $(function () {
         });
 
     input.on("input", function(event){
-        let current = $(this).val();
-        //console.log(Hangul.disassemble(prev));
-        //console.log(Hangul.disassemble(current));
-        let diff = dmp.diff_main(prev, current);
-        dmp.diff_cleanupSemantic(diff);
-        console.log("diff",diff);
-        res = setDiffString(diff);
-        console.log("res",res);
-        if(!(Hangul.disassemble(res[2]).length == Hangul.disassemble(res[1]).length + 1) || (keycode == "Backspace")){
+            console.log("receiveFlag", receiveFlag);
+            if(receiveFlag){
+                let current = $(this).val();
+                //console.log(Hangul.disassemble(prev));
+                //console.log(Hangul.disassemble(current));
+                let diff = dmp.diff_main(prev, current);
+                dmp.diff_cleanupSemantic(diff);
+                console.log("diff",diff);
+                res = setDiffString(diff);
+                console.log("res",res);
+                if(!(Hangul.disassemble(res[2]).length == Hangul.disassemble(res[1]).length + 1) || (keycode == "Backspace")){
+                    receiveFlag = false;
+                    sendContentPost(res,prev.length);
+                    $(this).height(1).height( $(this).prop('scrollHeight')+12 );
+                    //updateDocs();
+                    prev = $(this).val();
 
+                }
+                keycode="";
 
-            sendContentPost(res,prev.length);
-            $(this).height(1).height( $(this).prop('scrollHeight')+12 );
-            //updateDocs();
-            prev = $(this).val();
-
-        }
-        keycode="";
-        console.log("무슨키?",keycode);
+            }
     });
 
 
@@ -53,6 +56,7 @@ $(function () {
     $( "#disconnect" ).click(function() { disconnect(); });
 
 });
+
 function setDiffString(diff){
     let idx = 0;
     let insertString = "";
@@ -135,7 +139,11 @@ function connect() {
         stompClient.subscribe('/topic/docs'+"/"+docsId, function (content) {
             let receiveSessionId = JSON.parse(content.body).sessionId;
             version =JSON.parse(content.body).docs.version;
-            if(receiveSessionId!=clientSessionId){
+            if(receiveSessionId == clientSessionId){
+                receiveFlag =true;
+                console.log("GETMINE");
+            }
+            else{
             showContent(JSON.parse(content.body));
             }
         });

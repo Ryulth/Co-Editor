@@ -60,7 +60,9 @@ public class SimpleDocsService implements DocsService {
     public Docs getDocs(Long docsId) {
         Docs docs = docsRepository.findById(docsId).orElse(null);
         addCacheDocs(docsId, docs);
-        return docs;
+        synchronized (cacheDocs) {
+            return cacheDocs.get(docsId);
+        }
     }
 
 
@@ -83,19 +85,34 @@ public class SimpleDocsService implements DocsService {
         }
         cacheRequestCommand = requestCommand;
     */
+        Docs tempDocs;
+        synchronized (cacheDocs) {
+            tempDocs = cacheDocs.get(requestCommand.getDocsId());
+        }
 
-        Docs tempDocs =cacheDocs.get(requestCommand.getDocsId());
 
         Insert insert = requestCommand.getCommands().getInsert();
         Delete delete = requestCommand.getCommands().getDelete();
-        //System.out.println(insert);
+        Long clientVersion = requestCommand.getCommands().getVersion();
+        if (clientVersion.equals(tempDocs.getVersion())) {
+            System.out.println("같다네!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@");
+
+        } else {
+            System.out.println("틀림ㄲ########################################################");
+        }
+
+        System.out.println(tempDocs);
         StringBuffer stringBuffer = new StringBuffer();
         stringBuffer.append(tempDocs.getContent());
-        stringBuffer.delete(delete.getIndex(),delete.getIndex()+delete.getSize());
-        stringBuffer.insert(insert.getIndex(),insert.getText());
+
+        stringBuffer.delete(delete.getIndex(), delete.getIndex() + delete.getSize());
+        stringBuffer.insert(insert.getIndex(), insert.getText());
         tempDocs.setContent(stringBuffer.toString());
-        //System.out.println(tempDocs);
-        cacheDocs.replace(requestCommand.getDocsId(),tempDocs);
+        tempDocs.setVersion(clientVersion + 1);
+
+        synchronized (cacheDocs) {
+            cacheDocs.replace(requestCommand.getDocsId(), tempDocs);
+        }
 
         ResponseContent responseContent = ResponseContent.builder().insertLength(insert.getText().length())
                 .insertPos(insert.getIndex())
