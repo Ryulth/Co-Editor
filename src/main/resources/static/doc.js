@@ -3,26 +3,44 @@ let stompClient = null;
 let clientSessionId = null;
 let docsId = location.href.substr(location.href.lastIndexOf('?') + 1);
 let baseUrl ="http://10.77.34.204:8080/docs";
+let prev;
 $(document).ready(function() {
 dmp = new diff_match_patch();
 getDocs();
+
 connect();
 });
 $(function () {
     let input = $ ('#docs-text');
-    input.on("beforeinput", function(){
-          $(this).data('val', $(this).val());
-    });
-    input.on("input", function(){
-        let prev = $(this).data('val');
+    let keycode;
+   //let prev = $(this).data('val');
+    //input.on("beforeinput", function(){
+     //     $(this).data('val', $(this).val());
+    //});
+    input.on("keydown", function(event){
+            keycode = event.code;
+            console.log(keycode);
+        });
+
+    input.on("input", function(event){
         let current = $(this).val();
-        let diff = dmp.diff_main(prev, current);
-        dmp.diff_cleanupSemantic(diff);
-        res = setDiffString(diff);
-        sendContentPost(res,prev.length);
-        $(this).height(1).height( $(this).prop('scrollHeight')+12 );
-        updateDocs();
+        console.log(Hangul.disassemble(prev));
+        console.log(Hangul.disassemble(current));
+        if(!(Hangul.disassemble(prev).length == Hangul.disassemble(current).length + 1) || (keycode == "Backspace")){
+            let diff = dmp.diff_main(prev, current);
+            dmp.diff_cleanupSemantic(diff);
+            res = setDiffString(diff);
+            console.log("res",res);
+            sendContentPost(res,prev.length);
+            $(this).height(1).height( $(this).prop('scrollHeight')+12 );
+            updateDocs();
+            prev = $(this).val();
+
+        }
+        keycode="";
+        console.log("무슨키?",keycode);
     });
+
 
     $("form").on('submit', function (e) {
         e.preventDefault();
@@ -37,7 +55,6 @@ function setDiffString(diff){
     let deleteString = "";
     let flag = true;
     diff.forEach(function(element) {
-      console.log(element);
       switch (element[0]){
         case 0 : // retain
             if(flag){
@@ -67,6 +84,7 @@ function getDocs(){
          let content = response["content"]
          let input = $( "#docs-text" );
          input.val( content );
+         prev = content;
        }
     });
 }
