@@ -19,4 +19,6 @@ public class Docs {
     @Column(nullable = true)
     private String content;
 
+    @Column
+    private Long version;
 }

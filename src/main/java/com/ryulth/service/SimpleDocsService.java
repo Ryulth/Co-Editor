@@ -88,13 +88,13 @@ public class SimpleDocsService implements DocsService {
 
         Insert insert = requestCommand.getCommands().getInsert();
         Delete delete = requestCommand.getCommands().getDelete();
-        System.out.println(insert);
+        //System.out.println(insert);
         StringBuffer stringBuffer = new StringBuffer();
         stringBuffer.append(tempDocs.getContent());
         stringBuffer.delete(delete.getIndex(),delete.getIndex()+delete.getSize());
         stringBuffer.insert(insert.getIndex(),insert.getText());
         tempDocs.setContent(stringBuffer.toString());
-        System.out.println(tempDocs);
+        //System.out.println(tempDocs);
         cacheDocs.replace(requestCommand.getDocsId(),tempDocs);
 
         ResponseContent responseContent = ResponseContent.builder().insertLength(insert.getText().length())
