@@ -25,7 +25,9 @@ import java.util.concurrent.Future;
 public class SimpleDocsService implements DocsService {
     private static Logger logger = LoggerFactory.getLogger(DocsController.class);
     private final Map<Long, Docs> cacheDocs = new HashMap<Long, Docs>();
-    private static RequestCommand cacheRequestCommand;
+    private static RequestCommand cacheRequestCommands[] = new RequestCommand[1000];
+    int version = 0;
+
     @Autowired
     ObjectMapper mapper;
     @Autowired
@@ -85,6 +87,15 @@ public class SimpleDocsService implements DocsService {
         }
         cacheRequestCommand = requestCommand;
     */
+        Long requestVersion = requestCommand.getCommands().getVersion();
+        while(requestVersion < version){
+            positionIndexing(requestCommand);
+            requestVersion = requestCommand.getCommands().getVersion();
+        }
+        cacheRequestCommands[version] = requestCommand;
+        version++;
+        requestCommand.getCommands().setVersion(Long.valueOf(version));
+//    --------------------------------------------------------------------------------------------
         Docs tempDocs;
         synchronized (cacheDocs) {
             tempDocs = cacheDocs.get(requestCommand.getDocsId());
@@ -123,4 +134,20 @@ public class SimpleDocsService implements DocsService {
         return mapper.writeValueAsString(responseContent);
     }
 
+    private void positionIndexing(RequestCommand requestCommand){
+        Long requestVersion = requestCommand.getCommands().getVersion();
+        RequestCommand cacheRequestCommand = cacheRequestCommands[Math.toIntExact(requestVersion)];
+        int cacheInserIndex = cacheRequestCommand.getCommands().getInsert().getIndex();
+        int cacheDeleteIndex = cacheRequestCommand.getCommands().getDelete().getIndex();
+        int requestInserIndex = requestCommand.getCommands().getInsert().getIndex();
+        int requestDeleteIndex = requestCommand.getCommands().getInsert().getIndex();
+
+        if(cacheInserIndex < requestInserIndex){
+            requestCommand.getCommands().getInsert().setIndex(cacheRequestCommand.getCommands().getInsert().getText().length() + requestInserIndex);
+        }
+        if(cacheDeleteIndex < requestDeleteIndex){
+            requestCommand.getCommands().getDelete().setIndex(requestDeleteIndex - cacheRequestCommand.getCommands().getDelete().getSize());
+        }
+        requestCommand.getCommands().setVersion(requestVersion+1);
+    }
 }
