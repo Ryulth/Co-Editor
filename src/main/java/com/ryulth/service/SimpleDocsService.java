@@ -137,13 +137,13 @@ public class SimpleDocsService implements DocsService {
     private void positionIndexing(RequestCommand requestCommand){
         Long requestVersion = requestCommand.getCommands().getVersion();
         RequestCommand cacheRequestCommand = cacheRequestCommands[Math.toIntExact(requestVersion)];
-        int cacheInserIndex = cacheRequestCommand.getCommands().getInsert().getIndex();
+        int cacheInsertIndex = cacheRequestCommand.getCommands().getInsert().getIndex();
         int cacheDeleteIndex = cacheRequestCommand.getCommands().getDelete().getIndex();
-        int requestInserIndex = requestCommand.getCommands().getInsert().getIndex();
+        int requestInsertIndex = requestCommand.getCommands().getInsert().getIndex();
         int requestDeleteIndex = requestCommand.getCommands().getInsert().getIndex();
 
-        if(cacheInserIndex < requestInserIndex){
-            requestCommand.getCommands().getInsert().setIndex(cacheRequestCommand.getCommands().getInsert().getText().length() + requestInserIndex);
+        if(cacheInsertIndex < requestInsertIndex){
+            requestCommand.getCommands().getInsert().setIndex(cacheRequestCommand.getCommands().getInsert().getText().length() + requestInsertIndex);
         }
         if(cacheDeleteIndex < requestDeleteIndex){
             requestCommand.getCommands().getDelete().setIndex(requestDeleteIndex - cacheRequestCommand.getCommands().getDelete().getSize());
