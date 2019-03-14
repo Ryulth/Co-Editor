@@ -7,10 +7,10 @@ let prev;
 let version;
 let receiveFlag = true;
 let buffer = "";
+let arr = [];
 $(document).ready(function() {
 dmp = new diff_match_patch();
 getDocs();
-
 connect();
 });
 $(function () {
@@ -21,27 +21,26 @@ $(function () {
      //     $(this).data('val', $(this).val());
     //});
     document.getElementById("docs-text").addEventListener("keydown", function(event){
-                                           keycode = event.code;
-
+           keycode = event.code;
     });
     input.on("input", function(){
         if(receiveFlag){
-            let current = $(this).val();
+            let current =  $(this).val();
+            console.log("prev  " , prev)
+            console.log("currrent  " , current)
             let diff = dmp.diff_main(prev, current);
             dmp.diff_cleanupSemantic(diff);
-
             res = setDiffString(diff);
             buffer = res;
-
             if(!(res[1] == "" && res[2] == ""))
-            {
-                if(!(Hangul.disassemble(res[2]).length == Hangul.disassemble(res[1]).length + 1) || (keycode == "Backspace")){
-
+            {   console.log(res);
+                if(!(Hangul.disassemble(res[2]).length == Hangul.disassemble(res[1]).length + 1) || (keycode == "Backspace") ){
                     receiveFlag = false;
                     sendContentPost(res,prev.length);
                     $(this).height(1).height( $(this).prop('scrollHeight')+12 );
                     //updateDocs();
                     prev = $(this).val();
+                    console.log("prev in if  " , prev)
                 }
             }
             keycode="";
@@ -139,7 +138,10 @@ function connect() {
         stompClient.subscribe('/topic/docs'+"/"+docsId, function (content) {
             response = JSON.parse(content.body);
             let receiveSessionId = response.sessionId;
+
             version =response.version;
+            arr.push(version);
+
             if(receiveSessionId == clientSessionId){
                 receiveFlag =true;
             }
@@ -147,11 +149,6 @@ function connect() {
                 if(!receiveFlag && !(buffer[1] == "" && buffer[2] == "")){
                    console.log("response" , content);
                    console.log("buffer" , buffer);
-                   let insertString = message.insertString;
-                   let insertPos = message.insertPos;
-                   let insertLength = insertString.length;
-                   let deleteLength = message.deleteLength;
-                   let deletePos = message.deletePos;
                    if (response.insertPos > buffer[0] && buffer[1] != ""){
                         response.insertPos += buffer[1].length;
                    }
@@ -164,8 +161,6 @@ function connect() {
                    if (response.deletePos > buffer[0] && buffer[2] != ""){
                         response.deletePos -= buffer[2].length;
                    }
-
-
                    buffer = "";
                 }
             showContent(response);
