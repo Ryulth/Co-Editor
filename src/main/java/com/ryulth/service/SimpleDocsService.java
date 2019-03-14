@@ -130,9 +130,16 @@ public class SimpleDocsService implements DocsService {
         if(cacheInsertIndex < requestInsertIndex){
             requestCommand.getCommands().getInsert().setIndex(cacheRequestCommand.getCommands().getInsert().getText().length() + requestInsertIndex);
         }
+        if(cacheDeleteIndex < requestInsertIndex){
+            requestCommand.getCommands().getInsert().setIndex(cacheRequestCommand.getCommands().getInsert().getText().length() - cacheRequestCommand.getCommands().getDelete().getSize());
+        }
         if(cacheDeleteIndex < requestDeleteIndex){
             requestCommand.getCommands().getDelete().setIndex(requestDeleteIndex - cacheRequestCommand.getCommands().getDelete().getSize());
         }
+        if(cacheInsertIndex < requestDeleteIndex){
+            requestCommand.getCommands().getInsert().setIndex(cacheRequestCommand.getCommands().getInsert().getText().length() + requestDeleteIndex);
+        }
+
         requestCommand.getCommands().setVersion(requestVersion+1);
     }
 }
