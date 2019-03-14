@@ -15,9 +15,9 @@ public class ResponseContent {
     }
 
     private String sessionId;
-    private int insertLength;
+    private String insertString;
     private int insertPos;
     private int deleteLength;
     private int deletePos;
-    private Docs docs;
+    private Long version;
 }

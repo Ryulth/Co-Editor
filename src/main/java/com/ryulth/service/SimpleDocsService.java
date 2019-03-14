@@ -51,7 +51,7 @@ public class SimpleDocsService implements DocsService {
     public ResponseContent transform(RequestCommand requestCommand, String sessionId) {
         Insert insert = requestCommand.getCommands().getInsert();
         Delete delete = requestCommand.getCommands().getDelete();
-        return ResponseContent.builder().insertLength(insert.getText().length())
+        return ResponseContent.builder().insertString(insert.getText())
                 .insertPos(insert.getIndex())
                 .deleteLength(delete.getSize())
                 .deletePos(delete.getIndex())
@@ -89,48 +89,33 @@ public class SimpleDocsService implements DocsService {
     */
         Long requestVersion = requestCommand.getCommands().getVersion();
         while(requestVersion < version){
+            System.out.println(requestVersion +"     " +version);
             positionIndexing(requestCommand);
             requestVersion = requestCommand.getCommands().getVersion();
         }
+
         cacheRequestCommands[version] = requestCommand;
         version++;
         requestCommand.getCommands().setVersion(Long.valueOf(version));
-//    --------------------------------------------------------------------------------------------
-        Docs tempDocs;
-        synchronized (cacheDocs) {
-            tempDocs = cacheDocs.get(requestCommand.getDocsId());
-        }
-
 
         Insert insert = requestCommand.getCommands().getInsert();
         Delete delete = requestCommand.getCommands().getDelete();
-        Long clientVersion = requestCommand.getCommands().getVersion();
-        if (clientVersion.equals(tempDocs.getVersion())) {
-            System.out.println("같다네!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@!@");
-
-        } else {
-            System.out.println("틀림ㄲ########################################################");
+        /*Docs tempDocs;
+        synchronized (cacheDocs) {
+            tempDocs = cacheDocs.get(requestCommand.getDocsId());
         }
-
-        System.out.println(tempDocs);
-        StringBuffer stringBuffer = new StringBuffer();
-        stringBuffer.append(tempDocs.getContent());
-
-        stringBuffer.delete(delete.getIndex(), delete.getIndex() + delete.getSize());
-        stringBuffer.insert(insert.getIndex(), insert.getText());
-        tempDocs.setContent(stringBuffer.toString());
-        tempDocs.setVersion(clientVersion + 1);
-
+        tempDocs.setVersion(Long.valueOf(version));
         synchronized (cacheDocs) {
             cacheDocs.replace(requestCommand.getDocsId(), tempDocs);
-        }
+        }*/
 
-        ResponseContent responseContent = ResponseContent.builder().insertLength(insert.getText().length())
+        ResponseContent responseContent = ResponseContent.builder().insertString(insert.getText())
                 .insertPos(insert.getIndex())
                 .deleteLength(delete.getSize())
                 .deletePos(delete.getIndex())
                 .sessionId(requestCommand.getSessionId())
-                .docs(tempDocs).build();
+                .version(Long.valueOf(version))
+                .build();
         return mapper.writeValueAsString(responseContent);
     }
 

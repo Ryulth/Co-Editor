@@ -16,36 +16,35 @@ connect();
 $(function () {
     let input = $ ('#docs-text');
     let keycode;
-   //let prev = $(this).data('val');
+    //let prev = $(this).data('val');
     //input.on("beforeinput", function(){
      //     $(this).data('val', $(this).val());
     //});
-    input.on("keydown", function(event){
-            console.log("receiveFlag", receiveFlag);
-            keycode = event.code;
-            console.log(keycode);
-        });
+    document.getElementById("docs-text").addEventListener("keydown", function(event){
+                                           keycode = event.code;
 
+    });
     input.on("input", function(){
         if(receiveFlag){
             let current = $(this).val();
             let diff = dmp.diff_main(prev, current);
             dmp.diff_cleanupSemantic(diff);
-            console.log("diff",diff);
+
             res = setDiffString(diff);
-            console.log("res",res);
+            buffer = res;
+
             if(!(res[1] == "" && res[2] == ""))
             {
-            if(!(Hangul.disassemble(res[2]).length == Hangul.disassemble(res[1]).length + 1) || (keycode == "Backspace")){
-                receiveFlag = false;
-                sendContentPost(res,prev.length);
-                $(this).height(1).height( $(this).prop('scrollHeight')+12 );
-                //updateDocs();
-                prev = $(this).val();
-            }
+                if(!(Hangul.disassemble(res[2]).length == Hangul.disassemble(res[1]).length + 1) || (keycode == "Backspace")){
+
+                    receiveFlag = false;
+                    sendContentPost(res,prev.length);
+                    $(this).height(1).height( $(this).prop('scrollHeight')+12 );
+                    //updateDocs();
+                    prev = $(this).val();
+                }
             }
             keycode="";
-
         }
     });
 
@@ -138,19 +137,54 @@ function connect() {
         console.log("Connected" + frame);
         clientSessionId = /\/([^\/]+)\/websocket/.exec(socket._transport.url)[1];
         stompClient.subscribe('/topic/docs'+"/"+docsId, function (content) {
-            let receiveSessionId = JSON.parse(content.body).sessionId;
-            version =JSON.parse(content.body).docs.version;
+            response = JSON.parse(content.body);
+            let receiveSessionId = response.sessionId;
+            version =response.version;
             if(receiveSessionId == clientSessionId){
                 receiveFlag =true;
-                console.log("GETMINE");
             }
             else{
-            showContent(JSON.parse(content.body));
+                if(!receiveFlag && !(buffer[1] == "" && buffer[2] == "")){
+                   console.log("response" , content);
+                   console.log("buffer" , buffer);
+                   let insertString = message.insertString;
+                   let insertPos = message.insertPos;
+                   let insertLength = insertString.length;
+                   let deleteLength = message.deleteLength;
+                   let deletePos = message.deletePos;
+                   if (response.insertPos > buffer[0] && buffer[1] != ""){
+                        response.insertPos += buffer[1].length;
+                   }
+                   if (response.deletePos > buffer[0] && buffer[1] != ""){
+                        response.deletePos += buffer[1].length;
+                   }
+                   if (response.insertPos > buffer[0] && buffer[2] != ""){
+                        response.insertPos -= buffer[2].length;
+                   }
+                   if (response.deletePos > buffer[0] && buffer[2] != ""){
+                        response.deletePos -= buffer[2].length;
+                   }
+
+
+                   buffer = "";
+                }
+            showContent(response);
             }
         });
     });
 }
+function makeIndex(){
+    if (insertPos > cursorPos)
+    {
+        insertPos + buffer[1].length;
 
+    }
+    if (deletePos > cursorPos)
+    {
+        deletePos - buffer[2].length;
+    }
+
+}
 function disconnect() {
     if (stompClient !== null) {
         stompClient.disconnect();
@@ -192,16 +226,16 @@ function sendContentPost(res,originalLength){
 function showContent(message) {
     let input = $( "#docs-text" );
     let cursorPos= input.prop('selectionStart');
-    let insertLength = message.insertLength;
+    let insertString = message.insertString;
     let insertPos = message.insertPos;
+    let insertLength = insertString.length;
     let deleteLength = message.deleteLength;
     let deletePos = message.deletePos;
-    let content = message.docs.content;
-    //let result = input.val();
-    //result = del(result,deletePos,deleteLength);
-    //result = insert(result,insertPos,insertString);
-    input.val( content );
-    prev = content;
+    let result = input.val();
+    result = del(result,deletePos,deleteLength);
+    result = insert(result,insertPos,insertString);
+    input.val( result );
+    prev = result;
    // if(escape(insertString.charAt(0)).length == 6){
      //    insertLength = insertLength/2
     //}

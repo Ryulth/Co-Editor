@@ -64,7 +64,6 @@ public class DocsController{
 
     @PostMapping("/docs/{docsId}") // 받아오는 곳
     public void putDocs(@PathVariable Long docsId, @RequestBody RequestCommand requestCommand) throws Exception {
-        System.out.println(requestCommand);
         this.simpMessagingTemplate.convertAndSend("/topic/docs/"+docsId,
                 docsService.putDocs(requestCommand));
     }
