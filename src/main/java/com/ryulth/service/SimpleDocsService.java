@@ -58,16 +58,16 @@ public class SimpleDocsService implements DocsService {
 
     @Override
     public Docs getDocs(Long docsId) {
-        Docs docs = docsRepository.findById(docsId).orElse(null);
-        addCacheDocs(docsId, docs);
+        addCacheDocs(docsId);
         synchronized (cacheDocs) {
             return cacheDocs.get(docsId);
         }
     }
 
 
-    private void addCacheDocs(Long docsId, Docs docs) {
+    private void addCacheDocs(Long docsId) {
         if (cacheDocs.get(docsId) == null) {
+            Docs docs = docsRepository.findById(docsId).orElse(null);
             synchronized (cacheDocs) {
                 cacheDocs.put(docsId, docs);
             }

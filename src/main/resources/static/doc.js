@@ -6,6 +6,7 @@ let baseUrl ="http://10.77.34.204:8080/docs";
 let prev;
 let version;
 let receiveFlag = true;
+let buffer = "";
 $(document).ready(function() {
 dmp = new diff_match_patch();
 getDocs();
@@ -20,32 +21,32 @@ $(function () {
      //     $(this).data('val', $(this).val());
     //});
     input.on("keydown", function(event){
+            console.log("receiveFlag", receiveFlag);
             keycode = event.code;
             console.log(keycode);
         });
 
-    input.on("input", function(event){
-            console.log("receiveFlag", receiveFlag);
-            if(receiveFlag){
-                let current = $(this).val();
-                //console.log(Hangul.disassemble(prev));
-                //console.log(Hangul.disassemble(current));
-                let diff = dmp.diff_main(prev, current);
-                dmp.diff_cleanupSemantic(diff);
-                console.log("diff",diff);
-                res = setDiffString(diff);
-                console.log("res",res);
-                if(!(Hangul.disassemble(res[2]).length == Hangul.disassemble(res[1]).length + 1) || (keycode == "Backspace")){
-                    receiveFlag = false;
-                    sendContentPost(res,prev.length);
-                    $(this).height(1).height( $(this).prop('scrollHeight')+12 );
-                    //updateDocs();
-                    prev = $(this).val();
-
-                }
-                keycode="";
-
+    input.on("input", function(){
+        if(receiveFlag){
+            let current = $(this).val();
+            let diff = dmp.diff_main(prev, current);
+            dmp.diff_cleanupSemantic(diff);
+            console.log("diff",diff);
+            res = setDiffString(diff);
+            console.log("res",res);
+            if(!(res[1] == "" && res[2] == ""))
+            {
+            if(!(Hangul.disassemble(res[2]).length == Hangul.disassemble(res[1]).length + 1) || (keycode == "Backspace")){
+                receiveFlag = false;
+                sendContentPost(res,prev.length);
+                $(this).height(1).height( $(this).prop('scrollHeight')+12 );
+                //updateDocs();
+                prev = $(this).val();
             }
+            }
+            keycode="";
+
+        }
     });
 
 
@@ -158,7 +159,6 @@ function disconnect() {
     console.log("Disconnected");
 }
 function sendContentPost(res,originalLength){
-    //console.log(cursorPos +" , " +diff+" , "+diff2 )
     let cursorPos = res[0];
     let insertString = res[1];
     let deleteString = res[2];
