@@ -1,4 +1,4 @@
-const baseUrl ="http://localhost:8080/docs";
+const baseUrl ="http://10.77.34.205:8080/docs";
 let dmp = null;
 let stompClient = null;
 let clientSessionId = null;
@@ -6,7 +6,8 @@ let docsId = location.href.substr(location.href.lastIndexOf('?') + 1);
 let prev;
 let version;
 let synchronized;
-
+let response_list = [];
+let cache_res;
 $(document).ready(function() {
     dmp = new diff_match_patch();
     getDocs();
@@ -43,52 +44,84 @@ function connect() {
             response_content = response_body.contents;
             let receiveSessionId = response_body.sessionId;
             console.log(version)
-//            version = response.version;
-            while(true){
-                response = response_content[version];
-                if(response == null){
-                    if(receiveSessionId == clientSessionId){
-                        console.log("recv so synchronized")
-                        prev = $('#docs-text').val();
-                        synchronized = true;
-                    }
-                    break;
-                }
-                else if(synchronized){
-                    console.log("synchronized");
-                    showContent(response);
-                } else{
-                    console.log("not synchronized")
-                    let current = $( "#docs-text" ).val();
-                    let diff = dmp.diff_main(prev, current);
-                    dmp.diff_cleanupSemantic(diff);
 
-                    res = setDiffString(diff);
-                    console.log(res);
-                    if(receiveSessionId != clientSessionId){
-//                    if(!(res[1] == "" && res[2] == "")){
-                        if (response.insertPos > res[0] && res[1] != ""){
-                            response.insertPos += res[1].length;
+            let current = $( "#docs-text" ).val();
+            let diff = dmp.diff_main(prev, current);
+            dmp.diff_cleanupSemantic(diff);
+            res = setDiffString(diff);
+
+            response = response_content[version];
+
+            if(receiveSessionId == clientSessionId){
+                while(response != null){
+                    if(response.sessionId != clientSessionId){
+                        if (response.insertPos > cache_res[0] && cache_res[1] != ""){
+                            console.log("cache_resaaaaaaaaaa")
+                            response.insertPos += cache_res[1].length;
                         }
-                        if (response.deletePos > res[0] && res[1] != ""){
-                            response.deletePos += res[1].length;
+                        if (response.deletePos > cache_res[0] && cache_res[1] != ""){
+                            console.log("cache_resbbbbb")
+                            response.deletePos += cache_res[1].length;
                         }
-                        if (response.insertPos > res[0] && res[2] != ""){
-                            response.insertPos -= res[2].length;
+                        if (response.insertPos > cache_res[0] && cache_res[2] != ""){
+                            console.log("cache_resccccc")
+                            response.insertPos -= cache_res[2].length;
                         }
-                        if (response.deletePos > res[0] && res[2] != ""){
-                            response.deletePos -= res[2].length;
+                        if (response.deletePos > cache_res[0] && cache_res[2] != ""){
+                            console.log("cache_resdddddd")
+                            response.deletePos -= cache_res[2].length;
                         }
-                        showContent(response);
+                        response_list.push(response);
                     }
+                    version++;
+                    response = response_content[version];
                 }
-                version++;
+                showContentList(res);
+                synchronized = true;
+                sendBufferContent(res, current);
+                prev = $( "#docs-text" ).val();
+            } else if(synchronized){
+                while(response != null){
+                    if(response.sessionId != clientSessionId){
+                        response_list.push(response);
+                    }
+                    version++;
+                    response = response_content[version];
+                }
+                console.log(res);
+                showContentList(res);
+                prev = $( "#docs-text" ).val();
             }
         });
     });
 }
 
+function showContentList(res){
+    console.log(response_list)
+    for(index in response_list){
+        let response = response_list[index]
+        if (response.insertPos > res[0] && res[1] != ""){
+            console.log("aaaaaaaaaa")
+            response.insertPos += res[1].length;
+        }
+        if (response.deletePos > res[0] && res[1] != ""){
+            console.log("bbbbb")
+            response.deletePos += res[1].length;
+        }
+        if (response.insertPos > res[0] && res[2] != ""){
+            console.log("ccccc")
+            response.insertPos -= res[2].length;
+        }
+        if (response.deletePos > res[0] && res[2] != ""){
+            console.log("dddddd")
+            response.deletePos -= res[2].length;
+        }
+        showContent(response);
+    }
+    response_list = [];
+}
 function showContent(message) {
+    console.log(message);
     let input = $( "#docs-text" );
     let cursorStartPos= input.prop('selectionStart');
     let cursorEndPos= input.prop('selectionEnd');
@@ -189,20 +222,41 @@ function sendBuffer(){
         let current = input.val();
         let diff = dmp.diff_main(prev, current);
         dmp.diff_cleanupSemantic(diff);
-
+        console.log(diff)
         res = setDiffString(diff);
-        if(!(res[1] == "" && res[2] == ""))
-        {
-            if((!(Hangul.disassemble(res[2]).length == 3 && Hangul.disassemble(res[1]).length == 2) || (keycode == "Backspace"))){
-                synchronized = false;
-                console.log(res)
-                sendContentPost(res,prev.length);
-                input.height(1).height( input.prop('scrollHeight')+12 );
-                prev = input.val();
-            }
-        }
+        sendBufferContent(res, current)
+//        if(!(res[1] == "" && res[2] == ""))
+//        {
+//            if((!(Hangul.disassemble(res[2]).length == 3 && Hangul.disassemble(res[1]).length == 2) || (keycode == "Backspace"))){
+//                synchronized = false;
+//                console.log(res)
+//                sendContentPost(res,prev.length);
+//                input.height(1).height( input.prop('scrollHeight')+12 );
+//                prev = current;
+//            }
+//        }
         keycode="";
+    }else{
+        console.log("buffer~~~~");
+        let current = input.val();
+        let diff = dmp.diff_main(prev, current);
+        dmp.diff_cleanupSemantic(diff);
+        console.log(diff)
     }
+}
+
+function sendBufferContent(res, current){
+    let input = $( "#docs-text" );
+    if(!(res[1] == "" && res[2] == "")){
+        if((!(Hangul.disassemble(res[2]).length == 3 && Hangul.disassemble(res[1]).length == 2) || (keycode == "Backspace"))){
+            synchronized = false;
+            cache_res = res;
+            console.log(res)
+            sendContentPost(res,prev.length);
+            input.height(1).height( input.prop('scrollHeight')+12 );
+        }
+    }
+    prev = current;
 }
 
 function sendContentPost(res,originalLength){
@@ -243,7 +297,6 @@ function setDiffString(diff){
     let deleteString = "";
     let flag = true;
     diff.forEach(function(element) {
-        console.log(element)
       switch (element[0]){
         case 0 : // retain
             if(flag){
