@@ -2,12 +2,16 @@ let dmp = null;
 let stompClient = null;
 let clientSessionId = null;
 let docsId = location.href.substr(location.href.lastIndexOf('?') + 1);
-let baseUrl ="http://10.77.34.204:8080/docs";
+let baseUrl ="http://10.77.34.205:8080/docs";
 let prev;
 let version;
 let receiveFlag = true;
 let buffer = "";
+
+let current = "";
+
 let arr = [];
+
 $(document).ready(function() {
 dmp = new diff_match_patch();
 getDocs();
@@ -21,7 +25,8 @@ $(function () {
      //     $(this).data('val', $(this).val());
     //});
     document.getElementById("docs-text").addEventListener("keydown", function(event){
-           keycode = event.code;
+        current = $(this).val();
+        keycode = event.code;
     });
     input.on("input", function(){
         if(receiveFlag){
@@ -33,8 +38,8 @@ $(function () {
             res = setDiffString(diff);
             buffer = res;
             if(!(res[1] == "" && res[2] == ""))
-            {   console.log(res);
-                if(!(Hangul.disassemble(res[2]).length == Hangul.disassemble(res[1]).length + 1) || (keycode == "Backspace") ){
+            {
+                if((!(Hangul.disassemble(res[2]).length == 3 && Hangul.disassemble(res[1]).length == 2) || (keycode == "Backspace"))){
                     receiveFlag = false;
                     sendContentPost(res,prev.length);
                     $(this).height(1).height( $(this).prop('scrollHeight')+12 );
@@ -93,7 +98,6 @@ function getDocs(){
          let input = $( "#docs-text" );
          input.val( content );
          prev = content;
-
        }
     });
 }
@@ -136,50 +140,53 @@ function connect() {
         console.log("Connected" + frame);
         clientSessionId = /\/([^\/]+)\/websocket/.exec(socket._transport.url)[1];
         stompClient.subscribe('/topic/docs'+"/"+docsId, function (content) {
-            response = JSON.parse(content.body);
-            let receiveSessionId = response.sessionId;
-
-            version =response.version;
-            arr.push(version);
-
-            if(receiveSessionId == clientSessionId){
-                receiveFlag =true;
-            }
-            else{
-                if(!receiveFlag && !(buffer[1] == "" && buffer[2] == "")){
-                   console.log("response" , content);
-                   console.log("buffer" , buffer);
-                   if (response.insertPos > buffer[0] && buffer[1] != ""){
-                        response.insertPos += buffer[1].length;
-                   }
-                   if (response.deletePos > buffer[0] && buffer[1] != ""){
-                        response.deletePos += buffer[1].length;
-                   }
-                   if (response.insertPos > buffer[0] && buffer[2] != ""){
-                        response.insertPos -= buffer[2].length;
-                   }
-                   if (response.deletePos > buffer[0] && buffer[2] != ""){
-                        response.deletePos -= buffer[2].length;
-                   }
-                   buffer = "";
+            response_body = JSON.parse(content.body);
+            console.log(response_body);
+            response_content = response_body.contents;
+            let receiveSessionId = response_body.sessionId;
+            while(true){
+                if(response_content[version] == null){
+                    break;
                 }
-            showContent(response);
+                console.log(version)
+                response = response_content[version];
+                version = response.version;
+                if(receiveSessionId == clientSessionId){
+                    receiveFlag =true;
+                }
+                else{
+                    if(!receiveFlag && !(buffer[1] == "" && buffer[2] == "")){
+                       console.log("response" , content);
+                       console.log("buffer" , buffer);
+                       let insertString = message.insertString;
+                       let insertPos = message.insertPos;
+                       let insertLength = insertString.length;
+                       let deleteLength = message.deleteLength;
+                       let deletePos = message.deletePos;
+                       if (response.insertPos > buffer[0] && buffer[1] != ""){
+                            response.insertPos += buffer[1].length;
+                       }
+                       if (response.deletePos > buffer[0] && buffer[1] != ""){
+                            response.deletePos += buffer[1].length;
+                       }
+                       if (response.insertPos > buffer[0] && buffer[2] != ""){
+                            response.insertPos -= buffer[2].length;
+                       }
+                       if (response.deletePos > buffer[0] && buffer[2] != ""){
+                            response.deletePos -= buffer[2].length;
+                       }
+
+
+                       buffer = "";
+                    }
+                    showContent(response);
+                }
+                version++;
             }
         });
     });
 }
-function makeIndex(){
-    if (insertPos > cursorPos)
-    {
-        insertPos + buffer[1].length;
 
-    }
-    if (deletePos > cursorPos)
-    {
-        deletePos - buffer[2].length;
-    }
-
-}
 function disconnect() {
     if (stompClient !== null) {
         stompClient.disconnect();
@@ -220,7 +227,8 @@ function sendContentPost(res,originalLength){
     }
 function showContent(message) {
     let input = $( "#docs-text" );
-    let cursorPos= input.prop('selectionStart');
+    let cursorStartPos= input.prop('selectionStart');
+    let cursorEndPos= input.prop('selectionEnd');
     let insertString = message.insertString;
     let insertPos = message.insertPos;
     let insertLength = insertString.length;
@@ -234,18 +242,57 @@ function showContent(message) {
    // if(escape(insertString.charAt(0)).length == 6){
      //    insertLength = insertLength/2
     //}
-    if(insertPos > cursorPos && deleteLength == 0){
-    input.prop('selectionStart', cursorPos-deleteLength);
-    input.prop('selectionEnd', cursorPos-deleteLength);
+    console.log("-------------------------------");
+    console.log(insertPos+", "+deletePos);
+    console.log(cursorStartPos+", "+cursorEndPos);
+    if(insertPos < cursorStartPos && insertLength > 0){
+        console.log("aaaa")
+        cursorStartPos = cursorStartPos + insertLength
+        cursorEndPos = cursorEndPos + insertLength;
+    } else if(insertPos < cursorEndPos && insertLength > 0){
+        console.log("bbbbbb")
+        cursorStartPos = cursorStartPos;
+        cursorEndPos = cursorEndPos + insertLength;
     }
-    else if(deletePos > cursorPos ){
-    input.prop('selectionStart', cursorPos+insertLength);
-    input.prop('selectionEnd', cursorPos+insertLength);
+
+    if(deletePos + deleteLength < cursorStartPos && deleteLength > 0){
+        console.log("ccccccc")
+        cursorStartPos = cursorStartPos - deleteLength;
+        cursorEndPos = cursorEndPos - deleteLength;
+    } else if(deletePos < cursorStartPos && deleteLength > 0){
+        console.log("dddddddd")
+        if(deletePos + deleteLength < cursorEndPos){
+            console.log("eeeeeeeeeee")
+            cursorStartPos = deletePos;
+            cursorEndPos = cursorEndPos - deleteLength;
+        } else{
+            console.log("fffffffff")
+            cursorStartPos = deletePos;
+            cursorEndPos = deletePos;
+        }
+    } else if(deletePos < cursorEndPos && deleteLength > 0){
+        console.log("gggggggggggg");
+        cursorStartPos = cursorStartPos
+        cursorEndPos = cursorEndPos - deleteLength;
     }
-    else{
-    input.prop('selectionStart', cursorPos+insertLength-deleteLength);
-    input.prop('selectionEnd', cursorPos+insertLength-deleteLength);
-    }
+
+    input.prop('selectionStart', cursorStartPos);
+    input.prop('selectionEnd', cursorEndPos);
+
+    console.log(input.prop('selectionStart')+", "+input.prop('selectionEnd'));
+    console.log("-------------------------------");
+//    if(insertPos > cursorStartPos && deleteLength == 0){
+//    input.prop('selectionStart', cursorStartPos-deleteLength);
+//    input.prop('selectionEnd', cursorEndPos-deleteLength);
+//    }
+//    else if(deletePos > cursorStartPos ){
+//    input.prop('selectionStart', cursorStartPos+insertLength);
+//    input.prop('selectionEnd', cursorEndPos+insertLength);
+//    }
+//    else{
+//    input.prop('selectionStart', cursorStartPos+insertLength-deleteLength);
+//    input.prop('selectionEnd', cursorEndPos+insertLength-deleteLength);
+//    }
     $("textarea.autosize").height(1).height( $("textarea.autosize").prop('scrollHeight')+12 );
 }
 function insert(str, index, value) {
