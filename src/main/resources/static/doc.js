@@ -7,11 +7,14 @@ let prev;
 let version;
 let receiveFlag = true;
 let buffer = "";
+
 let current = "";
+
+let arr = [];
+
 $(document).ready(function() {
 dmp = new diff_match_patch();
 getDocs();
-
 connect();
 });
 $(function () {
@@ -24,17 +27,16 @@ $(function () {
     document.getElementById("docs-text").addEventListener("keydown", function(event){
         current = $(this).val();
         keycode = event.code;
-
     });
     input.on("input", function(){
         if(receiveFlag){
-            let current = $(this).val();
+            let current =  $(this).val();
+            console.log("prev  " , prev)
+            console.log("currrent  " , current)
             let diff = dmp.diff_main(prev, current);
             dmp.diff_cleanupSemantic(diff);
-
             res = setDiffString(diff);
             buffer = res;
-
             if(!(res[1] == "" && res[2] == ""))
             {
                 if((!(Hangul.disassemble(res[2]).length == 3 && Hangul.disassemble(res[1]).length == 2) || (keycode == "Backspace"))){
@@ -43,6 +45,7 @@ $(function () {
                     $(this).height(1).height( $(this).prop('scrollHeight')+12 );
                     //updateDocs();
                     prev = $(this).val();
+                    console.log("prev in if  " , prev)
                 }
             }
             keycode="";

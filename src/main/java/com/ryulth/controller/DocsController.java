@@ -32,14 +32,14 @@ public class DocsController{
     DocsRepository docsRepository;
     @Autowired
     DocsService docsService;
-
+/*
     @MessageMapping("/docs/{docsId}") // 받아오는 곳
     @SendTo("/topic/docs/{docsId}") // 이 주제에 전송 이주제를 구독하고 있는 사용자는 바로 받아볼 수 있음
     public ResponseContent getContent (@DestinationVariable String docsId, RequestCommand requestCommand, SimpMessageHeaderAccessor headerAccessor) throws Exception{
         String sessionId = headerAccessor.getSessionId();
         logger.info("SessionId {}",sessionId);
         return docsService.transform(requestCommand,sessionId);
-    }
+    }*/
     // 메인 페이지 리스트
     @GetMapping("/docs")
     public ResponseDocs getDocs(){
