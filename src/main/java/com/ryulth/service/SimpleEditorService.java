@@ -33,19 +33,28 @@ public class SimpleEditorService implements EditorService {
         Long docsId = requestDocsCommand.getDocsId();
         Long requestClientVersion = requestDocsCommand.getClientVersion();
         String patchText = requestDocsCommand.getPatchText();
-        ResponseDocsCommand responseDocsCommand;
         synchronized (cacheDocs) {
             docs = cacheDocs.get(docsId);
         }
         ArrayDeque<PatchInfo> patchInfo;
         Long serverVersion;
+
         synchronized (cachePatches){
             patchInfo = cachePatches.get(docsId).clone();
             serverVersion = patchInfo.getLast().getPatchVersion();
+            PatchInfo newPatchInfo = PatchInfo.builder()
+                    .patchText(patchText)
+                    .clientSessionId(requestDocsCommand.getSocketSessionId())
+                    .patchVersion(serverVersion+1).build();
+            cachePatches.get(docsId).add(newPatchInfo);
+            patchInfo.add(newPatchInfo);
         }
         //TODO 알고리즘 최적화
         if (requestClientVersion <= serverVersion) {
-            patchInfo = patchInfo.stream().filter(p -> p.getPatchVersion() > requestClientVersion).collect(Collectors.toCollection(ArrayDeque::new));
+            //patchInfo = patchInfo.stream().filter(p -> p.getPatchVersion() > requestClientVersion).collect(Collectors.toCollection(ArrayDeque::new));
+            System.out.println(patchInfo);
+            System.out.println(requestClientVersion);
+            patchInfo.removeIf(p -> (p.getPatchVersion() <= requestClientVersion));
             System.out.println("버젼 충돌 날때@@@@@@@@@@@@@@@@");
             System.out.println(patchInfo);
             System.out.println(requestDocsCommand);
@@ -54,18 +63,12 @@ public class SimpleEditorService implements EditorService {
         //if(serverVersion == requestDocsCommand.getClientVersion()){
         //List<diff_match_patch.Patch> patches = dmp.patch_fromText(patchText);
         //System.out.println(dmp.patch_apply((LinkedList<diff_match_patch.Patch>) patches,docs.getContent()));
-        responseDocsCommand = ResponseDocsCommand.builder().docsId(docsId)
+        ResponseDocsCommand responseDocsCommand = ResponseDocsCommand.builder().docsId(docsId)
                 .patchText(patchText)
                 .patchInfos(patchInfo)
                 .socketSessionId(requestDocsCommand.getSocketSessionId())
                 .serverVersion(serverVersion + 1).build();
-        synchronized (cachePatches) {
-            patchInfo.add(PatchInfo.builder()
-                    .patchText(patchText)
-                    .clientSessionId(requestDocsCommand.getSocketSessionId())
-                    .patchVersion(serverVersion+1).build());
-            cachePatches.replace(docsId,patchInfo);
-        }
+
         //docs.setVersion(serverVersion + 1);
         //synchronized (cacheDocs) {
         //    docs = cacheDocs.replace(docsId, docs);
@@ -100,17 +103,20 @@ public class SimpleEditorService implements EditorService {
         }
         if (patchInfo == null){
             patchInfo = new ArrayDeque<>();
-            patchInfo.add(PatchInfo.builder().patchText("").patchVersion(Long.valueOf(1)).build());
+            patchInfo.add(PatchInfo.builder().patchText("").patchVersion(Long.valueOf(0)).build());
             synchronized (cachePatches) {
                 cachePatches.put(docsId,patchInfo);
             }
+        }
+        else {
+            patchInfo = patchInfo.clone();
         }
         if(patchInfo.size() == 0){
             System.out.println("sadasdas");
             return null;
         }
         if (finalDocs.getVersion() < patchInfo.getLast().getPatchVersion()) {
-            patchInfo.removeIf(p -> (p.getPatchVersion() <= finalDocs.getVersion()));
+            patchInfo.removeIf(p -> (p.getPatchVersion() < finalDocs.getVersion()));
         }
         return patchInfo;
     }

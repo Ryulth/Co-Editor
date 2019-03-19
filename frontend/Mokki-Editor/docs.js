@@ -6,7 +6,7 @@ let prev = "";
 let keycode = "";
 let keydata = "";
 
-let docsId = 3; //location.href.substr(location.href.lastIndexOf('?') + 1);
+let docsId = 2; //location.href.substr(location.href.lastIndexOf('?') + 1);
 let receiveFlag = true;
 let synchronized = true;
 let clientVersion;
@@ -23,6 +23,7 @@ window.onload = function () {
     let bar = document.getElementById("mokkiButtonBar");
     editor.addEventListener("keydown", function (event) {
         keycode = event.code;
+        console.log(keycode)
         if(synchronized){
             prev = editor.innerHTML;
         }
@@ -36,11 +37,7 @@ window.onload = function () {
     }, false);
     editor.addEventListener("input", function (event) {
         if (synchronized) {
-            sendPatch(editor.innerHTML;);
-        }
-        keydata = event.data;
-        if (keycode == "Backspace") {
-            keydata = "";
+            sendPatch(editor.innerHTML);
         }
     });
 }
@@ -58,6 +55,7 @@ function getDocs() {
             serverVersion = response_doc["version"];
             let response_patches = response["patchInfos"];
             if (response_patches.length >= 1) {
+                console.log(response_doc)
                 console.log(response_patches);
                 content = initDocs(response_patches);
             } 
@@ -84,16 +82,18 @@ function initDocs(response_patches,content) {
 function sendPatch(current) {
     console.log("에디터", editor)
     let text1 = document.getElementById('text2b').value;
-    console.log("prev", prev)
-    console.log("current", current)
+    
     let diff = dmp.diff_main(prev, current, true);
     dmp.diff_cleanupSemantic(diff);
-
+    
     if ((diff.length > 1) || (diff.length == 1 && diff[0][0] != 0)) { // 1 이상이어야 변경 한 것이 있음
         let res = setDiff(diff);
-        if (!(Hangul.disassemble(res[0][2]).length == Hangul.disassemble(res[0][1]).length + 1) || (keycode == "Backspace")) {
+        if (!(Hangul.disassemble(res[0][2]).length == Hangul.disassemble(res[0][1]).length + 1) || (keycode == "Backspace" || keycode == "Delete")) {
+            console.log("prev", prev)
+            console.log("current", current)
             synchronized = false;
             let patch_list = dmp.patch_make(prev, current, diff);
+            console.log(patch_list);
             let patch_text = dmp.patch_toText(patch_list);
             sendContentPost(patch_text);
             let results = dmp.patch_apply(patch_list, text1);
@@ -176,34 +176,31 @@ function connect() {
     });
 }
 
-function calcString(message) {
+function calcString() {
     let input = document.getElementById("mokkiTextEmbed");
     let cursorStartPos = input.selectionStart;
     let cursorEndPos = input.selectionEnd;
-    prev = result;
-    editor.innerHTML = result;
     input.focus();
     input.setSelectionRange(cursorStartPos, cursorEndPos);
 }
-
 function receiveContent(response_body) {
-    let response_patchText = response_body.patchText;
     let receiveSessionId = response_body.socketSessionId;
     let response_patches = response_body.patchInfos;
     serverVersion = response_body.serverVersion;
     if (receiveSessionId == clientSessionId) {
         let current = editor.innerHTML;
         let result = initDocs(response_patches, current);
-        editor.innerHTML = result;
+        if(current != result){
+            calcString();
+            editor.innerHTML = result;
+        }   
         synchronized = true;
         clientVersion = serverVersion;
         sendPatch(current);
     } else if(synchronized){
         let text1 = editor.innerHTML;
-//        initDocs(response_patches, text1)
-//        let patches = dmp.patch_fromText(response_patchText);
-//        let results = dmp.patch_apply(patches, text1);
         let result = initDocs(response_patches, text1);
+        calcString();
         editor.innerHTML = result;
         prev = result;
         clientVersion = serverVersion;
