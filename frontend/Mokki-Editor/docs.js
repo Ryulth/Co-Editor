@@ -180,17 +180,20 @@ function calcString(message) {
 function receiveContent(response_body) {
     let response_patchText = response_body.patchText;
     let receiveSessionId = response_body.socketSessionId;
+    let response_patches = response_body.patchInfos;
     serverVersion = response_body.serverVersion;
     if (receiveSessionId == clientSessionId) {
         synchronized = true;
         clientVersion = serverVersion;
     } else {
         let text1 = editor.innerHTML;
-        let patches = dmp.patch_fromText(response_patchText);
-        let results = dmp.patch_apply(patches, text1);
-        editor.innerHTML = results[0];
-        prev = results[0];
-        document.getElementById('text2b').value = results[0];
+//        initDocs(response_patches, text1)
+//        let patches = dmp.patch_fromText(response_patchText);
+//        let results = dmp.patch_apply(patches, text1);
+        let result = initDocs(response_patches, text1);
+        editor.innerHTML = result;
+        prev = result;
+        document.getElementById('text2b').value = result;
     }
 }
 

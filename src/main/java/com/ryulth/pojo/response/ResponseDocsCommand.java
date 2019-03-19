@@ -1,9 +1,12 @@
 package com.ryulth.pojo.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.ryulth.pojo.model.PatchInfo;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+
+import java.util.ArrayDeque;
 
 @Data
 @Builder
@@ -15,4 +18,5 @@ public class ResponseDocsCommand {
     Long docsId;
     Long serverVersion;
     String patchText;
+    ArrayDeque<PatchInfo> patchInfos;
 }

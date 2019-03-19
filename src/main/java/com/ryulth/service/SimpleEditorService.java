@@ -31,6 +31,7 @@ public class SimpleEditorService implements EditorService {
         System.out.println(requestDocsCommand);
         Docs docs;
         Long docsId = requestDocsCommand.getDocsId();
+        Long requestServerVersion = requestDocsCommand.getClientVersion();
         String patchText = requestDocsCommand.getPatchText();
         ResponseDocsCommand responseDocsCommand;
         synchronized (cacheDocs) {
@@ -43,15 +44,19 @@ public class SimpleEditorService implements EditorService {
             serverVersion = patchInfo.getLast().getPatchVersion();
         }
 
+        if (requestServerVersion < serverVersion) {
+            patchInfo.removeIf(p -> p.getPatchVersion() <= requestServerVersion);
+        }
          //= docs.getVersion();
         //if(serverVersion == requestDocsCommand.getClientVersion()){
         //List<diff_match_patch.Patch> patches = dmp.patch_fromText(patchText);
         //System.out.println(dmp.patch_apply((LinkedList<diff_match_patch.Patch>) patches,docs.getContent()));
         responseDocsCommand = ResponseDocsCommand.builder().docsId(docsId)
-                .patchText(patchText).socketSessionId(requestDocsCommand.getSocketSessionId())
+                .patchText(patchText)
+                .patchInfos(patchInfo)
+                .socketSessionId(requestDocsCommand.getSocketSessionId())
                 .serverVersion(serverVersion + 1).build();
         synchronized (cachePatches) {
-
             patchInfo.add(PatchInfo.builder()
                     .patchText(patchText)
                     .patchVersion(serverVersion+1).build());
