@@ -1,0 +1,108 @@
+package com.ryulth.service;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ryulth.dto.Docs;
+import com.ryulth.pojo.model.PatchInfo;
+import com.ryulth.pojo.request.RequestDocsCommand;
+import com.ryulth.pojo.response.ResponseDocsCommand;
+import com.ryulth.pojo.response.ResponseDocsInit;
+import com.ryulth.repository.DocsRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import java.util.*;
+
+@Component
+public class SimpleEditorService implements EditorService {
+    @Autowired
+    DocsRepository docsRepository;
+    @Autowired
+    ObjectMapper objectMapper;
+    @Autowired(required = false)
+    diff_match_patch dmp;
+
+    private final Map<Long, Docs> cacheDocs = new HashMap<>();
+    private final Map<Long, ArrayDeque<PatchInfo>> cachePatches = new HashMap<>();
+
+    @Override
+    public String editDocs(RequestDocsCommand requestDocsCommand) throws JsonProcessingException {
+        System.out.println("payload@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+        System.out.println(requestDocsCommand);
+        Docs docs;
+        Long docsId = requestDocsCommand.getDocsId();
+        String patchText = requestDocsCommand.getPatchText();
+        ResponseDocsCommand responseDocsCommand;
+        synchronized (cacheDocs) {
+            docs = cacheDocs.get(docsId);
+        }
+        ArrayDeque<PatchInfo> patchInfo;
+        Long serverVersion;
+        synchronized (cachePatches){
+            patchInfo = cachePatches.get(docsId);
+            serverVersion = patchInfo.getLast().getPatchVersion();
+        }
+
+         //= docs.getVersion();
+        //if(serverVersion == requestDocsCommand.getClientVersion()){
+        //List<diff_match_patch.Patch> patches = dmp.patch_fromText(patchText);
+        //System.out.println(dmp.patch_apply((LinkedList<diff_match_patch.Patch>) patches,docs.getContent()));
+        responseDocsCommand = ResponseDocsCommand.builder().docsId(docsId)
+                .patchText(patchText).socketSessionId(requestDocsCommand.getSocketSessionId())
+                .serverVersion(serverVersion + 1).build();
+        synchronized (cachePatches) {
+
+            patchInfo.add(PatchInfo.builder()
+                    .patchText(patchText)
+                    .patchVersion(serverVersion+1).build());
+            cachePatches.replace(docsId,patchInfo);
+        }
+        //docs.setVersion(serverVersion + 1);
+        //synchronized (cacheDocs) {
+        //    docs = cacheDocs.replace(docsId, docs);
+        //}
+
+        return objectMapper.writeValueAsString(responseDocsCommand);
+    }
+
+    @Override
+    public String getDocsOne(Long docsId) throws JsonProcessingException {
+        ResponseDocsInit responseDocsInit;
+        Docs docs;
+        synchronized (cacheDocs) {
+            docs = cacheDocs.get(docsId);
+        }
+        if (docs == null) {
+            //TODO 나중에 null 처리
+            docs = docsRepository.findById(docsId).orElse(null);
+            synchronized (cacheDocs) {
+                cacheDocs.put(docsId, docs);
+            }
+        }
+        ArrayDeque<PatchInfo> patchInfoList = getPatches(docs, docsId);
+        responseDocsInit = ResponseDocsInit.builder().docs(docs).patchInfos(patchInfoList).build();
+        return objectMapper.writeValueAsString(responseDocsInit);
+    }
+
+    private ArrayDeque<PatchInfo> getPatches(Docs finalDocs, Long docsId) {
+        ArrayDeque<PatchInfo> patchInfo;
+        synchronized (cachePatches) {
+            patchInfo = cachePatches.get(docsId);
+        }
+        if (patchInfo == null){
+            patchInfo = new ArrayDeque<>();
+            patchInfo.add(PatchInfo.builder().patchText("").patchVersion(Long.valueOf(1)).build());
+            synchronized (cachePatches) {
+                cachePatches.put(docsId,patchInfo);
+            }
+        }
+        if(patchInfo.size() == 0){
+            System.out.println("sadasdas");
+            return null;
+        }
+        if (finalDocs.getVersion() < patchInfo.getLast().getPatchVersion()) {
+            patchInfo.removeIf(p -> p.getPatchVersion() <= finalDocs.getVersion());
+        }
+        return patchInfo;
+    }
+}

@@ -15,4 +15,7 @@ public class Commands {
     int originalLength;
     Long version;
     DocsStyle docsStyle;
+
+    
+    String patchText;
 }

@@ -1,0 +1,11 @@
+package com.ryulth.service;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.ryulth.pojo.request.RequestDocsCommand;
+import org.springframework.stereotype.Service;
+
+@Service
+public interface EditorService {
+    String editDocs(RequestDocsCommand requestDocsCommand) throws JsonProcessingException;
+    String getDocsOne(Long docsId) throws JsonProcessingException;
+}

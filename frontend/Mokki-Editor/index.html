@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Mokki Editor</title>
+	<script type="text/javascript" src="./resource/js/jquery-1.11.1.min.js"></script>
+	<link href="./mokki_asset/mokki_style/core.css" rel="stylesheet"/>
+	<link href="./resource/css/font-awesome.min.css" rel="stylesheet"/>
+	<script type="text/javascript" src="./mokki_asset/mokki_js/core.js"></script>
+	<script type="text/javascript" src="./resource/js/sockjs.min.js"></script>
+	<script type="text/javascript" src="./resource/js/stomp.min.js"></script>
+	<script type="text/javascript">
+		$(function () {
+			Mokki.editor('.damnEditor', {
+				// 'colorGlobal' : '#c00'
+			});
+			// Costumize with custom color
+			// Mokki.editor('.damnEditor', {
+				// 'colorGlobal' : '#c00'
+			// });
+		});
+	</script>
+	<style type="text/css">
+	.latihanGUe {
+		width: 50%;
+		margin: 10px;
+	}
+	</style>
+	
+</head>
+<body>
+	<div class="latihanGUe">
+		<div class="mokkiEditor damnEditor">
+			<textarea id="mokkiTextEmbed" >
+				
+			</textarea>
+			<div class="mokkiMedia">
+				<div class="mokkiMediaArea">
+					<div class="mokkiMediaHeader">
+						<h1>Select a file</h1>
+						<span class="mokkiCloseMedia">&times;</span>
+					</div>
+					<div class="mokkiMediaContent">
+						<div class="mokkiTabs">
+							<ul>
+								<li data-tabs="1"><i class="fa fa-upload"></i> &nbsp;Upload</li>
+								<li data-tabs="2"><i class="fa fa-globe"></i> &nbsp;Form URL</li>
+								<li data-tabs="3"><i class="fa fa-folder"></i> &nbsp;Media</li>
+								<!-- <button class="mokkiAddSelected mokki-media-btn" disabled="true"> <i class="fa fa-plus"></i> &nbsp;Add Selected</button> -->
+							</ul>
+							<div class="mediaUploaderBar" id="1">
+								<div class="mediaUploaderBarContent">
+									<div class="fileUploadButton button">
+										<i class="fa fa-upload"></i> Choose files
+										<input type="file" required="required" multiple="multiple" name="mokkiPhoto">
+									</div>
+									<span class="text-info">You may upload multiple files at once. User JPG, GIF, or PNG files</span>
+								</div>
+							</div>
+							<div class="mediaUploaderBar" id="2">
+								<div class="mediaUploaderBarContent">
+									<button class="button">Get image </button>
+									<span class="text-info">Insert Image URL in the field above</span>
+								</div>
+							</div>
+							<div class="mokkiTabContainerSection">
+								<div class="mokkiTabsContainer" id="1">
+									<div class="mediaList"> </div>
+								</div>
+								<div class="mokkiTabsContainer" id="2">Last Uploaded</div>
+								<div class="mokkiTabsContainer" id="3">
+									Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod
+									tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,
+									quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
+									consequat.
+
+									Duis aute irure dolor in reprehenderit in voluptate velit esse
+									cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non
+									proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+									Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod
+									tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,
+									quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
+									consequat.
+
+									Duis aute irure dolor in reprehenderit in voluptate velit esse
+									cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non
+									proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+									Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod
+									tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,
+									quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
+									consequat.
+
+									Duis aute irure dolor in reprehenderit in voluptate velit esse
+									cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non
+									proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+									Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod
+									tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,
+									quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
+									consequat.
+
+									Duis aute irure dolor in reprehenderit in voluptate velit esse
+									cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non
+									proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<p>APPLY TEXT</p>
+	<textarea readonly="" id="text2b" style="width: 100%" rows="10"></textarea>
+	<script type="text/javascript" src="./diff_match_patch.js"></script>
+	<script type="text/javascript" src="./hangul.js"></script>
+	<script type="text/javascript" src="./docs.js"></script>
+	
+</body>
+</html>
