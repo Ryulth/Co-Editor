@@ -23,16 +23,14 @@ window.onload = function () {
     let bar = document.getElementById("mokkiButtonBar");
     editor.addEventListener("keydown", function (event) {
         keycode = event.code;
-        prev = editor.innerHTML;
     });
     bar.addEventListener("click",function(){ 
-        prev = editor.innerHTML;
     });
     editor.addEventListener("DOMSubtreeModified", function (event) {
     }, false);
     editor.addEventListener("input", function (event) {
         if (synchronized) {
-            sendPatch();
+            sendPatch(editor.innerHTML);
         }
         keydata = event.data;
         if (keycode == "Backspace") {
@@ -77,10 +75,9 @@ function initDocs(response_patches,content) {
     return result;
 }
 
-function sendPatch() {
+function sendPatch(current) {
     console.log("에디터", editor)
     let text1 = document.getElementById('text2b').value;
-    let current = editor.innerHTML;
     console.log("prev", prev)
     console.log("current", current)
     let diff = dmp.diff_main(prev, current, true);
@@ -185,9 +182,13 @@ function receiveContent(response_body) {
     let response_patches = response_body.patchInfos;
     serverVersion = response_body.serverVersion;
     if (receiveSessionId == clientSessionId) {
+        let current = editor.innerHTML;
+        let result = initDocs(response_patches, text1);
+        editor.innerHTML = result;
         synchronized = true;
         clientVersion = serverVersion;
-        sendPatch();
+        sendPatch(current);
+        prev = result;
     } else if(synchronized){
         let text1 = editor.innerHTML;
 //        initDocs(response_patches, text1)
