@@ -14,6 +14,14 @@ $(document).ready(function() {
     connect();
 });
 
+async function setSynchronized(sync){
+    synchronized = sync
+    if(synchronized){
+        cache_res = [];
+        response_list = [];
+    }
+}
+
 function getDocs(){
     $.ajax({
       type: "GET",
@@ -26,7 +34,7 @@ function getDocs(){
          let input = $( "#docs-text" );
          input.val( content );
          prev = content;
-         synchronized = true;
+         setSynchronized(true);
        }
     });
 }
@@ -53,40 +61,36 @@ function connect() {
             response = response_content[version];
 
             if(receiveSessionId == clientSessionId){
+                console.log("mySession Data")
                 while(response != null){
                     if(response.sessionId != clientSessionId){
-                        if (response.insertPos > cache_res[0] && cache_res[1] != ""){
-                            console.log("cache_resaaaaaaaaaa")
-                            response.insertPos += cache_res[1].length;
-                        }
-                        if (response.deletePos > cache_res[0] && cache_res[1] != ""){
-                            console.log("cache_resbbbbb")
-                            response.deletePos += cache_res[1].length;
-                        }
-                        if (response.insertPos > cache_res[0] && cache_res[2] != ""){
-                            console.log("cache_resccccc")
-                            response.insertPos -= cache_res[2].length;
-                        }
-                        if (response.deletePos > cache_res[0] && cache_res[2] != ""){
-                            console.log("cache_resdddddd")
-                            response.deletePos -= cache_res[2].length;
-                        }
+                        cache_res_indexing(response);
                         response_list.push(response);
                     }
                     version++;
                     response = response_content[version];
                 }
                 showContentList(res);
-                synchronized = true;
+                setSynchronized(true);
+                console.log(prev);
+                console.log(diff);
+                if(diff.length > 2){
+                    console.log("diff!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                }
                 sendBufferContent(res, current);
                 prev = $( "#docs-text" ).val();
             } else if(synchronized){
+                console.log("another person Session Data")
                 while(response != null){
                     if(response.sessionId != clientSessionId){
                         response_list.push(response);
                     }
                     version++;
                     response = response_content[version];
+                }
+
+                if(res[1] != "" || res[2] != ""){
+                    console.log("synchronized > no??" + synchronized)
                 }
                 console.log(res);
                 showContentList(res);
@@ -96,23 +100,43 @@ function connect() {
     });
 }
 
+function cache_res_indexing(response){
+    if(cache_res.length == 3){
+        if (response.insertPos >= cache_res[0] && cache_res[1] != ""){
+            console.log("cache_resaaaaaaaaaa")
+            response.insertPos += cache_res[1].length;
+        }
+        if (response.deletePos >= cache_res[0] && cache_res[1] != ""){
+            console.log("cache_resbbbbb")
+            response.deletePos += cache_res[1].length;
+        }
+        if (response.insertPos >= cache_res[0] && cache_res[2] != ""){
+            console.log("cache_resccccc")
+            response.insertPos -= cache_res[2].length;
+        }
+        if (response.deletePos >= cache_res[0] && cache_res[2] != ""){
+            console.log("cache_resdddddd")
+            response.deletePos -= cache_res[2].length;
+        }
+    }
+}
 function showContentList(res){
     console.log(response_list)
     for(index in response_list){
         let response = response_list[index]
-        if (response.insertPos > res[0] && res[1] != ""){
+        if (response.insertPos >= res[0] && res[1] != ""){
             console.log("aaaaaaaaaa")
             response.insertPos += res[1].length;
         }
-        if (response.deletePos > res[0] && res[1] != ""){
+        if (response.deletePos >= res[0] && res[1] != ""){
             console.log("bbbbb")
             response.deletePos += res[1].length;
         }
-        if (response.insertPos > res[0] && res[2] != ""){
+        if (response.insertPos >= res[0] && res[2] != ""){
             console.log("ccccc")
             response.insertPos -= res[2].length;
         }
-        if (response.deletePos > res[0] && res[2] != ""){
+        if (response.deletePos >= res[0] && res[2] != ""){
             console.log("dddddd")
             response.deletePos -= res[2].length;
         }
@@ -200,10 +224,6 @@ $(function () {
 
     });
 
-    document.getElementById("docs-text").addEventListener("keydown", function(event){
-        keycode = event.code;
-    });
-
     input.on("input", sendBuffer);
 
 
@@ -225,16 +245,6 @@ function sendBuffer(){
         console.log(diff)
         res = setDiffString(diff);
         sendBufferContent(res, current)
-//        if(!(res[1] == "" && res[2] == ""))
-//        {
-//            if((!(Hangul.disassemble(res[2]).length == 3 && Hangul.disassemble(res[1]).length == 2) || (keycode == "Backspace"))){
-//                synchronized = false;
-//                console.log(res)
-//                sendContentPost(res,prev.length);
-//                input.height(1).height( input.prop('scrollHeight')+12 );
-//                prev = current;
-//            }
-//        }
         keycode="";
     }else{
         console.log("buffer~~~~");
@@ -249,14 +259,14 @@ function sendBufferContent(res, current){
     let input = $( "#docs-text" );
     if(!(res[1] == "" && res[2] == "")){
         if((!(Hangul.disassemble(res[2]).length == 3 && Hangul.disassemble(res[1]).length == 2) || (keycode == "Backspace"))){
-            synchronized = false;
+            setSynchronized(false);
             cache_res = res;
             console.log(res)
             sendContentPost(res,prev.length);
             input.height(1).height( input.prop('scrollHeight')+12 );
+            prev = current;
         }
     }
-    prev = current;
 }
 
 function sendContentPost(res,originalLength){
