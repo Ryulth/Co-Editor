@@ -185,7 +185,8 @@ function receiveContent(response_body) {
     if (receiveSessionId == clientSessionId) {
         synchronized = true;
         clientVersion = serverVersion;
-    } else {
+        sendPatch();
+    } else if(synchronized){
         let text1 = editor.innerHTML;
 //        initDocs(response_patches, text1)
 //        let patches = dmp.patch_fromText(response_patchText);
