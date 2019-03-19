@@ -47,7 +47,7 @@ public class SimpleOTDocsService implements OTDocsService {
     }
 
     @Override
-    public synchronized String putDocs(RequestCommand requestCommand) throws JsonProcessingException {
+    public synchronized String putDocs(RequestCommand requestCommand) throws JsonProcessingException, InterruptedException {
         Long requestVersion = requestCommand.getCommands().getVersion();
         List<Content> contentList = new LinkedList<>();
         RequestCommand cacheRequestCommand;
@@ -58,7 +58,7 @@ public class SimpleOTDocsService implements OTDocsService {
                     .insertLength(cacheRequestCommand.getCommands().getInsert().getText().length())
                     .deleteLength(cacheRequestCommand.getCommands().getDelete().getSize())
                     .deletePos(cacheRequestCommand.getCommands().getDelete().getIndex())
-                    .sessionId(requestCommand.getSessionId())
+                    .sessionId(cacheRequestCommand.getSessionId())
                     .version(requestVersion)
                     .build());
             positionIndexing(requestCommand);
@@ -90,6 +90,7 @@ public class SimpleOTDocsService implements OTDocsService {
 //                .build();
         ResponseOTContent responseContent = ResponseOTContent.builder().contents(contentList).sessionId(requestCommand.getSessionId()).build();
         System.out.println(responseContent);
+        Thread.sleep(1000);
         return mapper.writeValueAsString(responseContent);
     }
 

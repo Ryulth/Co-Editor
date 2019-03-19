@@ -13,5 +13,5 @@ public interface OTDocsService {
     Future<Boolean> saveDocs(Docs docs);
     String transform(RequestCommand requestCommand, String sessionId);
     Docs getDocs(Long id);
-    String putDocs(RequestCommand requestCommand) throws JsonProcessingException;
+    String putDocs(RequestCommand requestCommand) throws JsonProcessingException, InterruptedException;
 }

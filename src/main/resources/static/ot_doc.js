@@ -28,9 +28,11 @@ function getDocs(){
       url: baseUrl+"/"+docsId,
       cache: false,
       success: function(response){
+         console.log(response)
          let trHTML = '';
          let content = response["content"];
          version = response["version"];
+         version = 0;
          let input = $( "#docs-text" );
          input.val( content );
          prev = content;
@@ -110,13 +112,21 @@ function cache_res_indexing(response){
             console.log("cache_resbbbbb")
             response.deletePos += cache_res[1].length;
         }
-        if (response.insertPos >= cache_res[0] && cache_res[2] != ""){
-            console.log("cache_resccccc")
-            response.insertPos -= cache_res[2].length;
+
+        if(cache_res[0] <= response.insertPos && cache_res[2] != ""){
+            if(cache_res[0] + cache_res[2].length <= response.insertPos){
+                response.insertPos -= cache_res[2].length;
+            } else{
+                response.insertPos = cache_res[0];
+            }
         }
-        if (response.deletePos >= cache_res[0] && cache_res[2] != ""){
-            console.log("cache_resdddddd")
-            response.deletePos -= cache_res[2].length;
+
+        if(cache_res[0] <= response.deletePos && cache_res[2] != ""){
+            if(cache_res[0] + cache_res[2].length <= response.deletePos){
+                response.insertPos -= cache_res[2].length;
+            } else{
+                response.insertPos = cache_res[0];
+            }
         }
     }
 }

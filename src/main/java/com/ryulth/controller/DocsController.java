@@ -23,7 +23,7 @@ import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-@RestController
+//@RestController
 public class DocsController{
     private static Logger logger = LoggerFactory.getLogger(DocsController.class);
     @Autowired
