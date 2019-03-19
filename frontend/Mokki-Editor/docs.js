@@ -68,9 +68,11 @@ function getDocs() {
 function initDocs(response_patches,content) {
     let result = content;
     response_patches.forEach(function (item, index, array) {
-        let patches = dmp.patch_fromText(item["patchText"]);
-        let results = dmp.patch_apply(patches, result);
-        result = results[0];
+        if(clientVersion <= item["patchVersion"]){
+            let patches = dmp.patch_fromText(item["patchText"]);
+            let results = dmp.patch_apply(patches, result);
+            result = results[0];
+        }
     });
     return result;
 }
@@ -194,6 +196,7 @@ function receiveContent(response_body) {
         let result = initDocs(response_patches, text1);
         editor.innerHTML = result;
         prev = result;
+        clientVersion = serverVersion;
         document.getElementById('text2b').value = result;
     }
 }
