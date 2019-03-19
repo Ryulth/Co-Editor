@@ -62,6 +62,7 @@ public class SimpleEditorService implements EditorService {
         synchronized (cachePatches) {
             patchInfo.add(PatchInfo.builder()
                     .patchText(patchText)
+                    .clientSessionId(requestDocsCommand.getSocketSessionId())
                     .patchVersion(serverVersion+1).build());
             cachePatches.replace(docsId,patchInfo);
         }

@@ -15,4 +15,5 @@ public class PatchInfo {
     }
     Long patchVersion;
     String patchText;
+    String clientSessionId;
 }
