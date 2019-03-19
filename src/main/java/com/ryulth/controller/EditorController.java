@@ -27,7 +27,7 @@ public class EditorController {
 
     @CrossOrigin("*")
     @PostMapping("/docs/{docsId}")
-    public void editDocs(@PathVariable Long docsId, @RequestBody RequestDocsCommand requestDocsCommnad) throws JsonProcessingException {
+    public void editDocs(@PathVariable Long docsId, @RequestBody RequestDocsCommand requestDocsCommnad) throws JsonProcessingException, InterruptedException {
         this.simpMessagingTemplate.convertAndSend("/topic/docs/" + docsId,
                 editorService.editDocs(requestDocsCommnad));
     }

@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
 public class SimpleEditorService implements EditorService {
@@ -26,12 +27,11 @@ public class SimpleEditorService implements EditorService {
     private final Map<Long, ArrayDeque<PatchInfo>> cachePatches = new HashMap<>();
 
     @Override
-    public String editDocs(RequestDocsCommand requestDocsCommand) throws JsonProcessingException {
-        System.out.println("payload@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
-        System.out.println(requestDocsCommand);
+    public String editDocs(RequestDocsCommand requestDocsCommand) throws JsonProcessingException, InterruptedException {
+
         Docs docs;
         Long docsId = requestDocsCommand.getDocsId();
-        Long requestServerVersion = requestDocsCommand.getClientVersion();
+        Long requestClientVersion = requestDocsCommand.getClientVersion();
         String patchText = requestDocsCommand.getPatchText();
         ResponseDocsCommand responseDocsCommand;
         synchronized (cacheDocs) {
@@ -40,12 +40,15 @@ public class SimpleEditorService implements EditorService {
         ArrayDeque<PatchInfo> patchInfo;
         Long serverVersion;
         synchronized (cachePatches){
-            patchInfo = cachePatches.get(docsId);
+            patchInfo = cachePatches.get(docsId).clone();
             serverVersion = patchInfo.getLast().getPatchVersion();
         }
-
-        if (requestServerVersion < serverVersion) {
-            patchInfo.removeIf(p -> p.getPatchVersion() <= requestServerVersion);
+        //TODO 알고리즘 최적화
+        if (requestClientVersion <= serverVersion) {
+            patchInfo = patchInfo.stream().filter(p -> p.getPatchVersion() > requestClientVersion).collect(Collectors.toCollection(ArrayDeque::new));
+            System.out.println("버젼 충돌 날때@@@@@@@@@@@@@@@@");
+            System.out.println(patchInfo);
+            System.out.println(requestDocsCommand);
         }
          //= docs.getVersion();
         //if(serverVersion == requestDocsCommand.getClientVersion()){
@@ -66,7 +69,7 @@ public class SimpleEditorService implements EditorService {
         //synchronized (cacheDocs) {
         //    docs = cacheDocs.replace(docsId, docs);
         //}
-
+        Thread.sleep(1000);
         return objectMapper.writeValueAsString(responseDocsCommand);
     }
 
@@ -106,7 +109,7 @@ public class SimpleEditorService implements EditorService {
             return null;
         }
         if (finalDocs.getVersion() < patchInfo.getLast().getPatchVersion()) {
-            patchInfo.removeIf(p -> p.getPatchVersion() <= finalDocs.getVersion());
+            patchInfo.removeIf(p -> (p.getPatchVersion() <= finalDocs.getVersion()));
         }
         return patchInfo;
     }

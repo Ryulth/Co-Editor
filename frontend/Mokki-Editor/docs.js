@@ -23,14 +23,20 @@ window.onload = function () {
     let bar = document.getElementById("mokkiButtonBar");
     editor.addEventListener("keydown", function (event) {
         keycode = event.code;
+        if(synchronized){
+            prev = editor.innerHTML;
+        }
     });
     bar.addEventListener("click",function(){ 
+        if(synchronized){
+            prev = editor.innerHTML;
+        }
     });
     editor.addEventListener("DOMSubtreeModified", function (event) {
     }, false);
     editor.addEventListener("input", function (event) {
         if (synchronized) {
-            sendPatch(editor.innerHTML);
+            sendPatch();
         }
         keydata = event.data;
         if (keycode == "Backspace") {
@@ -75,9 +81,10 @@ function initDocs(response_patches,content) {
     return result;
 }
 
-function sendPatch(current) {
+function sendPatch() {
     console.log("에디터", editor)
     let text1 = document.getElementById('text2b').value;
+    let current = editor.innerHTML;
     console.log("prev", prev)
     console.log("current", current)
     let diff = dmp.diff_main(prev, current, true);
@@ -92,6 +99,7 @@ function sendPatch(current) {
             sendContentPost(patch_text);
             let results = dmp.patch_apply(patch_list, text1);
             document.getElementById('text2b').value = results[0];
+            prev = editor.innerHTML;
         }
         keycode = "";
     }
@@ -104,6 +112,7 @@ function sendContentPost(patchText) {
         "clientVersion": clientVersion,
         "patchText": patchText
     }
+    console.log("보낸거",reqBody)
     $.ajax({
         async: true, // false 일 경우 동기 요청으로 변경
         type: "POST",
@@ -111,7 +120,9 @@ function sendContentPost(patchText) {
         url: baseUrl + "/docs/" + docsId,
         data: JSON.stringify(reqBody),
         dataType: 'json',
-        success: function (response) {}
+        success: function (response) {
+            
+        }
     });
 }
 
@@ -182,13 +193,9 @@ function receiveContent(response_body) {
     let response_patches = response_body.patchInfos;
     serverVersion = response_body.serverVersion;
     if (receiveSessionId == clientSessionId) {
-        let current = editor.innerHTML;
-        let result = initDocs(response_patches, text1);
-        editor.innerHTML = result;
         synchronized = true;
         clientVersion = serverVersion;
-        sendPatch(current);
-        prev = result;
+        sendPatch();
     } else if(synchronized){
         let text1 = editor.innerHTML;
 //        initDocs(response_patches, text1)

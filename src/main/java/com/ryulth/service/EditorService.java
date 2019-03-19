@@ -6,6 +6,6 @@ import org.springframework.stereotype.Service;
 
 @Service
 public interface EditorService {
-    String editDocs(RequestDocsCommand requestDocsCommand) throws JsonProcessingException;
+    String editDocs(RequestDocsCommand requestDocsCommand) throws JsonProcessingException, InterruptedException;
     String getDocsOne(Long docsId) throws JsonProcessingException;
 }
