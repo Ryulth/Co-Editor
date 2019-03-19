@@ -72,7 +72,7 @@ function getDocs() {
 function initDocs(response_patches,content) {
     let result = content;
     response_patches.forEach(function (item, index, array) {
-        if(clientVersion <= item["patchVersion"]){
+        if(clientVersion <= item["patchVersion"] && clientSessionId != item["clientSessionId"]){
             let patches = dmp.patch_fromText(item["patchText"]);
             let results = dmp.patch_apply(patches, result);
             result = results[0];
@@ -193,6 +193,9 @@ function receiveContent(response_body) {
     let response_patches = response_body.patchInfos;
     serverVersion = response_body.serverVersion;
     if (receiveSessionId == clientSessionId) {
+        let text1 = editor.innerHTML;
+        let result = initDocs(response_patches, text1);
+        editor.innerHTML = result;
         synchronized = true;
         clientVersion = serverVersion;
         sendPatch();
