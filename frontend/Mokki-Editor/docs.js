@@ -196,13 +196,16 @@ function receiveContent(response_body) {
         let current = editor.innerHTML;
         if(response_patches.length > 1){
             let snapshotText = response_body.snapshotText;
-            clientVersion = 1;
+            clientVersion = 0;
             let result = initDocs(response_patches,snapshotText,true);
             if(current != result){
+                console.log("자기꺼인데 적용",current,"결과",result)
+                console.log(response_patches)
                 editor.innerHTML = result;
              }   
         }
         else{
+            
             let result = initDocs(response_patches,current);
             if(current != result){
                editor.innerHTML = result;

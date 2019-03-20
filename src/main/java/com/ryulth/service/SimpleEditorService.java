@@ -60,9 +60,10 @@ public class SimpleEditorService implements EditorService {
                 .patchText(patchText)
                 .patchInfos(patchInfo)
                 .socketSessionId(requestDocsCommand.getSocketSessionId())
+                .snapshotText(docs.getContent())
                 .serverVersion(serverVersion + 1).build();
         if(requestClientVersion<serverVersion){
-            responseDocsCommand.setSnapshotText(docs.getContent());
+            //responseDocsCommand.setSnapshotText(docs.getContent());
             logger.info("버젼 충돌",requestClientVersion);
         }
         //Thread.sleep(1000);
