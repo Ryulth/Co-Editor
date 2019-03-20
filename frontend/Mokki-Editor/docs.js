@@ -48,16 +48,18 @@ function getDocs() {
         url: baseUrl + "/docs/" + docsId,
         cache: false,
         success: function (response) {
-            response = JSON.parse(response);
-            let response_doc = response["docs"];
+            response_body = JSON.parse(response);
+            console.log(response_body)
+            let response_doc = response_body["docs"];
             let content = response_doc["content"];
+            console.log(content);
             clientVersion = response_doc["version"];
             serverVersion = response_doc["version"];
-            let response_patches = response["patchInfos"];
+            let response_patches = response_body["patchInfos"];
             if (response_patches.length >= 1) {
                 console.log(response_doc)
                 console.log(response_patches);
-                content = initDocs(response_patches);
+                content = initDocs(response_patches,content);
             } 
             document.getElementById("mokkiTextPreview").innerHTML = content;
             prev = content;
@@ -74,6 +76,8 @@ function initDocs(response_patches,content) {
             let patches = dmp.patch_fromText(item["patchText"]);
             let results = dmp.patch_apply(patches, result);
             result = results[0];
+            clientVersion =item["patchVersion"];
+            serverVersion = item["patchVersion"];
         }
     });
     return result;
@@ -191,7 +195,7 @@ function receiveContent(response_body) {
         let current = editor.innerHTML;
         let result = initDocs(response_patches, current);
         if(current != result){
-            calcString();
+        //    calcString();
             editor.innerHTML = result;
         }   
         synchronized = true;
@@ -200,7 +204,7 @@ function receiveContent(response_body) {
     } else if(synchronized){
         let text1 = editor.innerHTML;
         let result = initDocs(response_patches, text1);
-        calcString();
+        //calcString();
         editor.innerHTML = result;
         prev = result;
         clientVersion = serverVersion;

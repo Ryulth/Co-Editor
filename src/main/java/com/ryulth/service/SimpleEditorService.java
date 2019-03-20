@@ -12,7 +12,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Component
 public class SimpleEditorService implements EditorService {
@@ -52,13 +51,12 @@ public class SimpleEditorService implements EditorService {
         //TODO 알고리즘 최적화
         if (requestClientVersion <= serverVersion) {
             //patchInfo = patchInfo.stream().filter(p -> p.getPatchVersion() > requestClientVersion).collect(Collectors.toCollection(ArrayDeque::new));
-            System.out.println(patchInfo);
-            System.out.println(requestClientVersion);
             patchInfo.removeIf(p -> (p.getPatchVersion() <= requestClientVersion));
             System.out.println("버젼 충돌 날때@@@@@@@@@@@@@@@@");
             System.out.println(patchInfo);
             System.out.println(requestDocsCommand);
         }
+
          //= docs.getVersion();
         //if(serverVersion == requestDocsCommand.getClientVersion()){
         //List<diff_match_patch.Patch> patches = dmp.patch_fromText(patchText);
