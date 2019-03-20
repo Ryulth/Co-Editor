@@ -2,12 +2,15 @@ package com.ryulth.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ryulth.controller.EditorController;
 import com.ryulth.dto.Docs;
 import com.ryulth.pojo.model.PatchInfo;
 import com.ryulth.pojo.request.RequestDocsCommand;
 import com.ryulth.pojo.response.ResponseDocsCommand;
 import com.ryulth.pojo.response.ResponseDocsInit;
 import com.ryulth.repository.DocsRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -15,6 +18,7 @@ import java.util.*;
 
 @Component
 public class SimpleEditorService implements EditorService {
+    private static Logger logger = LoggerFactory.getLogger(SimpleEditorService.class);
     @Autowired
     DocsRepository docsRepository;
     @Autowired
@@ -49,19 +53,6 @@ public class SimpleEditorService implements EditorService {
             patchInfo.add(newPatchInfo);
             patchInfo.poll();
         }
-        //TODO 알고리즘 최적화
-//        if (requestClientVersion <= serverVersion) {
-//            //patchInfo = patchInfo.stream().filter(p -> p.getPatchVersion() > requestClientVersion).collect(Collectors.toCollection(ArrayDeque::new));
-//            patchInfo.removeIf(p -> (p.getPatchVersion() <= requestClientVersion));
-//            if(requestClientVersion<serverVersion){
-//                System.out.println("버젼 충돌 날때@@@@@@@@@@@@@@@@");
-//                System.out.println(patchInfo);
-//                System.out.println(requestDocsCommand);
-//            }
-//            else {
-//                System.out.println("안남");
-//            }
-//        }
         if(requestClientVersion == serverVersion){
             patchInfo.removeIf(p -> (p.getPatchVersion() <= requestClientVersion));
         }
@@ -72,19 +63,8 @@ public class SimpleEditorService implements EditorService {
                 .serverVersion(serverVersion + 1).build();
         if(requestClientVersion<serverVersion){
             responseDocsCommand.setSnapshotText(docs.getContent());
-            System.out.println("버젼 충돌 날때@@@@@@@@@@@@@@@@");
-
+            logger.info("버젼 충돌",requestClientVersion);
         }
-         //= docs.getVersion();
-        //if(serverVersion == requestDocsCommand.getClientVersion()){
-        //List<diff_match_patch.Patch> patches = dmp.patch_fromText(patchText);
-        //System.out.println(dmp.patch_apply((LinkedList<diff_match_patch.Patch>) patches,docs.getContent()));
-
-
-        //docs.setVersion(serverVersion + 1);
-        //synchronized (cacheDocs) {
-        //    docs = cacheDocs.replace(docsId, docs);
-        //}
         //Thread.sleep(1000);
         return objectMapper.writeValueAsString(responseDocsCommand);
     }
