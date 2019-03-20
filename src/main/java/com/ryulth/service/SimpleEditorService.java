@@ -47,31 +47,45 @@ public class SimpleEditorService implements EditorService {
                     .patchVersion(serverVersion+1).build();
             cachePatches.get(docsId).add(newPatchInfo);
             patchInfo.add(newPatchInfo);
+            patchInfo.poll();
         }
         //TODO 알고리즘 최적화
-        if (requestClientVersion <= serverVersion) {
-            //patchInfo = patchInfo.stream().filter(p -> p.getPatchVersion() > requestClientVersion).collect(Collectors.toCollection(ArrayDeque::new));
+//        if (requestClientVersion <= serverVersion) {
+//            //patchInfo = patchInfo.stream().filter(p -> p.getPatchVersion() > requestClientVersion).collect(Collectors.toCollection(ArrayDeque::new));
+//            patchInfo.removeIf(p -> (p.getPatchVersion() <= requestClientVersion));
+//            if(requestClientVersion<serverVersion){
+//                System.out.println("버젼 충돌 날때@@@@@@@@@@@@@@@@");
+//                System.out.println(patchInfo);
+//                System.out.println(requestDocsCommand);
+//            }
+//            else {
+//                System.out.println("안남");
+//            }
+//        }
+        if(requestClientVersion == serverVersion){
             patchInfo.removeIf(p -> (p.getPatchVersion() <= requestClientVersion));
-            System.out.println("버젼 충돌 날때@@@@@@@@@@@@@@@@");
-            System.out.println(patchInfo);
-            System.out.println(requestDocsCommand);
         }
-
-         //= docs.getVersion();
-        //if(serverVersion == requestDocsCommand.getClientVersion()){
-        //List<diff_match_patch.Patch> patches = dmp.patch_fromText(patchText);
-        //System.out.println(dmp.patch_apply((LinkedList<diff_match_patch.Patch>) patches,docs.getContent()));
         ResponseDocsCommand responseDocsCommand = ResponseDocsCommand.builder().docsId(docsId)
                 .patchText(patchText)
                 .patchInfos(patchInfo)
                 .socketSessionId(requestDocsCommand.getSocketSessionId())
                 .serverVersion(serverVersion + 1).build();
+        if(requestClientVersion<serverVersion){
+            responseDocsCommand.setSnapshotText(docs.getContent());
+            System.out.println("버젼 충돌 날때@@@@@@@@@@@@@@@@");
+
+        }
+         //= docs.getVersion();
+        //if(serverVersion == requestDocsCommand.getClientVersion()){
+        //List<diff_match_patch.Patch> patches = dmp.patch_fromText(patchText);
+        //System.out.println(dmp.patch_apply((LinkedList<diff_match_patch.Patch>) patches,docs.getContent()));
+
 
         //docs.setVersion(serverVersion + 1);
         //synchronized (cacheDocs) {
         //    docs = cacheDocs.replace(docsId, docs);
         //}
-        Thread.sleep(1000);
+        //Thread.sleep(1000);
         return objectMapper.writeValueAsString(responseDocsCommand);
     }
 

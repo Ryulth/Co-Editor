@@ -18,5 +18,6 @@ public class ResponseDocsCommand {
     Long docsId;
     Long serverVersion;
     String patchText;
+    String snapshotText;
     ArrayDeque<PatchInfo> patchInfos;
 }

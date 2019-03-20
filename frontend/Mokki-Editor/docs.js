@@ -6,13 +6,14 @@ let prev = "";
 let keycode = "";
 let keydata = "";
 
-let docsId = 2; //location.href.substr(location.href.lastIndexOf('?') + 1);
+let docsId = 3; //location.href.substr(location.href.lastIndexOf('?') + 1);
 let receiveFlag = true;
 let synchronized = true;
 let clientVersion;
 let serverVersion;
 let stompClient;
 let clientSessionId;
+let prevSet = []; // idx 0 = version 1 = text
 let dmp = new diff_match_patch();
 getDocs();
 
@@ -23,7 +24,6 @@ window.onload = function () {
     let bar = document.getElementById("mokkiButtonBar");
     editor.addEventListener("keydown", function (event) {
         keycode = event.code;
-        console.log(keycode)
         if(synchronized){
             prev = editor.innerHTML;
         }
@@ -49,16 +49,14 @@ function getDocs() {
         cache: false,
         success: function (response) {
             response_body = JSON.parse(response);
-            console.log(response_body)
             let response_doc = response_body["docs"];
             let content = response_doc["content"];
-            console.log(content);
             clientVersion = response_doc["version"];
             serverVersion = response_doc["version"];
             let response_patches = response_body["patchInfos"];
             if (response_patches.length >= 1) {
-                console.log(response_doc)
                 console.log(response_patches);
+                console.log(response_doc);
                 content = initDocs(response_patches,content);
             } 
             document.getElementById("mokkiTextPreview").innerHTML = content;
@@ -69,22 +67,29 @@ function getDocs() {
     });
 }
 
-function initDocs(response_patches,content) {
+function initDocs(response_patches,content,isConflict) {
     let result = content;
+    let ms_start = (new Date).getTime();
     response_patches.forEach(function (item, index, array) {
-        if(clientVersion <= item["patchVersion"] && clientSessionId != item["clientSessionId"]){
+        let itemSessionId = item["clientSessionId"];
+        if(isConflict){
+            itemSessionId = "";
+        }
+        if (clientVersion < item["patchVersion"] && clientSessionId != itemSessionId) {
+            
             let patches = dmp.patch_fromText(item["patchText"]);
             let results = dmp.patch_apply(patches, result);
             result = results[0];
-            clientVersion =item["patchVersion"];
+            clientVersion = item["patchVersion"];
             serverVersion = item["patchVersion"];
         }
     });
+    let ms_end = (new Date).getTime();
+    console.log("걸린시간",(ms_end - ms_start) /1000)
     return result;
 }
 
 function sendPatch(current) {
-    console.log("에디터", editor)
     let text1 = document.getElementById('text2b').value;
     
     let diff = dmp.diff_main(prev, current, true);
@@ -93,11 +98,8 @@ function sendPatch(current) {
     if ((diff.length > 1) || (diff.length == 1 && diff[0][0] != 0)) { // 1 이상이어야 변경 한 것이 있음
         let res = setDiff(diff);
         if (!(Hangul.disassemble(res[0][2]).length == Hangul.disassemble(res[0][1]).length + 1) || (keycode == "Backspace" || keycode == "Delete")) {
-            console.log("prev", prev)
-            console.log("current", current)
             synchronized = false;
             let patch_list = dmp.patch_make(prev, current, diff);
-            console.log(patch_list);
             let patch_text = dmp.patch_toText(patch_list);
             sendContentPost(patch_text);
             let results = dmp.patch_apply(patch_list, text1);
@@ -124,7 +126,6 @@ function sendContentPost(patchText) {
         data: JSON.stringify(reqBody),
         dataType: 'json',
         success: function (response) {
-            
         }
     });
 }
@@ -193,11 +194,20 @@ function receiveContent(response_body) {
     serverVersion = response_body.serverVersion;
     if (receiveSessionId == clientSessionId) {
         let current = editor.innerHTML;
-        let result = initDocs(response_patches, current);
-        if(current != result){
-        //    calcString();
-            editor.innerHTML = result;
-        }   
+        if(response_patches.length > 1){
+            let snapshotText = response_body.snapshotText;
+            clientVersion = 1;
+            let result = initDocs(response_patches,snapshotText,true);
+            if(current != result){
+                editor.innerHTML = result;
+             }   
+        }
+        else{
+            let result = initDocs(response_patches,current);
+            if(current != result){
+               editor.innerHTML = result;
+            }   
+        }
         synchronized = true;
         clientVersion = serverVersion;
         sendPatch(current);
