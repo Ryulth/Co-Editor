@@ -20,67 +20,77 @@ let prevSet = []; // idx 0 = version 1 = text
 let dmp = new diff_match_patch();
 let prevNode;
 let myCaret;
+let startCaret;
+let endCaret;
+let inputType = /Trident/.test( navigator.userAgent ) ? 'textinput' : 'input';
+let text_node_list = [];
+let inputText
 getDocs();
 
 window.onload = function () {
     connect();
     editor = document.getElementById("mokkiTextPreview");
     let bar = document.getElementById("mokkiButtonBar");
-    editor.addEventListener("keydown", function (event) {
-        keycode = event.code;
-        if(synchronized){
-            prev = editor.innerHTML;
-        }
-        myCaret = getCaretPosition(editor);
-    });
-    bar.addEventListener("click",function(){ 
-        if(synchronized){
-            prev = editor.innerHTML;
-        }
-    });
-    editor.addEventListener("DOMSubtreeModified", function (event) {
-    }, false);
-    editor.addEventListener("input", function (event) {
-        let inputText = event.data;
-        //console.log(inputText)
-        console.log(myCaret);
-        if(isHangul(inputText)){//console.log("한글")
-            
-            selectElementContents(editor,myCaret);
-        }
-        if (synchronized) {
-            sendPatch(editor.innerHTML);
-        }
-    });
+    
+    if (editor.addEventListener) {
+        editor.addEventListener("keydown", keydownAction)
+        bar.addEventListener("click",clickAction)
+        editor.addEventListener("mouseup", setCaret);
+        editor.addEventListener(inputType, inputAction);
+        editor.addEventListener("keyup", setHangulSelection);
+    }/*
+    else {
+        editor.attachEvent("onkeydown", keydownAction)
+        bar.attachEvent("onclick",clickAction)
+        editor.attachEvent("oninput", attachEvent);
+    }*/
+    
 }
-function getCaretPosition(element) {
-    var caretOffset = 0;
-    if (w3) {
-        var range = window.getSelection().getRangeAt(0);
-        var preCaretRange = range.cloneRange();
-        preCaretRange.selectNodeContents(element);
-        preCaretRange.setEnd(range.endContainer, range.endOffset);
-        caretOffset = preCaretRange.toString().length;
-    } else if (ie) {
-        var textRange = document.selection.createRange();
-        var preCaretTextRange = document.body.createTextRange();
-        preCaretTextRange.moveToElementText(element);
-        preCaretTextRange.setEndPoint("EndToEnd", textRange);
-        caretOffset = preCaretTextRange.text.length;
+function clickAction(){
+    setCaret();
+    if(synchronized){
+        prev = editor.innerHTML;
     }
-    return caretOffset;
+}
+function keydownAction(event){
+    keycode = event.code;
+    setCaret();
+    if (synchronized) {
+        prev = editor.innerHTML;
+    }
 }
 
-function selectElementContents(el,idx) {
-    let range = document.createRange();
-    let startNode = el.childNodes[0];
-    let endNode = el.childNodes[0]
-    range.setStart(startNode, idx);
-    range.setEnd(endNode, idx+1);
-    let sel = window.getSelection();
-    sel.removeAllRanges();
-    sel.addRange(range);
+function inputAction(event){
+    inputText = event.data;
+    //myCaret = getCaretPosition(editor);
+    setCaret();
+    if (synchronized) {
+        sendPatch(editor.innerHTML);
+    }
 }
+function setHangulSelection(event){
+    setCaret();
+    if(isHangul(inputText)){//console.log("한글")
+        endCaret = endCaret +1;
+        console.log("startCaret",startCaret);
+        console.log("endCaret",endCaret)
+        moveCursor(editor,startCaret,endCaret)
+    }
+    //moveCursor(editor,startCaret,endCaret)
+    inputText = ""
+}
+function setCaret(){
+    try{
+    startCaret = getCaretPositionStart(editor);
+    endCaret = getCaretPositionEnd(editor);
+    }
+    catch(e){
+        console.log(e);
+    }
+    //console.log(startCaret , " ~~~~~~~ " ,endCaret);
+}
+
+
 function getDocs() {
     $.ajax({
         type: "GET",
@@ -94,7 +104,7 @@ function getDocs() {
             serverVersion = response_doc["version"];
             let response_patches = response_body["patchInfos"];
             if (response_patches.length >= 1) {
-                //console.log(response_patches);
+                console.log(response_patches);
                 //console.log(response_doc);
                 content = initDocs(response_patches,content);
             } 
@@ -115,7 +125,6 @@ function initDocs(response_patches,content,isConflict) {
             itemSessionId = "";
         }
         if (clientVersion < item["patchVersion"] && clientSessionId != itemSessionId) {
-            
             let patches = dmp.patch_fromText(item["patchText"]);
             let results = dmp.patch_apply(patches, result);
             result = results[0];
@@ -124,7 +133,7 @@ function initDocs(response_patches,content,isConflict) {
         }
     });
     let ms_end = (new Date).getTime();
-    //console.log("걸린시간",(ms_end - ms_start) /1000)
+    console.log("걸린시간",(ms_end - ms_start) /1000)
     return result;
 }
 
@@ -155,7 +164,6 @@ function sendContentPost(patchText) {
         "clientVersion": clientVersion,
         "patchText": patchText
     }
-    //console.log("보낸거",reqBody)
     $.ajax({
         async: true, // false 일 경우 동기 요청으로 변경
         type: "POST",
@@ -213,7 +221,6 @@ function connect() {
         clientSessionId = /\/([^\/]+)\/websocket/.exec(socket._transport.url)[1];
         stompClient.subscribe('/topic/docs' + "/" + docsId, function (content) {
             response_body = JSON.parse(content.body);
-            //console.log("응답", response_body)
             receiveContent(response_body) //
         });
     });
@@ -230,24 +237,34 @@ function receiveContent(response_body) {
             clientVersion = 0;
             let result = initDocs(response_patches,snapshotText,true);
             if(current != result){
+                //setCaret();
                 editor.innerHTML = result;
+                if(!moveCursor(editor,startCaret,endCaret)){
+                    moveCursor(editor,startCaret,endCaret)
+               }
              }   
         }
         else{
-            
             let result = initDocs(response_patches,current);
             if(current != result){
+                //setCaret();
                editor.innerHTML = result;
+               if(!moveCursor(editor,startCaret,endCaret)){
+                    moveCursor(editor,startCaret,endCaret)
+               }
             }   
         }
         synchronized = true;
         clientVersion = serverVersion;
         sendPatch(current);
-    } else if(synchronized){
+    } 
+    if(receiveSessionId != clientSessionId && synchronized){
+        //console.log("?")
         let text1 = editor.innerHTML;
         let result = initDocs(response_patches, text1);
-        //calcString();
+        //setCaret();
         editor.innerHTML = result;
+        moveCursor(editor,startCaret,endCaret)
         prev = result;
         clientVersion = serverVersion;
         document.getElementById('text2b').value = result;
@@ -284,75 +301,130 @@ function isHangul(inputText){
     }
     return false;
 }
-// function getCaretPosition1(editableDiv) {
-//     var caretPos = 0,
-//       sel, range;
-//     if (window.getSelection) {
-//       sel = window.getSelection();
-//       if (sel.rangeCount) {
-//         range = sel.getRangeAt(0);
-//         if (range.commonAncestorContainer.parentNode == editableDiv) {
-//           caretPos = range.endOffset;
-//         }
-//       }
-//     } else if (document.selection && document.selection.createRange) {
-//       range = document.selection.createRange();
-//       if (range.parentElement() == editableDiv) {
-//         var tempEl = document.createElement("span");
-//         editableDiv.insertBefore(tempEl, editableDiv.firstChild);
-//         var tempRange = range.duplicate();
-//         tempRange.moveToElementText(tempEl);
-//         tempRange.setEndPoint("EndToEnd", range);
-//         caretPos = tempRange.text.length;
-//       }
-//     }
 
-//     return caretPos;
-//   }
 
-//   function getCaretCharacterOffsetWithin(element) {
-//     var caretOffset = 0;
-//     var doc = element.ownerDocument || element.document;
-//     var win = doc.defaultView || doc.parentWindow;
-//     var sel;
-//     if (typeof win.getSelection != "undefined") {
-//       sel = win.getSelection();
-//       if (sel.rangeCount > 0) {
-//         var range = win.getSelection().getRangeAt(0);
-//         var preCaretRange = range.cloneRange();
-//         preCaretRange.selectNodeContents(element);
-//         preCaretRange.setEnd(range.endContainer, range.endOffset);
-//         caretOffset = preCaretRange.toString().length;
-//       }
-//     } else if ((sel = doc.selection) && sel.type != "Control") {
-//       var textRange = sel.createRange();
-//       var preCaretTextRange = doc.body.createTextRange();
-//       preCaretTextRange.moveToElementText(element);
-//       preCaretTextRange.setEndPoint("EndToEnd", textRange);
-//       caretOffset = preCaretTextRange.text.length;
-//     }
-//     return caretOffset;
-//   }
-  
-//   function getCaretPosition() {
-//     if (window.getSelection && window.getSelection().getRangeAt) {
-//       var range = window.getSelection().getRangeAt(0);
-//       var selectedObj = window.getSelection();
-//       var rangeCount = 0;
-//       var childNodes = selectedObj.anchorNode.parentNode.childNodes;
-//       let i;
-//       for (i = 0; i < childNodes.length; i++) {
-//         if (childNodes[i] == selectedObj.anchorNode) {
-//           break;
-//         }
-//         if (childNodes[i].outerHTML)
-//           rangeCount += childNodes[i].outerHTML.length;
-//         else if (childNodes[i].nodeType == 3) {
-//           rangeCount += childNodes[i].textContent.length;
-//         }
-//       }
-//       return [childNodes[i] ,range.startOffset];
-//     }
-//     return -1;
-//   }
-  
+function moveCursor(el,start, end){
+    text_node_list = [];
+    getTextNode(el);
+    let text_length = 0;
+    let start_cursor = 0;
+    let start_element;
+    let end_cursor = 0;
+    let end_element;
+    console.log("start,end",start,end)
+    console.log("text_mode_list",text_node_list)
+        
+    for(index in text_node_list){
+        console.log(index)
+        if(start < text_length + text_node_list[index].length && start_element == null){
+            start_cursor = start - text_length;
+            start_element = text_node_list[index];
+        }
+        if(end < text_length + text_node_list[index].length && end_element == null){
+            end_cursor = end - text_length;
+            end_element = text_node_list[index];
+            break;
+        }
+    	text_length += text_node_list[index].length;
+    }
+
+
+    let range = document.createRange();
+    try{
+        console.log(start_element,start_cursor)
+        console.log(end_element,end_cursor)
+        console.log("st",startCaret)
+        console.log("end",endCaret)
+        range.setStart(start_element, start_cursor);
+        range.setEnd(end_element, end_cursor);
+    }
+    catch(e){
+        console.log(e);        
+        return false;
+    }
+    
+    let sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    return true;
+}
+
+function getTextNode(element){
+    let child_node_list = element.childNodes;
+    for(e1 in child_node_list){
+        if(child_node_list[e1].nodeType == Node.TEXT_NODE){
+            text_node_list.push(child_node_list[e1]);
+        } else{
+            getTextNode(child_node_list[e1]);
+        }
+    }
+}
+function getCaretPositionEnd(element) {
+    var caretOffset = 0;
+    if (w3) {
+        var range = window.getSelection().getRangeAt(0);
+        var preCaretRange = range.cloneRange();
+        preCaretRange.selectNodeContents(element);
+        preCaretRange.setEnd(range.endContainer, range.endOffset);
+        caretOffset = preCaretRange.toString().length;
+    } else if (ie) {
+        var textRange = document.selection.createRange();
+        var preCaretTextRange = document.body.createTextRange();
+        preCaretTextRange.moveToElementText(element);
+        preCaretTextRange.setEndPoint("EndToEnd", textRange);
+        caretOffset = preCaretTextRange.text.length;
+    }
+    return caretOffset;
+}
+
+function getCaretPositionStart(element) {
+    var caretOffset = 0;
+    if (w3) {
+        var range = window.getSelection().getRangeAt(0);
+        var preCaretRange = range.cloneRange();
+        preCaretRange.selectNodeContents(element);
+        preCaretRange.setEnd(range.startContainer, range.startOffset);
+        caretOffset = preCaretRange.toString().length;
+    } else if (ie) {
+        var textRange = document.selection.createRange();
+        var preCaretTextRange = document.body.createTextRange();
+        preCaretTextRange.moveToElementText(element);
+        preCaretTextRange.setStartPoint("StartToStart", textRange);
+        caretOffset = preCaretTextRange.text.length;
+    }
+    return caretOffset;
+}
+
+/*
+function selectElementContents(el,startIdx,endIdx) {
+    try{
+        let range = document.createRange();
+        let startNode = el.childNodes[0];
+        let endNode = el.childNodes[0]
+        range.setStart(startNode, startIdx);
+        range.setEnd(endNode, endIdx);
+        let sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+    }catch(e){
+
+    }
+}
+function getCaretPosition(element) {
+    var caretOffset = 0;
+    if (w3) {
+        var range = window.getSelection().getRangeAt(0);
+        var preCaretRange = range.cloneRange();
+        preCaretRange.selectNodeContents(element);
+        preCaretRange.setEnd(range.endContainer, range.endOffset);
+        caretOffset = preCaretRange.toString().length;
+    } else if (ie) {
+        var textRange = document.selection.createRange();
+        var preCaretTextRange = document.body.createTextRange();
+        preCaretTextRange.moveToElementText(element);
+        preCaretTextRange.setEndPoint("EndToEnd", textRange);
+        caretOffset = preCaretTextRange.text.length;
+    }
+    return caretOffset;
+}
+*/
