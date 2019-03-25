@@ -16,4 +16,6 @@ public class PatchInfo {
     Long patchVersion;
     String patchText;
     String clientSessionId;
+    int startIdx;
+    int endIdx;
 }

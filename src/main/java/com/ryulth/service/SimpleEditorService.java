@@ -30,35 +30,38 @@ public class SimpleEditorService implements EditorService {
     private final Map<Long, ArrayDeque<PatchInfo>> cachePatches = new HashMap<>();
 
     @Override
-    public String editDocs(RequestDocsCommand requestDocsCommand) throws JsonProcessingException, InterruptedException {
-
+    public String editDocs(RequestDocsCommand requestDocsCommand) throws JsonProcessingException {
         Docs docs;
         Long docsId = requestDocsCommand.getDocsId();
         Long requestClientVersion = requestDocsCommand.getClientVersion();
         String patchText = requestDocsCommand.getPatchText();
+        int startIdx = requestDocsCommand.getStartIdx();
+        int endIdx = requestDocsCommand.getEndIdx();
         synchronized (cacheDocs) {
             docs = cacheDocs.get(docsId);
         }
-        ArrayDeque<PatchInfo> patchInfo;
+        ArrayDeque<PatchInfo> tempPatchInfo;
         Long serverVersion;
 
         synchronized (cachePatches){
-            patchInfo = cachePatches.get(docsId).clone();
-            serverVersion = patchInfo.getLast().getPatchVersion();
+            tempPatchInfo = cachePatches.get(docsId).clone();
+            serverVersion = tempPatchInfo.getLast().getPatchVersion();
             PatchInfo newPatchInfo = PatchInfo.builder()
                     .patchText(patchText)
                     .clientSessionId(requestDocsCommand.getSocketSessionId())
-                    .patchVersion(serverVersion+1).build();
+                    .patchVersion(serverVersion+1)
+                    .startIdx(startIdx)
+                    .endIdx(endIdx).build();
             cachePatches.get(docsId).add(newPatchInfo);
-            patchInfo.add(newPatchInfo);
-            patchInfo.poll();
+            tempPatchInfo.add(newPatchInfo);
+            tempPatchInfo.poll();
         }
         if(requestClientVersion == serverVersion){
-            patchInfo.removeIf(p -> (p.getPatchVersion() <= requestClientVersion));
+            tempPatchInfo.removeIf(p -> (p.getPatchVersion() <= requestClientVersion));
         }
         ResponseDocsCommand responseDocsCommand = ResponseDocsCommand.builder().docsId(docsId)
                 .patchText(patchText)
-                .patchInfos(patchInfo)
+                .patchInfos(tempPatchInfo)
                 .socketSessionId(requestDocsCommand.getSocketSessionId())
                 .snapshotText(docs.getContent())
                 .serverVersion(serverVersion + 1).build();

@@ -11,4 +11,6 @@ public class RequestDocsCommand {
     Long clientVersion;
     String patchText;
     Long authorCaret;
+    int startIdx;
+    int endIdx;
 }
