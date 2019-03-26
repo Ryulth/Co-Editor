@@ -37,7 +37,7 @@ window.onload = function () {
         bar.addEventListener("click",clickAction)
         editor.addEventListener("mouseup", setCaret);
         editor.addEventListener(inputType, inputAction);
-        editor.addEventListener("keyup", setHangulSelection);
+        editor.addEventListener("keyup", setCaret);
     }/*
     else {
         editor.attachEvent("onkeydown", keydownAction)
@@ -72,8 +72,8 @@ function setHangulSelection(event){
     setCaret(true);
     if(isHangul(inputText)){//console.log("한글")
         endCaret = endCaret +1;
-        console.log("startCaret",startCaret);
-        console.log("endCaret",endCaret)
+        // console.log("startCaret",startCaret);
+        // console.log("endCaret",endCaret)
         moveCursor(editor,startCaret,endCaret)
     }
     //moveCursor(editor,startCaret,endCaret)
@@ -92,9 +92,8 @@ function setCaret(isKeyup){
         }
     }
     catch(e){
-        console.log(e);
+        //console.log("set"e);
     }
-    //console.log(startCaret , " ~~~~~~~ " ,endCaret);
 }
 
 
@@ -111,7 +110,7 @@ function getDocs() {
             serverVersion = response_doc["version"];
             let response_patches = response_body["patchInfos"];
             if (response_patches.length >= 1) {
-                console.log(response_patches);
+                // console.log(response_patches);
                 //console.log(response_doc);
                 content = initDocs(response_patches,content);
             } 
@@ -126,22 +125,39 @@ function getDocs() {
 function initDocs(response_patches,content,isConflict) {
     let result = content;
     let ms_start = (new Date).getTime();
+    console.log("stcaret",startCaret,"endcaret",endCaret)
     response_patches.forEach(function (item, index, array) {
         let itemSessionId = item["clientSessionId"];
         if(isConflict){
             itemSessionId = "";
         }
+
         if (clientVersion < item["patchVersion"] && clientSessionId != itemSessionId) {
             let patches = dmp.patch_fromText(item["patchText"]);
+            //console.log(patches)
+            if(!isConflict){
+                calcCursor(item.startIdx,item.endIdx,patches[0].diffs)
+            }
             let results = dmp.patch_apply(patches, result);
             result = results[0];
             clientVersion = item["patchVersion"];
             serverVersion = item["patchVersion"];
         }
     });
+    // console.log("stcaret",startCaret,"endcaret",endCaret)
     let ms_end = (new Date).getTime();
     console.log("걸린시간",(ms_end - ms_start) /1000)
     return result;
+}
+function calcCursor(startIdx,endIdx,diff){
+    
+    if(startIdx<=startCaret){
+        tempDiff=setDiff(diff);
+        //console.log(tempDiff)
+        moveIdx = tempDiff[1].length-tempDiff[2].length
+        startCaret +=moveIdx;
+        endCaret += moveIdx;
+    }
 }
 
 function sendPatch(current) {
@@ -150,7 +166,7 @@ function sendPatch(current) {
     
     if ((diff.length > 1) || (diff.length == 1 && diff[0][0] != 0)) { // 1 이상이어야 변경 한 것이 있음
         let res = setDiff(diff);
-        if (!(Hangul.disassemble(res[0][2]).length == Hangul.disassemble(res[0][1]).length + 1) || (keycode == "Backspace" || keycode == "Delete")) {
+        if (!(Hangul.disassemble(res[2]).length == Hangul.disassemble(res[1]).length + 1) || (keycode == "Backspace" || keycode == "Delete")) {
             synchronized = false;
             let patch_list = dmp.patch_make(prev, current, diff);
             let patch_text = dmp.patch_toText(patch_list);
@@ -169,8 +185,11 @@ function sendContentPost(patchText) {
         "socketSessionId": clientSessionId,
         "docsId": docsId,
         "clientVersion": clientVersion,
-        "patchText": patchText
+        "patchText": patchText,
+        "startIdx" : startCaret,
+        "endIdx" : endCaret
     }
+    //console.log("보낼때 startidx",startCaret,"보낼떄 endidx",endCaret)
     $.ajax({
         async: true, // false 일 경우 동기 요청으로 변경
         type: "POST",
@@ -195,10 +214,11 @@ function setDiff(diff) {
         switch (element[0]) {
             case 0: // retain
                 if (isCycle) {
-                    isCycle = false;
-                    res.push([idx, insertString, deleteString]);
-                    insertString = "";
-                    deleteString = "";
+                    //isCycle = false;
+                    return [idx, insertString, deleteString]
+                    // res.push([idx, insertString, deleteString]);
+                    // insertString = "";
+                    // deleteString = "";
                 }
                 idx += element[1].length;
                 break;
@@ -212,11 +232,12 @@ function setDiff(diff) {
                 break;
         }
     });
-    if (isCycle) {
-        res.push([idx, insertString, deleteString])
-    }
-
-    return res;
+    // if (isCycle) {
+    //     res.push([idx, insertString, deleteString])
+        
+    // }
+    // return res;
+    return [idx, insertString, deleteString]
 }
 
 function connect() {
@@ -239,27 +260,32 @@ function receiveContent(response_body) {
     serverVersion = response_body.serverVersion;
     if (receiveSessionId == clientSessionId) {
         let current = editor.innerHTML;
-        if(response_patches.length > 1){
+        if(response_patches.length > 1){ // 꼬여서 다시 부를 떄
+            
             let snapshotText = response_body.snapshotText;
             clientVersion = 0;
+            setCaret();
             let result = initDocs(response_patches,snapshotText,true);
+            
             if(current != result){
-                //setCaret();
+                // console.log(current)
+                // console.log(result)
+                // console.log("꼬여서 다시 부름")
                 editor.innerHTML = result;
-                if(!moveCursor(editor,startCaret,endCaret)){
-                    moveCursor(editor,startCaret,endCaret)
-               }
+                moveCursor(editor,startCaret,endCaret)
              }   
+            setCaret();                
+                         
         }
         else{
+            setCaret();
             let result = initDocs(response_patches,current);
+            //setCaret();
             if(current != result){
-                //setCaret();
                editor.innerHTML = result;
-               if(!moveCursor(editor,startCaret,endCaret)){
-                    moveCursor(editor,startCaret,endCaret)
-               }
-            }   
+               moveCursor(editor,startCaret,endCaret)
+            }  
+            setCaret(); 
         }
         synchronized = true;
         clientVersion = serverVersion;
@@ -268,10 +294,11 @@ function receiveContent(response_body) {
     if(receiveSessionId != clientSessionId && synchronized){
         //console.log("?")
         let text1 = editor.innerHTML;
+        setCaret();
         let result = initDocs(response_patches, text1);
-        //setCaret();
-        editor.innerHTML = result;
+        editor.innerHTML = result;        
         moveCursor(editor,startCaret,endCaret)
+        setCaret();
         prev = result;
         clientVersion = serverVersion;
         document.getElementById('text2b').value = result;
@@ -287,10 +314,7 @@ function disconnect() {
     console.log("Disconnected");
 }
 
-function sleep(delay) {
-    var start = new Date().getTime();
-    while (new Date().getTime() < start + delay);
-}
+
 
 function setConnected(connected) {
     if (connected) {
@@ -334,8 +358,6 @@ function moveCursor(el,start, end){
         }
     	text_length += text_node_list[index].length;
     }
-
-
     let range = document.createRange();
     try{
         console.log(start_element,start_cursor)
@@ -346,14 +368,13 @@ function moveCursor(el,start, end){
         range.setEnd(end_element, end_cursor);
     }
     catch(e){
-        console.log(e);        
-        return false;
+        console.log(e);     
     }
     
     let sel = window.getSelection();
     // sel.removeAllRanges();
     sel.addRange(range);
-    return true;
+    
 }
 
 function getTextNode(element){
@@ -513,3 +534,4 @@ function getCaretPosition(element) {
     return caretOffset;
 }
 */
+
