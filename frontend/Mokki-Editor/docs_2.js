@@ -1,7 +1,7 @@
 const ie = (typeof document.selection != "undefined" && document.selection.type != "Control") && true;
 const w3 = (typeof window.getSelection != "undefined") && true;
 const baseUrl = "http://10.77.34.204:8080";
-const docsId = 3;//location.href.substr(location.href.lastIndexOf('?') + 1);
+const docsId = 1;//location.href.substr(location.href.lastIndexOf('?') + 1);
 const dmp = new diff_match_patch();
 const inputType = /Trident/.test( navigator.userAgent ) ? 'textinput' : 'input';
 const lastGC = document.createElement("p");
@@ -11,13 +11,15 @@ let clientVersion;
 let stompClient;
 let clientSessionId;
 let prevText;
+let pivotStartCaret = 0;
+let pivotEndCaret = 0;
 let startCaret =0;
 let endCaret =0;
 let keycode = "";
 window.onload = function () {
     getDocs();
     editor = document.getElementById("mokkiTextPreview");
-    editor.appendChild(lastGC);
+    //editor.appendChild(lastGC);
     let bar = document.getElementById("mokkiButtonBar");
     
     if (editor.addEventListener) {
@@ -25,7 +27,7 @@ window.onload = function () {
         bar.addEventListener("click",clickAction)
         editor.addEventListener("mouseup", setCaret);
         editor.addEventListener(inputType, inputAction);
-        editor.addEventListener("keyup", setCaret);
+        //editor.addEventListener("keyup", setCaret);
     }/*
     else {
         editor.attachEvent("onkeydown", keydownAction)
@@ -34,22 +36,29 @@ window.onload = function () {
     }*/    
 }
 function calcCaret(startIdx,endIdx,diff){
-    if(startIdx<=startCaret){
+    if(startIdx<startCaret){
         tempDiff=setDiff(diff);
 
         moveIdx = tempDiff[1].length-tempDiff[2].length
         if(tempDiff[1].length>1){
             console.log(tempDiff);
         }
-        startCaret +=moveIdx;
-        endCaret += moveIdx;
+        pivotStartCaret += moveIdx;
+        pivotEndCaret +=moveIdx;
+        
     }
 }
 function setCaret(){
     let tempCaret = getCaretPosition(editor);
-    console.log(tempCaret)
+    //console.log(tempCaret)
     startCaret = tempCaret[0];
     endCaret = tempCaret[1];
+}
+function setPivotCaret(){
+    let tempCaret = getCaretPosition(editor);
+    //console.log(tempCaret)
+    pivotStartCaret = tempCaret[0];
+    pivotEndCaret = tempCaret[1];
 }
 function clickAction(){
     setCaret();
@@ -60,6 +69,7 @@ function clickAction(){
 function keydownAction(event){
     keycode = event.code;
     setCaret();
+    console.log("키다운",startCaret,endCaret,synchronized)
     if (synchronized) {
         prevText = editor.innerHTML;
     }
@@ -72,15 +82,19 @@ function inputAction(event){
     }
 }
 function sendPatch(prev,current) {
+    
     let diff = dmp.diff_main(prev, current, true);
     dmp.diff_cleanupSemantic(diff);
     if ((diff.length > 1) || (diff.length == 1 && diff[0][0] != 0)) { // 1 이상이어야 변경 한 것이 있음
         let res = setDiff(diff);
         if (!(Hangul.disassemble(res[2]).length == Hangul.disassemble(res[1]).length + 1) || (keycode == "Backspace" || keycode == "Delete")) {
             synchronized = false;
+            console.log(prev,current)
+            let inputLength = (res[1].length ==0 ) ? 0 : res[1].length-1;
+            let deleteLength =(res[2].length ==0 ) ? 0 : 1-res[2].length;
             let patch_list = dmp.patch_make(prev, current, diff);
             let patch_text = dmp.patch_toText(patch_list);
-            sendContentPost(patch_text);
+            sendContentPost(patch_text,inputLength,deleteLength);
             let text1 = document.getElementById('text2b').value;
             let results = dmp.patch_apply(patch_list, text1);
             document.getElementById('text2b').value = results[0];
@@ -89,14 +103,15 @@ function sendPatch(prev,current) {
         keycode = "";
     }
 }
-function sendContentPost(patchText) {
+function sendContentPost(patchText,inputLength,deleteLength) {
+    console.log(inputLength,deleteLength)
     let reqBody = {
         "socketSessionId": clientSessionId,
         "docsId": docsId,
         "clientVersion": clientVersion,
-        "patchText": patchText,
-        "startIdx" : startCaret,
-        "endIdx" : endCaret
+        "patchText": patchText ,
+        "startIdx" : startCaret -inputLength,
+        "endIdx" : endCaret + deleteLength
     }
     $.ajax({
         async: true, // false 일 경우 동기 요청으로 변경
@@ -181,29 +196,37 @@ function receiveContent(response_body) {
     if (receiveSessionId == clientSessionId) {
         let current = editor.innerHTML;
         if(response_patcheInfos.length > 1){ // 꼬여서 다시 부를 떄
+            console.log("asd",clientVersion)
             let snapshotText = response_body.snapshotText;
             let snapshotVersion = response_body.snapshotVersion;
+            //setPivotCaret();
             let result = patchDocs(response_patcheInfos,snapshotText,snapshotVersion);
             if(current != result){
-          //      setCaret();
+                
                 editor.innerHTML = result;
-            //    editor.appendChild(lastGC);
-                setCaretPosition(editor,startCaret,endCaret);
-                setCaret();
+                //editor.appendChild(lastGC);
+                //setCaretPosition(editor,pivotStartCaret,pivotEndCaret);
+                //setPivotCaret();
+                //setCaretPosition(editor,startCaret,endCaret);
                 console.log(response_patcheInfos.length)
-                sendPatch(prevText,current);
+                
             }   
         }
+        else{
+            clientVersion = response_patcheInfos[0].patchVersion;
+        }
         synchronized = true;
+        sendPatch(prevText,current);
     } 
     if(receiveSessionId != clientSessionId && synchronized){
         let originText = editor.innerHTML;
-        //setCaret();
+        //setPivotCaret();
         let result = patchDocs(response_patcheInfos,originText,clientVersion);
         editor.innerHTML = result;        
-      //  editor.appendChild(lastGC);
-        setCaretPosition(editor,startCaret,endCaret);
-        setCaret();
+        //editor.appendChild(lastGC);
+        //setCaretPosition(editor,pivotStartCaret,pivotEndCaret);
+        //setPivotCaret();
+        //setCaretPosition(editor,startCaret,endCaret);
         prevText = result;
         document.getElementById('text2b').value = result;
     }
@@ -360,7 +383,7 @@ const setCaretPosition = function(element, start, end){
             startElement = textNode;
         }
         if(end <= childTextLength + caretOffset + nodeTextLength && endElement == null){
-            endOffsetzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz = end - (childTextLength + caretOffset);
+            endOffset = end - (childTextLength + caretOffset);
             endElement = textNode;
             return;
         }
@@ -375,9 +398,12 @@ const setCaretPosition = function(element, start, end){
     }catch(e){ 
         console.log(startElement,startElement)
         console.log(endElement,endElement)
-        console.log("st",startOffset)
-        console.log("end",endOffset)
-        console.log(e)}
+        console.log("st",startCaret)
+        console.log("end",endCaret)
+        console.log(prevText)
+        console.log(editor.innerHTML)
+        console.log(e)
+    }
     
     let sel = window.getSelection();
     sel.removeAllRanges();
