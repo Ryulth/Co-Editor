@@ -42,18 +42,18 @@ public class SimpleEditorService implements EditorService {
         ArrayDeque<PatchInfo> patchInfo;
         Long serverVersion;
 
-        synchronized (cachePatches){
+        synchronized (cachePatches) {
             patchInfo = cachePatches.get(docsId).clone();
             serverVersion = patchInfo.getLast().getPatchVersion();
             PatchInfo newPatchInfo = PatchInfo.builder()
                     .patchText(patchText)
                     .clientSessionId(requestDocsCommand.getSocketSessionId())
-                    .patchVersion(serverVersion+1).build();
+                    .patchVersion(serverVersion + 1).build();
             cachePatches.get(docsId).add(newPatchInfo);
             patchInfo.add(newPatchInfo);
             patchInfo.poll();
         }
-        if(requestClientVersion == serverVersion){
+        if (requestClientVersion == serverVersion) {
             patchInfo.removeIf(p -> (p.getPatchVersion() <= requestClientVersion));
         }
         ResponseDocsCommand responseDocsCommand = ResponseDocsCommand.builder().docsId(docsId)
@@ -62,9 +62,9 @@ public class SimpleEditorService implements EditorService {
                 .socketSessionId(requestDocsCommand.getSocketSessionId())
                 .snapshotText(docs.getContent())
                 .serverVersion(serverVersion + 1).build();
-        if(requestClientVersion<serverVersion){
+        if (requestClientVersion < serverVersion) {
             //responseDocsCommand.setSnapshotText(docs.getContent());
-            logger.info("버젼 충돌",requestClientVersion);
+            logger.info("버젼 충돌", requestClientVersion);
         }
         //Thread.sleep(1000);
         return objectMapper.writeValueAsString(responseDocsCommand);
@@ -94,17 +94,16 @@ public class SimpleEditorService implements EditorService {
         synchronized (cachePatches) {
             patchInfo = cachePatches.get(docsId);
         }
-        if (patchInfo == null){
+        if (patchInfo == null) {
             patchInfo = new ArrayDeque<>();
             patchInfo.add(PatchInfo.builder().patchText("").patchVersion(Long.valueOf(0)).build());
             synchronized (cachePatches) {
-                cachePatches.put(docsId,patchInfo);
+                cachePatches.put(docsId, patchInfo);
             }
-        }
-        else {
+        } else {
             patchInfo = patchInfo.clone();
         }
-        if(patchInfo.size() == 0){
+        if (patchInfo.size() == 0) {
             System.out.println("sadasdas");
             return null;
         }

@@ -1,7 +1,7 @@
 let ie = (typeof document.selection != "undefined" && document.selection.type != "Control") && true;
 let w3 = (typeof window.getSelection != "undefined") && true;
 
-const baseUrl = "http://10.77.34.204:8080";
+const baseUrl = "http://10.77.34.203:8080";
 let editor;
 let inputTag;
 
@@ -47,14 +47,14 @@ window.onload = function () {
     
 }
 function clickAction(){
-    setCaret();
+    setCaret(false);
     if(synchronized){
         prev = editor.innerHTML;
     }
 }
 function keydownAction(event){
     keycode = event.code;
-    setCaret();
+    setCaret(false);
     if (synchronized) {
         prev = editor.innerHTML;
     }
@@ -63,13 +63,13 @@ function keydownAction(event){
 function inputAction(event){
     inputText = event.data;
     //myCaret = getCaretPosition(editor);
-    setCaret();
+    setCaret(false);
     if (synchronized) {
         sendPatch(editor.innerHTML);
     }
 }
 function setHangulSelection(event){
-    setCaret();
+    setCaret(true);
     if(isHangul(inputText)){//console.log("한글")
         endCaret = endCaret +1;
         console.log("startCaret",startCaret);
@@ -79,10 +79,17 @@ function setHangulSelection(event){
     //moveCursor(editor,startCaret,endCaret)
     inputText = ""
 }
-function setCaret(){
+function setCaret(isKeyup){
     try{
-    startCaret = getCaretPositionStart(editor);
-    endCaret = getCaretPositionEnd(editor);
+        if(isKeyup){
+            startCaret = getCaretPositionStart11(editor);
+            endCaret = getCaretPositionEnd11(editor);
+            console.log(startCaret, "@@@@", endCaret)
+            console.log(editor.childNodes)
+        }else{
+            startCaret = getCaretPositionStart(editor);
+            endCaret = getCaretPositionEnd(editor);
+        }
     }
     catch(e){
         console.log(e);
@@ -316,11 +323,11 @@ function moveCursor(el,start, end){
         
     for(index in text_node_list){
         console.log(index)
-        if(start < text_length + text_node_list[index].length && start_element == null){
+        if(start <= text_length + text_node_list[index].length && start_element == null){
             start_cursor = start - text_length;
             start_element = text_node_list[index];
         }
-        if(end < text_length + text_node_list[index].length && end_element == null){
+        if(end <= text_length + text_node_list[index].length && end_element == null){
             end_cursor = end - text_length;
             end_element = text_node_list[index];
             break;
@@ -344,13 +351,14 @@ function moveCursor(el,start, end){
     }
     
     let sel = window.getSelection();
-    sel.removeAllRanges();
+    // sel.removeAllRanges();
     sel.addRange(range);
     return true;
 }
 
 function getTextNode(element){
     let child_node_list = element.childNodes;
+    console.log("@@@이거 뭐냐??", child_node_list)
     for(e1 in child_node_list){
         if(child_node_list[e1].nodeType == Node.TEXT_NODE){
             text_node_list.push(child_node_list[e1]);
@@ -384,7 +392,9 @@ function getCaretPositionStart(element) {
         var preCaretRange = range.cloneRange();
         preCaretRange.selectNodeContents(element);
         preCaretRange.setEnd(range.startContainer, range.startOffset);
+        tempOffset = preCaretRange.toString();
         caretOffset = preCaretRange.toString().length;
+
     } else if (ie) {
         var textRange = document.selection.createRange();
         var preCaretTextRange = document.body.createTextRange();
@@ -394,6 +404,81 @@ function getCaretPositionStart(element) {
     }
     return caretOffset;
 }
+
+function getCaretPositionEnd11(element) {
+    var caretOffset = 0;
+    if (w3) {
+        var range = window.getSelection().getRangeAt(0);
+        var preCaretRange = range.cloneRange();
+        preCaretRange.selectNodeContents(element);
+        preCaretRange.setEnd(range.endContainer, range.endOffset);
+        caretOffset = preCaretRange.toString().length;
+        
+        if(preCaretRange.endContainer.innerHTML == "<br>" || preCaretRange.endContainer.parentNode.id == "mokkiTextPreview"){
+            caretOffset += countPrevBrTag(preCaretRange.endContainer);
+        } else{
+            caretOffset += countPrevBrTag(preCaretRange.endContainer.parentNode);
+        }
+
+    } else if (ie) {
+        var textRange = document.selection.createRange();
+        var preCaretTextRange = document.body.createTextRange();
+        preCaretTextRange.moveToElementText(element);
+        preCaretTextRange.setEndPoint("EndToEnd", textRange);
+        caretOffset = preCaretTextRange.text.length;
+    }
+    return caretOffset;
+}
+
+function getCaretPositionStart11(element) {
+    var caretOffset = 0;
+    if (w3) {
+        var range = window.getSelection().getRangeAt(0);
+        var preCaretRange = range.cloneRange();
+        preCaretRange.selectNodeContents(element);
+        preCaretRange.setEnd(range.startContainer, range.startOffset);
+        caretOffset = preCaretRange.toString().length;
+       
+        if(preCaretRange.endContainer.innerHTML == "<br>" || preCaretRange.endContainer.parentNode.id == "mokkiTextPreview"){
+            caretOffset += countPrevBrTag(preCaretRange.endContainer);
+        } else{
+            caretOffset += countPrevBrTag(preCaretRange.endContainer.parentNode);
+        }
+
+    } else if (ie) {
+        var textRange = document.selection.createRange();
+        var preCaretTextRange = document.body.createTextRange();
+        preCaretTextRange.moveToElementText(element);
+        preCaretTextRange.setStartPoint("StartToStart", textRange);
+        caretOffset = preCaretTextRange.text.length;
+    }
+    return caretOffset;
+}
+
+
+function countPrevBrTag(local_end_container) {
+    let count = 0;
+    let isFirstLine = true;
+    let list = editor.childNodes;
+    for(idx in list){
+        if(isFirstLine){ // 아직 첫번째 줄임
+            if(list[idx].nodeName == "P"){
+                isFirstLine = false;
+                count += 1;
+            }
+            if(list[idx] == local_end_container){
+                break;
+            }
+        }else{
+            count += 1;
+            if(list[idx] == local_end_container){
+                break;
+            }
+        }
+    }
+    return count;
+}
+
 
 /*
 function selectElementContents(el,startIdx,endIdx) {
