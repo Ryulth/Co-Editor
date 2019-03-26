@@ -435,11 +435,12 @@ function getCaretPositionEnd11(element) {
         preCaretRange.setEnd(range.endContainer, range.endOffset);
         caretOffset = preCaretRange.toString().length;
         
-        if(preCaretRange.endContainer.innerHTML == "<br>" || preCaretRange.endContainer.parentNode.id == "mokkiTextPreview"){
-            caretOffset += countPrevBrTag(preCaretRange.endContainer);
-        } else{
-            caretOffset += countPrevBrTag(preCaretRange.endContainer.parentNode);
+        let findParentNodeMokki = preCaretRange.endContainer;
+        while(findParentNodeMokki.parentNode.id != "mokkiTextPreview"){
+            findParentNodeMokki = findParentNodeMokki.parentNode;
         }
+
+        caretOffset += countPrevBrTag(findParentNodeMokki);
 
     } else if (ie) {
         var textRange = document.selection.createRange();
@@ -460,11 +461,12 @@ function getCaretPositionStart11(element) {
         preCaretRange.setEnd(range.startContainer, range.startOffset);
         caretOffset = preCaretRange.toString().length;
        
-        if(preCaretRange.endContainer.innerHTML == "<br>" || preCaretRange.endContainer.parentNode.id == "mokkiTextPreview"){
-            caretOffset += countPrevBrTag(preCaretRange.endContainer);
-        } else{
-            caretOffset += countPrevBrTag(preCaretRange.endContainer.parentNode);
+        let findParentNodeMokki = preCaretRange.endContainer;
+        while(findParentNodeMokki.parentNode.id != "mokkiTextPreview"){
+            findParentNodeMokki = findParentNodeMokki.parentNode;
         }
+
+        caretOffset += countPrevBrTag(findParentNodeMokki);
 
     } else if (ie) {
         var textRange = document.selection.createRange();
