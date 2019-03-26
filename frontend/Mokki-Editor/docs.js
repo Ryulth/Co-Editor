@@ -1,7 +1,7 @@
 let ie = (typeof document.selection != "undefined" && document.selection.type != "Control") && true;
 let w3 = (typeof window.getSelection != "undefined") && true;
 
-const baseUrl = "http://10.77.34.203:8080";
+const baseUrl = "http://10.77.34.204:8080";
 let editor;
 let inputTag;
 
@@ -84,8 +84,8 @@ function setCaret(isKeyup){
         if(isKeyup){
             startCaret = getCaretPositionStart11(editor);
             endCaret = getCaretPositionEnd11(editor);
-            console.log(startCaret, "@@@@", endCaret)
-            console.log(editor.childNodes)
+            //console.log(startCaret, "@@@@", endCaret)
+            //console.log(editor.childNodes)
         }else{
             startCaret = getCaretPositionStart(editor);
             endCaret = getCaretPositionEnd(editor);
@@ -281,6 +281,7 @@ function receiveContent(response_body) {
             let result = initDocs(response_patches,current);
             //setCaret();
             if(current != result){
+                console.log("이건언ㄴ제")
                editor.innerHTML = result;
                moveCursor(editor,startCaret,endCaret)
             }  
@@ -378,7 +379,7 @@ function moveCursor(el,start, end){
 
 function getTextNode(element){
     let child_node_list = element.childNodes;
-    console.log("@@@이거 뭐냐??", child_node_list)
+    //console.log("@@@이거 뭐냐??", child_node_list)
     for(e1 in child_node_list){
         if(child_node_list[e1].nodeType == Node.TEXT_NODE){
             text_node_list.push(child_node_list[e1]);

@@ -17,6 +17,7 @@ public class ResponseDocsCommand {
     String socketSessionId;
     Long docsId;
     Long serverVersion;
+    Long snapshotVersion;
     String patchText;
     String snapshotText;
     ArrayDeque<PatchInfo> patchInfos;

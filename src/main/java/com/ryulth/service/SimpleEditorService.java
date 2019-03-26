@@ -2,7 +2,6 @@ package com.ryulth.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ryulth.controller.EditorController;
 import com.ryulth.dto.Docs;
 import com.ryulth.pojo.model.PatchInfo;
 import com.ryulth.pojo.request.RequestDocsCommand;
@@ -14,7 +13,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.HashMap;
+import java.util.Map;
 
 @Component
 public class SimpleEditorService implements EditorService {
@@ -56,7 +57,6 @@ public class SimpleEditorService implements EditorService {
             tempPatchInfo.add(newPatchInfo);
             tempPatchInfo.poll();
         }
-
         if(requestClientVersion == serverVersion){
             tempPatchInfo.removeIf(p -> (p.getPatchVersion() <= requestClientVersion));
         }
@@ -65,9 +65,9 @@ public class SimpleEditorService implements EditorService {
                 .patchInfos(tempPatchInfo)
                 .socketSessionId(requestDocsCommand.getSocketSessionId())
                 .snapshotText(docs.getContent())
+                .snapshotVersion(docs.getVersion())
                 .serverVersion(serverVersion + 1).build();
         if (requestClientVersion < serverVersion) {
-            //responseDocsCommand.setSnapshotText(docs.getContent());
             logger.info("버젼 충돌", requestClientVersion);
         }
         //Thread.sleep(1000);
@@ -100,7 +100,7 @@ public class SimpleEditorService implements EditorService {
         }
         if (patchInfo == null) {
             patchInfo = new ArrayDeque<>();
-            patchInfo.add(PatchInfo.builder().patchText("").patchVersion(Long.valueOf(0)).build());
+            patchInfo.add(PatchInfo.builder().patchText("").patchVersion(finalDocs.getVersion()).build());
             synchronized (cachePatches) {
                 cachePatches.put(docsId, patchInfo);
             }
