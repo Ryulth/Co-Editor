@@ -1,7 +1,7 @@
 const ie = (typeof document.selection != "undefined" && document.selection.type != "Control") && true;
 const w3 = (typeof window.getSelection != "undefined") && true;
-const baseUrl = "http://10.77.34.203:8080";
-const docsId = 1;//location.href.substr(location.href.lastIndexOf('?') + 1);
+const baseUrl = "http://10.77.34.204:8080";
+const docsId = 2;//location.href.substr(location.href.lastIndexOf('?') + 1);
 const dmp = new diff_match_patch();
 const inputType = /Trident/.test( navigator.userAgent ) ? 'textinput' : 'input';
 let editor;
@@ -33,17 +33,25 @@ const setUserCaret = function(sessionId, start, end){
 window.onload = function () {
     Quill.register('modules/cursors', QuillCursors);
 
-    const quillOne = new Quill('#mokkiTextPreview', {
+    const quillOne = new Quill('#test', {
+        theme: 'snow',
         modules: {
             cursors: true
         }
     });
 
     quilModule = quillOne.getModule('cursors');
+    // Quill.register('modules/cursors', QuillCursors);
 
-//    editor = document.getElementById("mokkiTextPreview");
+    // const quillOne = new Quill('#mokkiTextPreview', {
+    //     modules: {
+    //         cursors: true
+    //     }
+    // });
+    // quilModule = quillOne.getModule('cursors');
     editor = document.getElementsByClassName('ql-editor')[0];
-    //editor.appendChild(lastGC);
+    getDocs();
+//    editor = document.getElementById("mokkiTextPreview");
     let bar = document.getElementById("mokkiButtonBar");
     
     if (editor.addEventListener) {
@@ -59,7 +67,7 @@ window.onload = function () {
         editor.attachEvent("oninput", attachEvent);
     }*/
 
-    getDocs();
+    
 }
 function mouseupAction(){
     getCaret();
@@ -67,15 +75,12 @@ function mouseupAction(){
 }
 function getCaret(){
     let tempCaret = getCaretPosition(editor);
-    //console.log(tempCaret)
     startCaret = tempCaret[0];
     endCaret = tempCaret[1];
-    console.log(stompClient);
     stompClient.send('/topic/position/'+docsId, {}, JSON.stringify({sessionId: clientSessionId, start: startCaret-1, end: endCaret-1}));
 }
 function getPivotCaret(){
     let tempCaret = getCaretPosition(editor);
-    //console.log(tempCaret)
     pivotStartCaret = tempCaret[0];
     pivotEndCaret = tempCaret[1];
 }
@@ -95,6 +100,7 @@ function keydownAction(event){
 }
 
 function inputAction(event){
+    console.log("set")
     inputText = event.data;
     if (synchronized) {
         sendPatch(prevText,editor.innerHTML);
@@ -106,6 +112,7 @@ function sendPatch(prev,current) {
     dmp.diff_cleanupSemantic(diff);
     if ((diff.length > 1) || (diff.length == 1 && diff[0][0] != 0)) { // 1 이상이어야 변경 한 것이 있음
         let res = setDiff(diff)[0];
+        console.log(res)
         if (!(Hangul.disassemble(res[2]).length == Hangul.disassemble(res[1]).length + 1) || (keycode == "Backspace" || keycode == "Delete")) {
             synchronized = false;
             let inputLength = (res[1].length ==0 ) ? 0 : res[1].length-1;
@@ -130,6 +137,7 @@ function sendContentPost(patchText,inputLength,deleteLength) {
         "startIdx" : startCaret -inputLength,
         "endIdx" : endCaret + deleteLength
     }
+    console.log(patchText)
     $.ajax({
         async: true, // false 일 경우 동기 요청으로 변경
         type: "POST",
@@ -151,7 +159,6 @@ function setDiff(diff) {
         switch (element[0]) {
             case 0: // retain
                 if (isCycle) {
-//                    return [idx, insertString, deleteString]
                     isCycle = false;
                     res.push([idx, insertString, deleteString]);
                     insertString = "";
@@ -175,7 +182,6 @@ function setDiff(diff) {
         
     }
     return res;
-    //return [idx, insertString, deleteString]
 }
 
 
@@ -195,8 +201,11 @@ function getDocs() {
                 console.log(response_doc);
                 content = patchDocs(response_patches,content,clientVersion);
             } 
-            editor.innerHTML = content;
-           // document.getElementById("mokkiTextPreview").appendChild(lastGC);
+            //console.log(editor)
+            //editor.innerHTML = content;
+            console.log(content)
+            document.getElementsByClassName('ql-editor')[0].innerHTML = content;
+            //document.getElementById("mokkiTextPreview").appendChild(lastGC);
             prevText = content;
             synchronized = true;
             document.getElementById('text2b').value = content;
@@ -209,7 +218,6 @@ function connect() {
     stompClient = Stomp.over(socket);
     stompClient.connect({}, function (frame) {
         setConnected(true);
-        //console.log("Connected" + frame);
         clientSessionId = /\/([^\/]+)\/websocket/.exec(socket._transport.url)[1];
         stompClient.subscribe('/topic/docs' + "/" + docsId, function (content) {
             response_body = JSON.parse(content.body);
@@ -220,7 +228,7 @@ function connect() {
             if(contentBody.sessionId != clientSessionId){
                 setUserCaret(contentBody.sessionId, contentBody.start, contentBody.end);
             }
-        })
+        });
     });
 }
 function receiveContent(response_body) {
@@ -270,26 +278,13 @@ function calcCaret(diff){
         let startIdx = tempDiff[0];
         let moveIdx = tempDiff[1].length-tempDiff[2].length;
         let endIdx = startIdx + moveIdx;
-        console.log(startCaret)
-        console.log(startIdx)
-        console.log(endIdx)
-        if(startIdx<startCaret){
-            // if(startCaret<=endIdx){
-            //     startCaret = startIdx+1;
-            //     endCaret = startIdx+1;
-            // }
-            //else{
+        if(startIdx<=startCaret){
             if(tempDiff[1].length>1){
                 console.log(tempDiff);
             }
             startCaret += moveIdx;
             endCaret +=moveIdx;
-            //}
         }
-        // if(startCaret<=startIdx && startCaret<=endIdx){
-        //     startCaret = startIdx;
-        //     endCaret = startIdx;
-        // }
     });
 }
 function removeTags(text){

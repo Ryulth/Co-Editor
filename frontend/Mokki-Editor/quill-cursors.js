@@ -3587,11 +3587,11 @@ module.exports = InfoReceiver;
 'use strict';
 
 module.exports = global.location || {
-  origin: 'http://localhost:80'
+  origin: 'http://10.77.34.204:80'
 , protocol: 'http:'
-, host: 'localhost'
+, host: '10.77.34.204'
 , port: 80
-, href: 'http://localhost/'
+, href: 'http://10.77.34.204/'
 , hash: ''
 };
 
@@ -11298,9 +11298,9 @@ module.exports = {
 
 /***/ }),
 
-/***/ "./node_modules/webpack-dev-server/client/index.js?http://localhost:8080":
+/***/ "./node_modules/webpack-dev-server/client/index.js?http://10.77.34.204:8080":
 /*!*********************************************************!*\
-  !*** (webpack)-dev-server/client?http://localhost:8080 ***!
+  !*** (webpack)-dev-server/client?http://10.77.34.204:8080 ***!
   \*********************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
@@ -11576,7 +11576,7 @@ function reloadApp() {
     rootWindow.location.reload();
   }
 }
-/* WEBPACK VAR INJECTION */}.call(this, "?http://localhost:8080"))
+/* WEBPACK VAR INJECTION */}.call(this, "?http://10.77.34.204:8080"))
 
 /***/ }),
 
@@ -12241,12 +12241,12 @@ exports.default = template;
 
 /***/ 0:
 /*!******************************************************************************!*\
-  !*** multi (webpack)-dev-server/client?http://localhost:8080 ./src/index.ts ***!
+  !*** multi (webpack)-dev-server/client?http://10.77.34.204:8080 ./src/index.ts ***!
   \******************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-__webpack_require__(/*! C:\Users\NHNEnt\Downloads\quill-cursors-master\quill-cursors-master\node_modules\webpack-dev-server\client\index.js?http://localhost:8080 */"./node_modules/webpack-dev-server/client/index.js?http://localhost:8080");
+__webpack_require__(/*! C:\Users\NHNEnt\Downloads\quill-cursors-master\quill-cursors-master\node_modules\webpack-dev-server\client\index.js?http://10.77.34.204:8080 */"./node_modules/webpack-dev-server/client/index.js?http://10.77.34.204:8080");
 module.exports = __webpack_require__(/*! ./src/index.ts */"./src/index.ts");
 
 

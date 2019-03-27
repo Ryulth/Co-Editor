@@ -31,4 +31,5 @@ public class EditorController {
         this.simpMessagingTemplate.convertAndSend("/topic/docs/" + docsId,
                 editorService.editDocs(requestDocsCommnad));
     }
+
 }
