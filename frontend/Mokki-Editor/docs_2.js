@@ -4,7 +4,6 @@ const baseUrl = "http://10.77.34.203:8080";
 const docsId = 1;//location.href.substr(location.href.lastIndexOf('?') + 1);
 const dmp = new diff_match_patch();
 const inputType = /Trident/.test( navigator.userAgent ) ? 'textinput' : 'input';
-const lastGC = document.createElement("p");
 let editor;
 let synchronized = true; 
 let clientVersion;
@@ -355,15 +354,15 @@ const getCaretPositionStart = function(element) {
     let position = 0;
     if (w3) {
         try{
-        let range = window.getSelection().getRangeAt(0);
-        let clonedRange = range.cloneRange();
-        clonedRange.selectNodeContents(element);
-        clonedRange.setEnd(range.startContainer, range.startOffset);
-        position = clonedRange.toString().length;
+            let range = window.getSelection().getRangeAt(0);
+            let clonedRange = range.cloneRange();
+            clonedRange.selectNodeContents(element);
+            clonedRange.setEnd(range.startContainer, range.startOffset);
+            position = clonedRange.toString().length;
 
-        let lineNode = getLineNode(element, clonedRange.endContainer);
+            let lineNode = getLineNode(element, clonedRange.endContainer);
 
-        position += getCountOfNewLine(element, lineNode);
+            position += getCountOfNewLine(element, lineNode);
         }catch(e){}
     } else if (ie) {
         let textRange = document.selection.createRange();
