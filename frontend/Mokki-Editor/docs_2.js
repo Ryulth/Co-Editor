@@ -400,7 +400,7 @@ const getCountOfNewLine = function(element, lineNode) {
 const setCaretPosition = function(element, start, end){
     let childTextLength = 0;
     let textNodeList = getTextNodeList(element);
-    let startCaret = 0, endCaret = 0;
+    let startOffset = 0, endOffset = 0;
     let startElement, endElement;
     let countOfNewLine = 0;
     let range = document.createRange();
@@ -412,20 +412,21 @@ const setCaretPosition = function(element, start, end){
         countOfNewLine = getCountOfNewLine(element, lineNode);
 
         if(start <= childTextLength + countOfNewLine + nodeTextLength && startElement == null){
-            startCaret = start - (childTextLength + countOfNewLine);
+            startOffset = start - (childTextLength + countOfNewLine);
             startElement = textNode;
         }
         if(end <= childTextLength + countOfNewLine + nodeTextLength && endElement == null){
-            endCaret = end - (childTextLength + countOfNewLine);
+            endOffset = end - (childTextLength + countOfNewLine);
             endElement = textNode;
             return;
         }
 
         childTextLength += nodeTextLength;
     });
-
-    range.setStart(startElement, startCaret);
-    range.setEnd(endElement, endCaret);
+    try{
+    range.setStart(startElement, startOffset);
+    range.setEnd(endElement, endOffset);
+    }catch(e){}   
     sel.removeAllRanges();
     sel.addRange(range);
 }
