@@ -1,52 +1,52 @@
-var ie = (typeof document.selection != "undefined" && document.selection.type != "Control") && true;
-var w3 = (typeof window.getSelection != "undefined") && true;
+let ie = (typeof document.selection != "undefined" && document.selection.type != "Control") && true;
+let w3 = (typeof window.getSelection != "undefined") && true;
 
 const getCaretPosition = function(element){
     return [getCaretPositionStart(element), getCaretPositionEnd(element)];
 }
 
 const getCaretPositionStart = function(element) {
-    var caretOffset = 0;
+    let position = 0;
     if (w3) {
-        var range = window.getSelection().getRangeAt(0);
-        var preCaretRange = range.cloneRange();
-        preCaretRange.selectNodeContents(element);
-        preCaretRange.setEnd(range.startContainer, range.startOffset);
-        caretOffset = preCaretRange.toString().length;
+        let range = window.getSelection().getRangeAt(0);
+        let clonedRange = range.cloneRange();
+        clonedRange.selectNodeContents(element);
+        clonedRange.setEnd(range.startContainer, range.startOffset);
+        position = clonedRange.toString().length;
 
-        let lineNode = getLineNode(element, preCaretRange.endContainer);
+        let lineNode = getLineNode(element, clonedRange.endContainer);
 
-        caretOffset += countPrevBrTag(element, lineNode);
+        position += getCountOfNewLine(element, lineNode);
     } else if (ie) {
-        var textRange = document.selection.createRange();
-        var preCaretTextRange = document.body.createTextRange();
-        preCaretTextRange.moveToElementText(element);
-        preCaretTextRange.setStartPoint("StartToStart", textRange);
-        caretOffset = preCaretTextRange.text.length;
+        let textRange = document.selection.createRange();
+        let createdTextRange = document.body.createTextRange();
+        createdTextRange.moveToElementText(element);
+        createdTextRange.setStartPoint("StartToStart", textRange);
+        position = createdTextRange.text.length;
     }
-    return caretOffset;
+    return position;
 }
 
 const getCaretPositionEnd = function(element) {
-    var caretOffset = 0;
+    let position = 0;
     if (w3) {
-        var range = window.getSelection().getRangeAt(0);
-        var preCaretRange = range.cloneRange();
-        preCaretRange.selectNodeContents(element);
-        preCaretRange.setEnd(range.endContainer, range.endOffset);
-        caretOffset = preCaretRange.toString().length;
+        let range = window.getSelection().getRangeAt(0);
+        let clonedRange = range.cloneRange();
+        clonedRange.selectNodeContents(element);
+        clonedRange.setEnd(range.endContainer, range.endOffset);
+        position = clonedRange.toString().length;
 
-        let lineNode = getLineNode(element, preCaretRange.endContainer);
+        let lineNode = getLineNode(element, clonedRange.endContainer);
 
-        caretOffset += countPrevBrTag(element, lineNode);
+        position += getCountOfNewLine(element, lineNode);
     } else if (ie) {
         var textRange = document.selection.createRange();
-        var preCaretTextRange = document.body.createTextRange();
-        preCaretTextRange.moveToElementText(element);
-        preCaretTextRange.setStartPoint("StartToStart", textRange);
-        caretOffset = preCaretTextRange.text.length;
+        var createdTextRange = document.body.createTextRange();
+        createdTextRange.moveToElementText(element);
+        createdTextRange.setStartPoint("StartToStart", textRange);
+        position = createdTextRange.text.length;
     }
-    return caretOffset;
+    return position;
 }
 
 const getLineNode = function(element, node){
@@ -63,7 +63,7 @@ const getLineNode = function(element, node){
     return lineNode;
 }
 
-const countPrevBrTag = function(element, lineNode) {
+const getCountOfNewLine = function(element, lineNode) {
     let count = 0;
     let isFirstLine = true;
     let list = element.childNodes;
@@ -91,19 +91,21 @@ const setCaretPosition = function(element, start, end){
     let textNodeList = getTextNodeList(element);
     let startCaret = 0, endCaret = 0;
     let startElement, endElement;
-    let caretOffset = 0;
+    let countOfNewLine = 0;
+    let range = document.createRange();
+    let sel = window.getSelection();
 
     textNodeList.forEach(function(textNode) {
         let nodeTextLength = textNode.textContent.length;
         let lineNode = getLineNode(element, textNode);
-        caretOffset = countPrevBrTag(element, lineNode);
+        countOfNewLine = getCountOfNewLine(element, lineNode);
 
-        if(start <= childTextLength + caretOffset + nodeTextLength && startElement == null){
-            startCaret = start - (childTextLength + caretOffset);
+        if(start <= childTextLength + countOfNewLine + nodeTextLength && startElement == null){
+            startCaret = start - (childTextLength + countOfNewLine);
             startElement = textNode;
         }
-        if(end <= childTextLength + caretOffset + nodeTextLength && endElement == null){
-            endCaret = end - (childTextLength + caretOffset);
+        if(end <= childTextLength + countOfNewLine + nodeTextLength && endElement == null){
+            endCaret = end - (childTextLength + countOfNewLine);
             endElement = textNode;
             return;
         }
@@ -111,10 +113,8 @@ const setCaretPosition = function(element, start, end){
         childTextLength += nodeTextLength;
     });
 
-    let range = document.createRange();
     range.setStart(startElement, startCaret);
     range.setEnd(endElement, endCaret);
-    let sel = window.getSelection();
     sel.removeAllRanges();
     sel.addRange(range);
 }
