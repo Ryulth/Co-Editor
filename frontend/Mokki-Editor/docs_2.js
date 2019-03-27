@@ -223,7 +223,7 @@ function receiveContent(response_body) {
         console.log(diff)
         calcCaret(diff)
         setCaretPosition(editor,startCaret,endCaret);
-        getCaret();
+      //  getCaret();
         prevText = result;
         document.getElementById('text2b').value = result;
     }
@@ -231,16 +231,21 @@ function receiveContent(response_body) {
 function calcCaret(diff){
     let tempDiffs=setDiff(diff);
     console.log(tempDiffs)
+    
     tempDiffs.forEach(function (tempDiff,index,array){
         let startIdx = tempDiff[0];
+        let moveIdx = tempDiff[1].length-tempDiff[2].length;
+        let endIdx = start+=moveIdx;
+        console.log(startCaret)
+        console.log(startIdx)
         if(startIdx<startCaret){
-            moveIdx = tempDiff[1].length-tempDiff[2].length
             if(tempDiff[1].length>1){
                 console.log(tempDiff);
             }
             startCaret += moveIdx;
             endCaret +=moveIdx;
         }
+
     });
 }
 function removeTags(text){
@@ -411,7 +416,7 @@ const setCaretPosition = function(element, start, end){
     let range = document.createRange();
     try{
         range.setStart(startElement, startOffset);
-        range.setEnd(endElement, endCaret);
+        range.setEnd(endElement, endOffset);
     }catch(e){ 
         console.log("offseterror");
     }
