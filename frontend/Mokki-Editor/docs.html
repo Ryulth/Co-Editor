@@ -25,9 +25,9 @@
 		margin: 10px;
 	}
 	</style>
-	
 </head>
 <body>
+
 	<div class="latihanGUe">
 		<div class="mokkiEditor damnEditor">
 			<textarea id="mokkiTextEmbed" >
@@ -110,6 +110,24 @@
 	</div>
 	<p>APPLY TEXT</p>
 	<textarea readonly="" id="text2b" style="width: 100%" rows="10"></textarea>
+	<table>
+		<thead>
+		<tr>
+			<th>What</th>
+			<th>Position</th>
+		</tr>
+		</thead>
+		<tbody>
+		<tr>
+			<td>Start Caret Position :</td>
+			<td id='caretBegin' >0</td>
+		</tr>
+		<tr>
+			<td>End Caret Position :</td>
+			<td id='caretEnd'>0</td>
+		</tr>
+		</tbody>
+	</table>
 	<script type="text/javascript" src="./diff_match_patch.js"></script>
 	<script type="text/javascript" src="./hangul.js"></script>
 	<script type="text/javascript" src="./docs_2.js"></script>
