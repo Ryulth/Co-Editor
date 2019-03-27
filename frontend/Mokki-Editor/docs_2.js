@@ -4,7 +4,6 @@ const baseUrl = "http://10.77.34.204:8080";
 const docsId = 1;//location.href.substr(location.href.lastIndexOf('?') + 1);
 const dmp = new diff_match_patch();
 const inputType = /Trident/.test( navigator.userAgent ) ? 'textinput' : 'input';
-const lastGC = document.createElement("p");
 let editor;
 let synchronized = true; 
 let clientVersion;
@@ -19,7 +18,6 @@ let keycode = "";
 window.onload = function () {
     getDocs();
     editor = document.getElementById("mokkiTextPreview");
-    //editor.appendChild(lastGC);
     let bar = document.getElementById("mokkiButtonBar");
     
     if (editor.addEventListener) {
@@ -319,6 +317,7 @@ const getCaretPosition = function(element){
 const getCaretPositionStart = function(element) {
     let position = 0;
     if (w3) {
+        try{
         let range = window.getSelection().getRangeAt(0);
         let clonedRange = range.cloneRange();
         clonedRange.selectNodeContents(element);
@@ -328,6 +327,8 @@ const getCaretPositionStart = function(element) {
         let lineNode = getLineNode(element, clonedRange.endContainer);
 
         position += getCountOfNewLine(element, lineNode);
+        }
+        catch(e){}
     } else if (ie) {
         let textRange = document.selection.createRange();
         let createdTextRange = document.body.createTextRange();
@@ -341,6 +342,7 @@ const getCaretPositionStart = function(element) {
 const getCaretPositionEnd = function(element) {
     let position = 0;
     if (w3) {
+        try{
         let range = window.getSelection().getRangeAt(0);
         let clonedRange = range.cloneRange();
         clonedRange.selectNodeContents(element);
@@ -350,6 +352,7 @@ const getCaretPositionEnd = function(element) {
         let lineNode = getLineNode(element, clonedRange.endContainer);
 
         position += getCountOfNewLine(element, lineNode);
+        }catch(e){}
     } else if (ie) {
         var textRange = document.selection.createRange();
         var createdTextRange = document.body.createTextRange();
