@@ -25,9 +25,9 @@ window.onload = function () {
     if (editor.addEventListener) {
         editor.addEventListener("keydown", keydownAction)
         bar.addEventListener("click",clickAction)
-        editor.addEventListener("mouseup", setCaret);
+        editor.addEventListener("mouseup", mouseupAction);
         editor.addEventListener(inputType, inputAction);
-        //editor.addEventListener("keyup", setCaret);
+        editor.addEventListener("keyup", getCaret);
     }/*
     else {
         editor.attachEvent("onkeydown", keydownAction)
@@ -35,41 +35,31 @@ window.onload = function () {
         editor.attachEvent("oninput", attachEvent);
     }*/    
 }
-function calcCaret(startIdx,endIdx,diff){
-    if(startIdx<startCaret){
-        tempDiff=setDiff(diff);
-
-        moveIdx = tempDiff[1].length-tempDiff[2].length
-        if(tempDiff[1].length>1){
-            console.log(tempDiff);
-        }
-        pivotStartCaret += moveIdx;
-        pivotEndCaret +=moveIdx;
-        
-    }
+function mouseupAction(){
+    getCaret();
 }
-function setCaret(){
+function getCaret(){
     let tempCaret = getCaretPosition(editor);
     //console.log(tempCaret)
     startCaret = tempCaret[0];
     endCaret = tempCaret[1];
 }
-function setPivotCaret(){
+function getPivotCaret(){
     let tempCaret = getCaretPosition(editor);
     //console.log(tempCaret)
     pivotStartCaret = tempCaret[0];
     pivotEndCaret = tempCaret[1];
 }
 function clickAction(){
-    setCaret();
+    getCaret();
+ 
     if(synchronized){
         prevText = editor.innerHTML;
     }
 }
 function keydownAction(event){
     keycode = event.code;
-    setCaret();
-    console.log("키다운",startCaret,endCaret,synchronized)
+    getCaret();
     if (synchronized) {
         prevText = editor.innerHTML;
     }
@@ -86,10 +76,9 @@ function sendPatch(prev,current) {
     let diff = dmp.diff_main(prev, current, true);
     dmp.diff_cleanupSemantic(diff);
     if ((diff.length > 1) || (diff.length == 1 && diff[0][0] != 0)) { // 1 이상이어야 변경 한 것이 있음
-        let res = setDiff(diff);
+        let res = setDiff(diff)[0];
         if (!(Hangul.disassemble(res[2]).length == Hangul.disassemble(res[1]).length + 1) || (keycode == "Backspace" || keycode == "Delete")) {
             synchronized = false;
-            console.log(prev,current)
             let inputLength = (res[1].length ==0 ) ? 0 : res[1].length-1;
             let deleteLength =(res[2].length ==0 ) ? 0 : 1-res[2].length;
             let patch_list = dmp.patch_make(prev, current, diff);
@@ -104,7 +93,6 @@ function sendPatch(prev,current) {
     }
 }
 function sendContentPost(patchText,inputLength,deleteLength) {
-    console.log(inputLength,deleteLength)
     let reqBody = {
         "socketSessionId": clientSessionId,
         "docsId": docsId,
@@ -134,7 +122,12 @@ function setDiff(diff) {
         switch (element[0]) {
             case 0: // retain
                 if (isCycle) {
-                    return [idx, insertString, deleteString]
+//                    return [idx, insertString, deleteString]
+                    isCycle = false;
+                    res.push([idx, insertString, deleteString]);
+                    insertString = "";
+                    deleteString = "";
+
                 }
                 idx += element[1].length;
                 break;
@@ -148,7 +141,12 @@ function setDiff(diff) {
                 break;
         }
     });
-    return [idx, insertString, deleteString]
+    if (isCycle) {
+        res.push([idx, insertString, deleteString])
+        
+    }
+    return res;
+    //return [idx, insertString, deleteString]
 }
 
 
@@ -193,43 +191,60 @@ function connect() {
 function receiveContent(response_body) {
     let receiveSessionId = response_body.socketSessionId;
     let response_patcheInfos = response_body.patchInfos;
+    let originText = editor.innerHTML;
     if (receiveSessionId == clientSessionId) {
-        let current = editor.innerHTML;
         if(response_patcheInfos.length > 1){ // 꼬여서 다시 부를 떄
-            console.log("asd",clientVersion)
             let snapshotText = response_body.snapshotText;
             let snapshotVersion = response_body.snapshotVersion;
-            //setPivotCaret();
             let result = patchDocs(response_patcheInfos,snapshotText,snapshotVersion);
-            if(current != result){
-                
+            if(originText != result){
+                getCaret();
+                console.log("꼬임?",snapshotVersion)
+                console.log("처음",startCaret,endCaret)
+                let diff = dmp.diff_main(originText, result, true);
+                dmp.diff_cleanupSemantic(diff);        
                 editor.innerHTML = result;
-                //editor.appendChild(lastGC);
-                //setCaretPosition(editor,pivotStartCaret,pivotEndCaret);
-                //setPivotCaret();
-                //setCaretPosition(editor,startCaret,endCaret);
-                console.log(response_patcheInfos.length)
-                
+                calcCaret(diff)
+                setCaretPosition(editor,startCaret,endCaret);
+                console.log("나중",startCaret,endCaret)
             }   
         }
         else{
             clientVersion = response_patcheInfos[0].patchVersion;
         }
         synchronized = true;
-        sendPatch(prevText,current);
+        sendPatch(prevText,originText);
     } 
     if(receiveSessionId != clientSessionId && synchronized){
-        let originText = editor.innerHTML;
         //setPivotCaret();
+        getCaret();
+        console.log("처음",startCaret,endCaret)
         let result = patchDocs(response_patcheInfos,originText,clientVersion);
+        let diff = dmp.diff_main(originText, result, true);
+        dmp.diff_cleanupSemantic(diff);
         editor.innerHTML = result;        
-        //editor.appendChild(lastGC);
-        //setCaretPosition(editor,pivotStartCaret,pivotEndCaret);
-        //setPivotCaret();
-        //setCaretPosition(editor,startCaret,endCaret);
+        calcCaret(diff)
+        setCaretPosition(editor,startCaret,endCaret);
+        getCaret();
+        console.log("나중",startCaret,endCaret)
         prevText = result;
         document.getElementById('text2b').value = result;
     }
+}
+function calcCaret(diff){
+    let tempDiffs=setDiff(diff);
+    tempDiffs.forEach(function (tempDiff,index,array){
+        let startIdx = tempDiff[0];
+        if(startIdx<startCaret){
+            moveIdx = tempDiff[1].length-tempDiff[2].length
+            if(tempDiff[1].length>1){
+                console.log(tempDiff);
+            }
+            startCaret += moveIdx;
+            endCaret +=moveIdx;
+        }
+    });
+    
 }
 function patchDocs(response_patches,content,startClientVersion) {
     let result = content;
@@ -241,11 +256,13 @@ function patchDocs(response_patches,content,startClientVersion) {
             result = results[0];
             startClientVersion += 1;
         }
+        if (clientVersion<item["patchVersion"] && clientVersion != 0){
+           //calcCaret(item.startIdx,item.endIdx,patches[0].diffs)
+        }
         if (index == (array.length -1) && patches.length != 0) {
-            
-            calcCaret(item.startIdx,item.endIdx,patches[0].diffs)
             clientVersion = item["patchVersion"];
         }
+        
     });
     let ms_end = (new Date).getTime();
     console.log("걸린시간",(ms_end - ms_start) /1000)
@@ -398,8 +415,8 @@ const setCaretPosition = function(element, start, end){
     }catch(e){ 
         console.log(startElement,startElement)
         console.log(endElement,endElement)
-        console.log("st",startCaret)
-        console.log("end",endCaret)
+        console.log("st",start)
+        console.log("end",end)
         console.log(prevText)
         console.log(editor.innerHTML)
         console.log(e)

@@ -57,7 +57,7 @@ public class SimpleEditorService implements EditorService {
             tempPatchInfo.add(newPatchInfo);
             tempPatchInfo.poll();
         }
-        if(requestClientVersion == serverVersion){
+        if(requestClientVersion.equals(serverVersion)){
             tempPatchInfo.removeIf(p -> (p.getPatchVersion() <= requestClientVersion));
         }
         ResponseDocsCommand responseDocsCommand = ResponseDocsCommand.builder().docsId(docsId)

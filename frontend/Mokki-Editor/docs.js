@@ -9,7 +9,7 @@ let prev = "";
 let keycode = "";
 let keydata = "";
 
-let docsId = 1; //location.href.substr(location.href.lastIndexOf('?') + 1);
+let docsId = 3; //location.href.substr(location.href.lastIndexOf('?') + 1);
 let receiveFlag = true;
 let synchronized = true;
 let clientVersion;
