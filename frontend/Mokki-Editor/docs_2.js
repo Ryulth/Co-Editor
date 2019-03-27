@@ -37,6 +37,7 @@ window.onload = function () {
 }
 function mouseupAction(){
     getCaret();
+    console.log(startCaret,endCaret)
 }
 function getCaret(){
     let tempCaret = getCaretPosition(editor);
@@ -129,15 +130,15 @@ function setDiff(diff) {
                     deleteString = "";
 
                 }
-                idx += element[1].length;
+                idx += removeTags(element[1]).length;
                 break;
             case -1: // delete
                 isCycle = true;
-                deleteString = element[1];
+                deleteString = removeTags(element[1]);
                 break;
             case 1: // insert
                 isCycle = true;
-                insertString = element[1];
+                insertString = removeTags(element[1]);
                 break;
         }
     });
@@ -191,48 +192,45 @@ function connect() {
 function receiveContent(response_body) {
     let receiveSessionId = response_body.socketSessionId;
     let response_patcheInfos = response_body.patchInfos;
-    let originText = editor.innerHTML;
+    let originHTML = editor.innerHTML;
     if (receiveSessionId == clientSessionId) {
         if(response_patcheInfos.length > 1){ // 꼬여서 다시 부를 떄
             let snapshotText = response_body.snapshotText;
             let snapshotVersion = response_body.snapshotVersion;
             let result = patchDocs(response_patcheInfos,snapshotText,snapshotVersion);
-            if(originText != result){
+            if(originHTML != result){
                 getCaret();
-                console.log("꼬임?",snapshotVersion)
-                console.log("처음",startCaret,endCaret)
-                let diff = dmp.diff_main(originText, result, true);
+                let diff = dmp.diff_main(originHTML, result, true);
                 dmp.diff_cleanupSemantic(diff);        
                 editor.innerHTML = result;
+                console.log(diff)
                 calcCaret(diff)
                 setCaretPosition(editor,startCaret,endCaret);
-                console.log("나중",startCaret,endCaret)
             }   
         }
         else{
             clientVersion = response_patcheInfos[0].patchVersion;
         }
         synchronized = true;
-        sendPatch(prevText,originText);
+        sendPatch(prevText,originHTML);
     } 
     if(receiveSessionId != clientSessionId && synchronized){
-        //setPivotCaret();
         getCaret();
-        console.log("처음",startCaret,endCaret)
-        let result = patchDocs(response_patcheInfos,originText,clientVersion);
-        let diff = dmp.diff_main(originText, result, true);
+        let result = patchDocs(response_patcheInfos,originHTML,clientVersion);
+        let diff = dmp.diff_main(originHTML, result, true);
         dmp.diff_cleanupSemantic(diff);
         editor.innerHTML = result;        
+        console.log(diff)
         calcCaret(diff)
         setCaretPosition(editor,startCaret,endCaret);
         getCaret();
-        console.log("나중",startCaret,endCaret)
         prevText = result;
         document.getElementById('text2b').value = result;
     }
 }
 function calcCaret(diff){
     let tempDiffs=setDiff(diff);
+    console.log(tempDiffs)
     tempDiffs.forEach(function (tempDiff,index,array){
         let startIdx = tempDiff[0];
         if(startIdx<startCaret){
@@ -244,7 +242,12 @@ function calcCaret(diff){
             endCaret +=moveIdx;
         }
     });
-    
+}
+function removeTags(text){
+    let resText = text.replace(/<\/p>/ig, " "); 
+    resText = resText.replace("&nbsp;"," ");
+    resText = resText.replace(/<(\/)?([a-zA-Z]*)(\s[a-zA-Z]*=[^>]*)?(\s)*(\/)?>/ig, "");
+    return resText;
 }
 function patchDocs(response_patches,content,startClientVersion) {
     let result = content;
@@ -255,9 +258,6 @@ function patchDocs(response_patches,content,startClientVersion) {
             let results = dmp.patch_apply(patches, result);
             result = results[0];
             startClientVersion += 1;
-        }
-        if (clientVersion<item["patchVersion"] && clientVersion != 0){
-           //calcCaret(item.startIdx,item.endIdx,patches[0].diffs)
         }
         if (index == (array.length -1) && patches.length != 0) {
             clientVersion = item["patchVersion"];
@@ -413,13 +413,7 @@ const setCaretPosition = function(element, start, end){
         range.setStart(startElement, startOffset);
         range.setEnd(endElement, endCaret);
     }catch(e){ 
-        console.log(startElement,startElement)
-        console.log(endElement,endElement)
-        console.log("st",start)
-        console.log("end",end)
-        console.log(prevText)
-        console.log(editor.innerHTML)
-        console.log(e)
+        console.log("offseterror");
     }
     
     let sel = window.getSelection();

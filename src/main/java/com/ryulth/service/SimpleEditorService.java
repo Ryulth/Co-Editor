@@ -57,6 +57,7 @@ public class SimpleEditorService implements EditorService {
             tempPatchInfo.add(newPatchInfo);
             tempPatchInfo.poll();
         }
+        //TODO 앞뒤변경
         if(requestClientVersion.equals(serverVersion)){
             tempPatchInfo.removeIf(p -> (p.getPatchVersion() <= requestClientVersion));
         }
