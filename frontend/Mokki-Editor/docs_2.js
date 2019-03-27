@@ -301,77 +301,75 @@ function isHangul(inputText){
 
 //////커서
 const getCaretPosition = function(element){
+    document.getElementById("caretBegin").innerText = getCaretPositionStart(element);
+    document.getElementById("caretEnd").innerText = getCaretPositionEnd(element);
     return [getCaretPositionStart(element), getCaretPositionEnd(element)];
 }
 
-function getCaretPositionStart(element) {
-    var caretOffset = 0;
+const getCaretPositionStart = function(element) {
+    let position = 0;
     if (w3) {
-        try{
-        var range = window.getSelection().getRangeAt(0);
-        var preCaretRange = range.cloneRange();
-        preCaretRange.selectNodeContents(element);
-        preCaretRange.setEnd(range.startContainer, range.startOffset);
-        caretOffset = preCaretRange.toString().length;
-       
-        let lineNode = getLineNode(element, preCaretRange.endContainer);
+        let range = window.getSelection().getRangeAt(0);
+        let clonedRange = range.cloneRange();
+        clonedRange.selectNodeContents(element);
+        clonedRange.setEnd(range.startContainer, range.startOffset);
+        position = clonedRange.toString().length;
 
-        caretOffset += countPrevBrTag(element, lineNode);
-        }catch(e){}
+        let lineNode = getLineNode(element, clonedRange.endContainer);
+
+        position += getCountOfNewLine(element, lineNode);
     } else if (ie) {
-        var textRange = document.selection.createRange();
-        var preCaretTextRange = document.body.createTextRange();
-        preCaretTextRange.moveToElementText(element);
-        preCaretTextRange.setStartPoint("StartToStart", textRange);
-        caretOffset = preCaretTextRange.text.length;
+        let textRange = document.selection.createRange();
+        let createdTextRange = document.body.createTextRange();
+        createdTextRange.moveToElementText(element);
+        createdTextRange.setStartPoint("StartToStart", textRange);
+        position = createdTextRange.text.length;
     }
-    return caretOffset;
+    return position;
 }
 
-function getCaretPositionEnd(element) {
-    var caretOffset = 0;
+const getCaretPositionEnd = function(element) {
+    let position = 0;
     if (w3) {
-        try{
-        var range = window.getSelection().getRangeAt(0);
-        var preCaretRange = range.cloneRange();
-        preCaretRange.selectNodeContents(element);
-        preCaretRange.setEnd(range.endContainer, range.endOffset);
-        caretOffset = preCaretRange.toString().length;
-       
-        let lineNode = getLineNode(element, preCaretRange.endContainer);
+        let range = window.getSelection().getRangeAt(0);
+        let clonedRange = range.cloneRange();
+        clonedRange.selectNodeContents(element);
+        clonedRange.setEnd(range.endContainer, range.endOffset);
+        position = clonedRange.toString().length;
 
-        caretOffset += countPrevBrTag(element, lineNode);
-        }catch(e){}
+        let lineNode = getLineNode(element, clonedRange.endContainer);
+
+        position += getCountOfNewLine(element, lineNode);
     } else if (ie) {
         var textRange = document.selection.createRange();
-        var preCaretTextRange = document.body.createTextRange();
-        preCaretTextRange.moveToElementText(element);
-        preCaretTextRange.setStartPoint("StartToStart", textRange);
-        caretOffset = preCaretTextRange.text.length;
+        var createdTextRange = document.body.createTextRange();
+        createdTextRange.moveToElementText(element);
+        createdTextRange.setStartPoint("StartToStart", textRange);
+        position = createdTextRange.text.length;
     }
-    return caretOffset;
+    return position;
 }
 
-function getLineNode(element, node){
+const getLineNode = function(element, node){
     let lineNode = node;
 
     if(element == lineNode){
         return lineNode;
     }
     
-    while(lineNode.parentNode.id != element.id){
+    while((lineNode.parentNode.id != element.id) || (lineNode.parentNode.classList != element.classList)){
         lineNode = lineNode.parentNode;
     }
     
     return lineNode;
 }
 
-function countPrevBrTag(element, lineNode) {
+const getCountOfNewLine = function(element, lineNode) {
     let count = 0;
     let isFirstLine = true;
     let list = element.childNodes;
     for(idx in list){
-        if(isFirstLine){ // 아직 첫번째 줄임
+        if(isFirstLine){
             if(list[idx].nodeName == "DIV" || list[idx].nodeName == "P"){
                 isFirstLine = false;
                 count += 1;
@@ -392,36 +390,32 @@ function countPrevBrTag(element, lineNode) {
 const setCaretPosition = function(element, start, end){
     let childTextLength = 0;
     let textNodeList = getTextNodeList(element);
-    let startOffset = 0, endOffset = 0;
+    let startCaret = 0, endCaret = 0;
     let startElement, endElement;
-    let caretOffset = 0;
-    textNodeList.forEach(textNode => {
+    let countOfNewLine = 0;
+    let range = document.createRange();
+    let sel = window.getSelection();
+
+    textNodeList.forEach(function(textNode) {
         let nodeTextLength = textNode.textContent.length;
         let lineNode = getLineNode(element, textNode);
-        caretOffset = countPrevBrTag(element, lineNode);
-        
-        if(start <= childTextLength + caretOffset + nodeTextLength && startElement == null){
-            startOffset = start - (childTextLength + caretOffset);
+        countOfNewLine = getCountOfNewLine(element, lineNode);
+
+        if(start <= childTextLength + countOfNewLine + nodeTextLength && startElement == null){
+            startCaret = start - (childTextLength + countOfNewLine);
             startElement = textNode;
         }
-        if(end <= childTextLength + caretOffset + nodeTextLength && endElement == null){
-            endOffset = end - (childTextLength + caretOffset);
+        if(end <= childTextLength + countOfNewLine + nodeTextLength && endElement == null){
+            endCaret = end - (childTextLength + countOfNewLine);
             endElement = textNode;
             return;
         }
-        
+
         childTextLength += nodeTextLength;
     });
 
-    let range = document.createRange();
-    try{
-        range.setStart(startElement, startOffset);
-        range.setEnd(endElement, endOffset);
-    }catch(e){ 
-        console.log("offseterror");
-    }
-    
-    let sel = window.getSelection();
+    range.setStart(startElement, startCaret);
+    range.setEnd(endElement, endCaret);
     sel.removeAllRanges();
     sel.addRange(range);
 }
@@ -429,14 +423,14 @@ const setCaretPosition = function(element, start, end){
 const getTextNodeList = function(element){
     let childNodeList = element.childNodes;
     let textNodeList = [];
-    for(childElement of childNodeList){
+    Array.prototype.slice.call(childNodeList).forEach(function(childElement){
         if(childElement.nodeType == Node.TEXT_NODE){
             textNodeList.push(childElement);
         } else if(childElement.nodeName == "BR"){
             textNodeList.push(childElement);
         }else{
-            textNodeList.push(...getTextNodeList(childElement));
+            textNodeList = textNodeList.concat(getTextNodeList(childElement));
         }
-    }
+    })
     return textNodeList;
 }
