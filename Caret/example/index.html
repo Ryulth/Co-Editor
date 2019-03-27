@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="../caret.js"></script>
+    <script src="./main.js"></script>
+	<style type="text/css">
+	body {
+		font-family: Calibri, Verdana, Arial, Helvetica, sans-serif;
+		color: #444
+	}
+
+	#editable {
+		font-family: Consolas, "Courier New", Courier, monospace;
+		color: #000;
+		margin-top: 0.5em;
+		font-size: 1em;
+        width: 100%;
+		min-height: 100px;
+        border: 1px solid #000000;
+		padding: 10px;
+	}
+
+	#caretBegin, #caretEnd {
+		width: 70px;
+	}
+
+	table {
+		border-collapse: collapse;
+		margin: 1em;
+	}
+	th, td {
+		border: 1px solid #444;
+		padding: 0.3em;
+	}
+	th { font-weight: bold; }
+	</style>
+	
+</head>
+<body>
+<div id='editable' contenteditable='true'></div>
+<table>
+	<thead>
+	<tr>
+		<th>What</th>
+		<th>Position</th>
+	</tr>
+	</thead>
+	<tbody>
+	<tr>
+		<td>Start Caret Position :</td>
+		<td ><input id='caretBegin' value='0' type='number'></td>
+	</tr>
+	<tr>
+		<td>End Caret Position :</td>
+		<td ><input id='caretEnd' value='0' type='number'></td>
+	</tr>
+	<tr>
+		<td colspan='2'><button id='setCaret' style='float: right'>Set Caret</button></td>
+	</tr>
+	</tbody>
+</table>
+
+</body>
+</html>
