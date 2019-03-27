@@ -56,7 +56,7 @@ const getLineNode = function(element, node){
         return lineNode;
     }
 
-    while(lineNode.parentNode.id != element.id){
+    while((lineNode.parentNode.id != element.id) || (lineNode.parentNode.classList != element.classList)){
         lineNode = lineNode.parentNode;
     }
 
