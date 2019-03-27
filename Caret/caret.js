@@ -1,5 +1,5 @@
-let ie = (typeof document.selection != "undefined" && document.selection.type != "Control") && true;
-let w3 = (typeof window.getSelection != "undefined") && true;
+const ie = (typeof document.selection != "undefined" && document.selection.type != "Control") && true;
+const w3 = (typeof window.getSelection != "undefined") && true;
 
 const getCaretPosition = function(element){
     return [getCaretPositionStart(element), getCaretPositionEnd(element)];
