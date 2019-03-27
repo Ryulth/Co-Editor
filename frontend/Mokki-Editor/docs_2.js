@@ -235,17 +235,27 @@ function calcCaret(diff){
     tempDiffs.forEach(function (tempDiff,index,array){
         let startIdx = tempDiff[0];
         let moveIdx = tempDiff[1].length-tempDiff[2].length;
-        let endIdx = start+=moveIdx;
+        let endIdx = startIdx + moveIdx;
         console.log(startCaret)
         console.log(startIdx)
+        console.log(endIdx)
         if(startIdx<startCaret){
+            // if(startCaret<=endIdx){
+            //     startCaret = startIdx+1;
+            //     endCaret = startIdx+1;
+            // }
+            //else{
             if(tempDiff[1].length>1){
                 console.log(tempDiff);
             }
             startCaret += moveIdx;
             endCaret +=moveIdx;
+            //}
         }
-
+        // if(startCaret<=startIdx && startCaret<=endIdx){
+        //     startCaret = startIdx;
+        //     endCaret = startIdx;
+        // }
     });
 }
 function removeTags(text){
