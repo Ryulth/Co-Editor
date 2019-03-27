@@ -1,6 +1,6 @@
 const ie = (typeof document.selection != "undefined" && document.selection.type != "Control") && true;
 const w3 = (typeof window.getSelection != "undefined") && true;
-const baseUrl = "http://10.77.34.204:8080";
+const baseUrl = "http://10.77.34.203:8080";
 const docsId = 1;//location.href.substr(location.href.lastIndexOf('?') + 1);
 const dmp = new diff_match_patch();
 const inputType = /Trident/.test( navigator.userAgent ) ? 'textinput' : 'input';
@@ -16,9 +16,34 @@ let pivotEndCaret = 0;
 let startCaret =0;
 let endCaret =0;
 let keycode = "";
+
+const userSet = new Set([]);
+const setUserCaret = function(sessionId, start, end){
+    let R = Math.round(Math.random()*255);
+    let G = Math.round(Math.random()*255);
+    let B = Math.round(Math.random()*255);
+    let rgba = "rgba("+R+", "+G+", "+B+", .4)";
+
+    let range = {index: start, length: end-start}
+    if(userSet.size != userSet.add(sessionId)){
+        quilModule.createCursor(sessionId, sessionId, rgba);
+    }
+    quilModule.moveCursor(sessionId, range)
+}
+
 window.onload = function () {
-    getDocs();
-    editor = document.getElementById("mokkiTextPreview");
+    Quill.register('modules/cursors', QuillCursors);
+
+    const quillOne = new Quill('#mokkiTextPreview', {
+        modules: {
+            cursors: true
+        }
+    });
+
+    quilModule = quillOne.getModule('cursors');
+
+//    editor = document.getElementById("mokkiTextPreview");
+    editor = document.getElementsByClassName('ql-editor')[0];
     //editor.appendChild(lastGC);
     let bar = document.getElementById("mokkiButtonBar");
     
@@ -33,7 +58,9 @@ window.onload = function () {
         editor.attachEvent("onkeydown", keydownAction)
         bar.attachEvent("onclick",clickAction)
         editor.attachEvent("oninput", attachEvent);
-    }*/    
+    }*/
+
+    getDocs();
 }
 function mouseupAction(){
     getCaret();
@@ -44,6 +71,8 @@ function getCaret(){
     //console.log(tempCaret)
     startCaret = tempCaret[0];
     endCaret = tempCaret[1];
+    console.log(stompClient);
+    stompClient.send('/topic/position/'+docsId, {}, JSON.stringify({sessionId: clientSessionId, start: startCaret-1, end: endCaret-1}));
 }
 function getPivotCaret(){
     let tempCaret = getCaretPosition(editor);
@@ -167,7 +196,7 @@ function getDocs() {
                 console.log(response_doc);
                 content = patchDocs(response_patches,content,clientVersion);
             } 
-            document.getElementById("mokkiTextPreview").innerHTML = content;
+            editor.innerHTML = content;
            // document.getElementById("mokkiTextPreview").appendChild(lastGC);
             prevText = content;
             synchronized = true;
@@ -187,6 +216,12 @@ function connect() {
             response_body = JSON.parse(content.body);
             receiveContent(response_body) //
         });
+        stompClient.subscribe('/topic/position/'+docsId, function(content){
+            let contentBody = JSON.parse(content.body);
+            if(contentBody.sessionId != clientSessionId){
+                setUserCaret(contentBody.sessionId, contentBody.start, contentBody.end);
+            }
+        })
     });
 }
 function receiveContent(response_body) {
@@ -319,6 +354,7 @@ const getCaretPosition = function(element){
 const getCaretPositionStart = function(element) {
     let position = 0;
     if (w3) {
+        try{
         let range = window.getSelection().getRangeAt(0);
         let clonedRange = range.cloneRange();
         clonedRange.selectNodeContents(element);
@@ -328,6 +364,7 @@ const getCaretPositionStart = function(element) {
         let lineNode = getLineNode(element, clonedRange.endContainer);
 
         position += getCountOfNewLine(element, lineNode);
+        }catch(e){}
     } else if (ie) {
         let textRange = document.selection.createRange();
         let createdTextRange = document.body.createTextRange();
@@ -341,6 +378,7 @@ const getCaretPositionStart = function(element) {
 const getCaretPositionEnd = function(element) {
     let position = 0;
     if (w3) {
+        try{
         let range = window.getSelection().getRangeAt(0);
         let clonedRange = range.cloneRange();
         clonedRange.selectNodeContents(element);
@@ -350,6 +388,7 @@ const getCaretPositionEnd = function(element) {
         let lineNode = getLineNode(element, clonedRange.endContainer);
 
         position += getCountOfNewLine(element, lineNode);
+        }catch(e){}
     } else if (ie) {
         var textRange = document.selection.createRange();
         var createdTextRange = document.body.createTextRange();
@@ -366,10 +405,17 @@ const getLineNode = function(element, node){
     if(element == lineNode){
         return lineNode;
     }
-    
-    while((lineNode.parentNode.id != element.id) || (lineNode.parentNode.classList != element.classList)){
-        lineNode = lineNode.parentNode;
+
+    if(element.id != null && element.id != ""){
+        while((lineNode.parentNode.id != element.id)){
+            lineNode = lineNode.parentNode;
+        }
+    } else if(element.classList != null && element.classList.length > 0){
+        while((lineNode.parentNode.classList != element.classList)){
+            lineNode = lineNode.parentNode;
+        }
     }
+
     
     return lineNode;
 }
