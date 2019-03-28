@@ -35,17 +35,14 @@ window.onload = function () {
 }
 function mouseupAction(){
     getCaret();
- //   console.log(startCaret,endCaret)
 }
 function getCaret(){
     let tempCaret = getCaretPosition(editor);
-    //console.log(tempCaret)
     startCaret = tempCaret[0];
     endCaret = tempCaret[1];
 }
 function getPivotCaret(){
     let tempCaret = getCaretPosition(editor);
-    //console.log(tempCaret)
     pivotStartCaret = tempCaret[0];
     pivotEndCaret = tempCaret[1];
 }
@@ -65,21 +62,19 @@ function keydownAction(event){
 }
 
 function inputAction(event){
-    //inputData = event.data;
-    //setHangulSelection(inputText)
     if (synchronized) {
         sendPatch(prevText,editor.innerHTML);
     }
 }
 function keyupAction(){
     getCaret();
-    //setHangulSelection(inputText);
 }
-function setHangulSelection(inputString,deleteString){
-    inputString = inputString.trim();
- //   console.log("st",startCaret,"ed",endCaret)
+function setHangulSelection(resDiff){
+    let startIdx = resDiff[0];
+    let inputString = resDiff[1].trim();
+    let deleteString = resDiff[2].trim();
     if(isHangul(inputString)){
-        //console.log("한글",inputString,startCaret,endCaret)
+        console.log("한글",inputString,startCaret,endCaret)
         let isWriting = (startCaret == endCaret)? false : true;
         if(inputString.length == 2 ){
             startCaret +=1;
@@ -88,26 +83,32 @@ function setHangulSelection(inputString,deleteString){
         else{
             if(isWriting && !Hangul.isCompleteAll(inputString)){
                 if(Hangul.isCho(inputString)||Hangul.isVowel(inputString)){
+                    if(endCaret-startCaret>1){
+                        endCaret+=(1-deleteString.length);                
+                    }
+                    else{
                     startCaret +=(1-deleteString.length);
                     endCaret+=(1-deleteString.length);
+                    }
                 }
+            }
+            else{
+                console.log("쵸여기",resDiff);
             }
         }
         endCaret = (startCaret == endCaret)? endCaret+1 : endCaret;
-        //console.log("st",startCaret,"ed",endCaret)
+        console.log("st",startCaret,"ed",endCaret)
         setCaretPosition(editor,startCaret,endCaret);
     }
-    // console.log("st",startCaret,"ed",endCaret)
 }
 function sendPatch(prev,current) {
     
     let diff = dmp.diff_main(prev, current, true);
     dmp.diff_cleanupSemantic(diff);
     if ((diff.length > 1) || (diff.length == 1 && diff[0][0] != 0)) { // 1 이상이어야 변경 한 것이 있음
-        let res = setDiff(diff)[0];
+        let res = setDiff(diff)[0];    
         if (!(Hangul.disassemble(res[2]).length == Hangul.disassemble(res[1]).length + 1) || (keycode == "Backspace" || keycode == "Delete")) {
-            //console.log(res)
-            setHangulSelection(res[1],res[2])
+            setHangulSelection(res)
             synchronized = false;
             let inputLength = (res[1].length ==0 ) ? 0 : res[1].length-1;
             let deleteLength =(res[2].length ==0 ) ? 0 : 1-res[2].length;
@@ -120,6 +121,9 @@ function sendPatch(prev,current) {
             prevText = editor.innerHTML;
         }
         keycode = "";
+    }
+    else{
+        //TODO 변경한거 없다고 잡는 경우가 있다 제자리 변경 그경우 고려해야함        console.log(diff)
     }
 }
 function sendContentPost(patchText,inputLength,deleteLength) {
@@ -157,7 +161,6 @@ function setDiff(diff) {
                     res.push([idx, insertString, deleteString]);
                     insertString = "";
                     deleteString = "";
-
                 }
                 idx += removeTags(element[1]).length;
                 break;
@@ -250,7 +253,6 @@ function receiveContent(response_body) {
         editor.innerHTML = result;        
         calcCaret(diff)
         setCaretPosition(editor,startCaret,endCaret);
-      //  getCaret();
         prevText = result;
         //document.getElementById('text2b').value = result;
     }
@@ -260,28 +262,35 @@ function calcCaret(diff){
     tempDiffs.forEach(function (tempDiff,index,array){
         let startIdx = tempDiff[0];
         let moveIdx = tempDiff[1].length-tempDiff[2].length;
-        let endIdx = startIdx + moveIdx;
-        if(startIdx<startCaret){
-            // if(startCaret<=endIdx){
-            //     startCaret = startIdx+1;
-            //     endCaret = startIdx+1;
-            // }
-            //else{
+        let endIdx = startIdx - moveIdx;
+//      console.log(tempDiff,"si",startIdx,"ei",endIdx)
+//      console.log(startCaret)
+        if(startIdx<=startCaret && endIdx<=startCaret){
             if(tempDiff[1].length>1){
-                //console.log(tempDiff);
             }
+            console.log("저기")
             startCaret += moveIdx;
             endCaret +=moveIdx;
-            //}
         }
-        // if(startCaret<=startIdx && startCaret<=endIdx){
-        //     startCaret = startIdx;
-        //     endCaret = startIdx;
-        // }
+        else if(startIdx<=startCaret && startCaret< endIdx){
+            console.log("요기")
+            startCaret = startIdx;
+            endCaret =startIdx;
+        }
+        else if(startCaret<=startIdx && startIdx <= endCaret){
+            console.log("쩌기")
+            endCaret +=moveIdx;
+        }
+        else{
+            console.log(tempDiff)
+            console.log("si",startIdx,"ei",endIdx)
+            console.log("startCaret",startCaret,"endCaret",endCaret)
+            console.log("else")
+        }
     });
 }
 function removeTags(text){
-    let resText = text.replace(/<\/p>/ig, " "); 
+    let resText = text.replace(/<\p>/ig, " "); //엔터에 대한 계산위한용도
     resText = resText.replace("&nbsp;"," ");
     resText = resText.replace(/<(\/)?([a-zA-Z]*)(\s[a-zA-Z]*=[^>]*)?(\s)*(\/)?>/ig, "");
     return resText;
