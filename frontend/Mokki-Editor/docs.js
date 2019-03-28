@@ -213,8 +213,8 @@ function setDiff(diff) {
         switch (element[0]) {
             case 0: // retain
                 if (isCycle) {
-                    //isCycle = false;
                     return [idx, insertString, deleteString]
+                    //isCycle = false;
                     // res.push([idx, insertString, deleteString]);
                     // insertString = "";
                     // deleteString = "";

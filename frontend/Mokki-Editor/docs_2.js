@@ -25,7 +25,7 @@ window.onload = function () {
         bar.addEventListener("click",clickAction)
         editor.addEventListener("mouseup", mouseupAction);
         editor.addEventListener(inputType, inputAction);
-        editor.addEventListener("keyup", getCaret);
+        editor.addEventListener("keyup", keyupAction);
     }/*
     else {
         editor.attachEvent("onkeydown", keydownAction)
@@ -35,7 +35,7 @@ window.onload = function () {
 }
 function mouseupAction(){
     getCaret();
-    console.log(startCaret,endCaret)
+ //   console.log(startCaret,endCaret)
 }
 function getCaret(){
     let tempCaret = getCaretPosition(editor);
@@ -65,10 +65,39 @@ function keydownAction(event){
 }
 
 function inputAction(event){
-    inputText = event.data;
+    //inputData = event.data;
+    //setHangulSelection(inputText)
     if (synchronized) {
         sendPatch(prevText,editor.innerHTML);
     }
+}
+function keyupAction(){
+    getCaret();
+    //setHangulSelection(inputText);
+}
+function setHangulSelection(inputString,deleteString){
+    inputString = inputString.trim();
+ //   console.log("st",startCaret,"ed",endCaret)
+    if(isHangul(inputString)){
+        //console.log("한글",inputString,startCaret,endCaret)
+        let isWriting = (startCaret == endCaret)? false : true;
+        if(inputString.length == 2 ){
+            startCaret +=1;
+            endCaret+=1;
+        }
+        else{
+            if(isWriting && !Hangul.isCompleteAll(inputString)){
+                if(Hangul.isCho(inputString)||Hangul.isVowel(inputString)){
+                    startCaret +=(1-deleteString.length);
+                    endCaret+=(1-deleteString.length);
+                }
+            }
+        }
+        endCaret = (startCaret == endCaret)? endCaret+1 : endCaret;
+        //console.log("st",startCaret,"ed",endCaret)
+        setCaretPosition(editor,startCaret,endCaret);
+    }
+    // console.log("st",startCaret,"ed",endCaret)
 }
 function sendPatch(prev,current) {
     
@@ -77,15 +106,17 @@ function sendPatch(prev,current) {
     if ((diff.length > 1) || (diff.length == 1 && diff[0][0] != 0)) { // 1 이상이어야 변경 한 것이 있음
         let res = setDiff(diff)[0];
         if (!(Hangul.disassemble(res[2]).length == Hangul.disassemble(res[1]).length + 1) || (keycode == "Backspace" || keycode == "Delete")) {
+            //console.log(res)
+            setHangulSelection(res[1],res[2])
             synchronized = false;
             let inputLength = (res[1].length ==0 ) ? 0 : res[1].length-1;
             let deleteLength =(res[2].length ==0 ) ? 0 : 1-res[2].length;
             let patch_list = dmp.patch_make(prev, current, diff);
             let patch_text = dmp.patch_toText(patch_list);
             sendContentPost(patch_text,inputLength,deleteLength);
-            let text1 = document.getElementById('text2b').value;
-            let results = dmp.patch_apply(patch_list, text1);
-            document.getElementById('text2b').value = results[0];
+            //let text1 = document.getElementById('text2b').value;
+            //let results = dmp.patch_apply(patch_list, text1);
+            //document.getElementById('text2b').value = results[0];
             prevText = editor.innerHTML;
         }
         keycode = "";
@@ -169,7 +200,7 @@ function getDocs() {
            // document.getElementById("mokkiTextPreview").appendChild(lastGC);
             prevText = content;
             synchronized = true;
-            document.getElementById('text2b').value = content;
+           // document.getElementById('text2b').value = content;
             connect();
         }
     });
@@ -201,7 +232,6 @@ function receiveContent(response_body) {
                 let diff = dmp.diff_main(originHTML, result, true);
                 dmp.diff_cleanupSemantic(diff);        
                 editor.innerHTML = result;
-                console.log(diff)
                 calcCaret(diff)
                 setCaretPosition(editor,startCaret,endCaret);
             }   
@@ -218,25 +248,19 @@ function receiveContent(response_body) {
         let diff = dmp.diff_main(originHTML, result, true);
         dmp.diff_cleanupSemantic(diff);
         editor.innerHTML = result;        
-        console.log(diff)
         calcCaret(diff)
         setCaretPosition(editor,startCaret,endCaret);
       //  getCaret();
         prevText = result;
-        document.getElementById('text2b').value = result;
+        //document.getElementById('text2b').value = result;
     }
 }
 function calcCaret(diff){
     let tempDiffs=setDiff(diff);
-    console.log(tempDiffs)
-    
     tempDiffs.forEach(function (tempDiff,index,array){
         let startIdx = tempDiff[0];
         let moveIdx = tempDiff[1].length-tempDiff[2].length;
         let endIdx = startIdx + moveIdx;
-        console.log(startCaret)
-        console.log(startIdx)
-        console.log(endIdx)
         if(startIdx<startCaret){
             // if(startCaret<=endIdx){
             //     startCaret = startIdx+1;
@@ -244,7 +268,7 @@ function calcCaret(diff){
             // }
             //else{
             if(tempDiff[1].length>1){
-                console.log(tempDiff);
+                //console.log(tempDiff);
             }
             startCaret += moveIdx;
             endCaret +=moveIdx;
@@ -278,7 +302,7 @@ function patchDocs(response_patches,content,startClientVersion) {
         
     });
     let ms_end = (new Date).getTime();
-    console.log("걸린시간",(ms_end - ms_start) /1000)
+    //console.log("걸린시간",(ms_end - ms_start) /1000)
     return result;
 }
 function disconnect() {
@@ -309,8 +333,8 @@ function isHangul(inputText){
 
 //////커서
 const getCaretPosition = function(element){
-    document.getElementById("caretBegin").innerText = getCaretPositionStart(element);
-    document.getElementById("caretEnd").innerText = getCaretPositionEnd(element);
+    //document.getElementById("caretBegin").innerText = getCaretPositionStart(element);
+    //document.getElementById("caretEnd").innerText = getCaretPositionEnd(element);
     return [getCaretPositionStart(element), getCaretPositionEnd(element)];
 }
 
