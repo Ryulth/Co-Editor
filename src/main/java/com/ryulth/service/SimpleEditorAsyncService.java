@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.AsyncResult;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayDeque;
@@ -13,6 +14,7 @@ import java.util.LinkedList;
 import java.util.concurrent.Future;
 
 @Component
+@EnableAsync
 public class SimpleEditorAsyncService implements EditorAsyncService {
     private static Logger logger = LoggerFactory.getLogger(SimpleEditorAsyncService.class);
 

@@ -11,12 +11,12 @@ import com.ryulth.repository.DocsRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.Future;
-import java.util.function.BinaryOperator;
 
 @Component
 public class SimpleEditorService implements EditorService {
@@ -28,7 +28,6 @@ public class SimpleEditorService implements EditorService {
     ObjectMapper objectMapper;
     @Autowired
     EditorAsyncService editorAsyncService;
-    private final static diff_match_patch dmp = new diff_match_patch();
 
     private final Map<Long, Docs> cacheDocs = new HashMap<>();
     private final Map<Long, ArrayDeque<PatchInfo>> cachePatches = new HashMap<>();
@@ -57,7 +56,7 @@ public class SimpleEditorService implements EditorService {
             PatchInfo newPatchInfo = PatchInfo.builder()
                     .patchText(patchText)
                     .clientSessionId(requestDocsCommand.getSocketSessionId())
-                    .authorId(remoteAddr)
+                    .remoteAddress(remoteAddr)
                     .patchVersion(serverVersion+1)
                     .startIdx(startIdx)
                     .endIdx(endIdx).build();
@@ -65,9 +64,7 @@ public class SimpleEditorService implements EditorService {
             tempPatchInfo.add(newPatchInfo);
             tempPatchInfo.poll();
         }
-        System.out.println(serverVersion);
         if(tempPatchInfo.size()>SNAPSHOT_CYCLE && !cacheIsUpdating.get(docsId)){
-            //updateSnapshot(patchInfos,docs);
             synchronized (cacheIsUpdating){
                 cacheIsUpdating.replace(docsId,true);
             }
@@ -77,6 +74,7 @@ public class SimpleEditorService implements EditorService {
                     synchronized (cacheIsUpdating) {
                         cacheIsUpdating.replace(docsId, false);
                     }
+                    docsRepository.save(docs);
                     break;
                 }
             }
@@ -125,7 +123,7 @@ public class SimpleEditorService implements EditorService {
         }
         if (patchInfo == null) {
             patchInfo = new ArrayDeque<>();
-            patchInfo.add(PatchInfo.builder().patchText("").patchVersion(finalDocs.getVersion()).authorId("").build());
+            patchInfo.add(PatchInfo.builder().patchText("").patchVersion(finalDocs.getVersion()).remoteAddress("").build());
             synchronized (cachePatches) {
                 cachePatches.put(docsId, patchInfo);
             }

@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 
-
 @RestController
 public class EditorController {
     private static Logger logger = LoggerFactory.getLogger(EditorController.class);
@@ -34,4 +33,7 @@ public class EditorController {
         this.simpMessagingTemplate.convertAndSend("/topic/docs/" + docsId,
                 editorService.editDocs(requestDocsCommnad,request.getRemoteAddr()));
     }
+
+
+
 }
