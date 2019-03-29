@@ -261,32 +261,47 @@ function calcCaret(diff){
     let tempDiffs=setDiff(diff);
     tempDiffs.forEach(function (tempDiff,index,array){
         let startIdx = tempDiff[0];
-        let moveIdx = tempDiff[1].length-tempDiff[2].length;
+        let inputString = tempDiff[1];
+        let deleteString = tempDiff[2]
+        let moveIdx = inputString.length-deleteString.length;
         let endIdx = startIdx - moveIdx;
 //      console.log(tempDiff,"si",startIdx,"ei",endIdx)
 //      console.log(startCaret)
         if(startIdx<=startCaret && endIdx<=startCaret){
             if(tempDiff[1].length>1){
             }
-            console.log("저기")
+            // console.log("저기")
             startCaret += moveIdx;
             endCaret +=moveIdx;
+            
         }
         else if(startIdx<=startCaret && startCaret< endIdx){
-            console.log("요기")
+            // console.log("요기")
             startCaret = startIdx;
             endCaret =startIdx;
         }
-        else if(startCaret<=startIdx && startIdx <= endCaret){
-            console.log("쩌기")
+        else if(startCaret<startIdx && startIdx < endCaret){
+            // console.log("쩌기")
+            // if(startCaret == startIdx || startIdx == endCaret){
+            //     console.log("같냐2!")
+            // }
             endCaret +=moveIdx;
         }
         else{
-            console.log(tempDiff)
-            console.log("si",startIdx,"ei",endIdx)
-            console.log("startCaret",startCaret,"endCaret",endCaret)
-            console.log("else")
+            // console.log(tempDiff)
+            // console.log("si",startIdx,"ei",endIdx)
+            // console.log("startCaret",startCaret,"endCaret",endCaret)
+            // console.log("else")
+            if(endCaret == startIdx){
+
+                console.log("여기이이이인가?")
+            }
         }
+        if(startCaret == startIdx || startIdx == endCaret){
+            // console.log("같냐!")
+            //endCaret +=moveIdx;
+        }
+
     });
 }
 function removeTags(text){
