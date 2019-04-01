@@ -25,9 +25,11 @@ public class AccountController {
     SimpMessagingTemplate simpMessagingTemplate;
     @CrossOrigin("*")
     @PostMapping("/docs/{docsId}/accounts")
-    public void docsLogin(@PathVariable Long docsId, @RequestBody Account account , HttpServletRequest request){
+    public void docsLogin(@PathVariable Long docsId, @RequestBody Account account , HttpServletRequest request) throws JsonProcessingException {
         account.setRemoteAddress(request.getRemoteAddr());
         accountService.setAccount(docsId,account);
+        this.simpMessagingTemplate.convertAndSend("/topic/docs/" + docsId+"/accounts",
+                accountService.getAccounts(docsId));
     }
     @CrossOrigin("*")
     @GetMapping("/docs/{docsId}/accounts")
@@ -41,19 +43,25 @@ public class AccountController {
 //        accountService.deleteAccount(docsId,deleteAccount);
 //    }
 
+//    @EventListener
+//    @Async
+//    public void handleWebsocketconnectListner(SessionConnectEvent event) throws JsonProcessingException {
+//        StompHeaderAccessor sha = StompHeaderAccessor.wrap(event.getMessage());
+//        logger.info("session open : " + sha.getSessionId());
+//        String clientSessionId = sha.getSessionId();
+//        Long docsId = accountService.getDocsId(sha.getSessionId());
+//        logger.info("docsid  "+docsId);
+//        this.simpMessagingTemplate.convertAndSend("/topic/docs/" + docsId+"/accounts",
+//                accountService.getAccountsBySessionId(clientSessionId));
+//    }
     @EventListener
     @Async
-    public void handleWebsocketconnectListner(SessionConnectEvent event) throws JsonProcessingException {
+    public void handleWebsocketDisconnectListner(SessionDisconnectEvent event) throws JsonProcessingException {
         StompHeaderAccessor sha = StompHeaderAccessor.wrap(event.getMessage());
-        logger.info("session open : " + sha.getSessionId());
-        this.simpMessagingTemplate.convertAndSend("/topic/docs/" + accountService.getDocsId(sha.getSessionId()),
-                accountService.getAccountsBySessionId(sha.getSessionId()));
-    }
-    @EventListener
-    @Async
-    public void handleWebsocketDisconnectListner(SessionDisconnectEvent event) {
-        StompHeaderAccessor sha = StompHeaderAccessor.wrap(event.getMessage());
-        logger.info("session closed : " + sha.getSessionId());
+        Long docsId = accountService.getDocsId(sha.getSessionId());
         accountService.deleteAccount(sha.getSessionId());
+
+        this.simpMessagingTemplate.convertAndSend("/topic/docs/" + docsId+"/accounts",
+                accountService.getAccounts(docsId));
     }
 }

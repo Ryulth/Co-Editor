@@ -27,12 +27,11 @@ public class SimpleAccountService implements  AccountService{
             Set<Account> accounts = new HashSet<Account>();
             accounts.add(newAccount);
             cacheAccounts.put(docsId,accounts);
-
         }
         else {
             cacheAccounts.get(docsId).add(newAccount);
         }
-            cacheSessionTable.put(newAccount.getClientSessionId(), docsId);
+        cacheSessionTable.put(newAccount.getClientSessionId(), docsId);
     }
 
     @Override
@@ -56,6 +55,7 @@ public class SimpleAccountService implements  AccountService{
             Long docsId = cacheSessionTable.get(clientSessionId);
             Account deleteAccount = Account.builder().clientSessionId(clientSessionId).remoteAddress("").build();
             cacheAccounts.get(docsId).remove(deleteAccount);
+            cacheSessionTable.remove(clientSessionId);
     }
 
 
