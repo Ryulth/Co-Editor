@@ -27,6 +27,14 @@ class Caret {
             caretWrapper.style.height = rect.height+"px";
         }
     }
+
+    removeCaret(key){
+        if(key in this.caretWrappers){
+            let caretWrapper = document.querySelector("#container-"+key);
+            caretWrapper.remove();
+            delete this.caretWrappers[key];
+        }
+    }
 }
 
 const getCreatedCursorWrapper = function(color){
