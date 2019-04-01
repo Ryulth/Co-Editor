@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 
-
 @RestController
 public class EditorController {
     private static Logger logger = LoggerFactory.getLogger(EditorController.class);
@@ -31,8 +30,10 @@ public class EditorController {
     @PostMapping("/docs/{docsId}")
     public void editDocs(@PathVariable Long docsId, @RequestBody RequestDocsCommand requestDocsCommnad,
                          HttpServletRequest request) throws JsonProcessingException, InterruptedException {
-        System.out.println(request.getRemoteAddr());
         this.simpMessagingTemplate.convertAndSend("/topic/docs/" + docsId,
-                editorService.editDocs(requestDocsCommnad));
+                editorService.editDocs(requestDocsCommnad,request.getRemoteAddr()));
     }
+
+
+
 }

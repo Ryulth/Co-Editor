@@ -41,12 +41,25 @@ window.onload = function () {
         editor.addEventListener("mouseup", mouseupAction);
         editor.addEventListener(inputType, inputAction);
         editor.addEventListener("keyup", keyupAction);
+        window.addEventListener("beforeunload", closeAction);
     }/*
     else {
         editor.attachEvent("onkeydown", keydownAction)
         bar.attachEvent("onclick",clickAction)
         editor.attachEvent("oninput", attachEvent);
     }*/    
+}
+function closeAction(e){
+    // e = e || window.event;
+    // // For IE<8 and Firefox prior to version 4
+    // if (e) {
+    // e.returnValue = '';
+    // }
+    // For Chrome, Safari, IE8+ and Opera 12+
+    accountLogout(baseUrl,"docs",docsId,clientSessionId);
+}
+function testgetAccount(){
+    getAccounts(baseUrl,"docs",docsId);
 }
 function mouseupAction(){
     getCaret();
@@ -162,6 +175,7 @@ function sendContentPost(patchText,inputLength,deleteLength) {
         }
     });
 }
+
 function setDiff(diff) {
     let idx = 0;
     let insertString = "";
@@ -228,9 +242,9 @@ function connect() {
     let socket = new SockJS(baseUrl + '/docs-websocket');
     stompClient = Stomp.over(socket);
     stompClient.connect({}, function (frame) {
+        clientSessionId = /\/([^\/]+)\/websocket/.exec(socket._transport.url)[1];
         setConnected(true);
         //console.log("Connected" + frame);
-        clientSessionId = /\/([^\/]+)\/websocket/.exec(socket._transport.url)[1];
         stompClient.subscribe('/topic/docs' + "/" + docsId, function (content) {
             response_body = JSON.parse(content.body);
             receiveContent(response_body) //
@@ -284,32 +298,47 @@ function calcCaret(diff){
     let tempDiffs=setDiff(diff);
     tempDiffs.forEach(function (tempDiff,index,array){
         let startIdx = tempDiff[0];
-        let moveIdx = tempDiff[1].length-tempDiff[2].length;
+        let inputString = tempDiff[1];
+        let deleteString = tempDiff[2]
+        let moveIdx = inputString.length-deleteString.length;
         let endIdx = startIdx - moveIdx;
 //      console.log(tempDiff,"si",startIdx,"ei",endIdx)
 //      console.log(startCaret)
         if(startIdx<=startCaret && endIdx<=startCaret){
             if(tempDiff[1].length>1){
             }
-            console.log("저기")
+            // console.log("저기")
             startCaret += moveIdx;
             endCaret +=moveIdx;
+            
         }
         else if(startIdx<=startCaret && startCaret< endIdx){
-            console.log("요기")
+            // console.log("요기")
             startCaret = startIdx;
             endCaret =startIdx;
         }
-        else if(startCaret<=startIdx && startIdx <= endCaret){
-            console.log("쩌기")
+        else if(startCaret<startIdx && startIdx < endCaret){
+            // console.log("쩌기")
+            // if(startCaret == startIdx || startIdx == endCaret){
+            //     console.log("같냐2!")
+            // }
             endCaret +=moveIdx;
         }
         else{
-            console.log(tempDiff)
-            console.log("si",startIdx,"ei",endIdx)
-            console.log("startCaret",startCaret,"endCaret",endCaret)
-            console.log("else")
+            // console.log(tempDiff)
+            // console.log("si",startIdx,"ei",endIdx)
+            // console.log("startCaret",startCaret,"endCaret",endCaret)
+            // console.log("else")
+            if(endCaret == startIdx){
+
+                console.log("여기이이이인가?")
+            }
         }
+        if(startCaret == startIdx || startIdx == endCaret){
+            // console.log("같냐!")
+            //endCaret +=moveIdx;
+        }
+
     });
 }
 function removeTags(text){
@@ -334,7 +363,7 @@ function patchDocs(response_patches,content,startClientVersion) {
         
     });
     let ms_end = (new Date).getTime();
-    //console.log("걸린시간",(ms_end - ms_start) /1000)
+    console.log("걸린시간",(ms_end - ms_start) /1000)
     return result;
 }
 function disconnect() {
@@ -347,6 +376,7 @@ function disconnect() {
 
 function setConnected(connected) {
     if (connected) {
+        accountLogin(baseUrl,"docs",docsId,clientSessionId)
         console.log("연결됨");
     } else {
         console.log("연결안됨");
@@ -542,4 +572,45 @@ const getRangeBoundRect = function(element, start, end){
         catch(e){}
     }
     return null;
+
+//파일로 추출
+function accountLogout(baseUrl,type,id,clientSessionId){
+    let sendUrl =  baseUrl + "/" +type +"/" + id+"/accounts/"+clientSessionId;
+    $.ajax({
+        async: true, // false 일 경우 동기 요청으로 변경
+        type: "DELETE",
+        contentType: "application/json",
+        url: sendUrl,
+        success: function (response) {
+        }
+    });
+}
+function accountLogin(baseUrl,type,id,clientSessionId){
+    let sendUrl =  baseUrl + "/" +type +"/" + id+"/accounts";
+    let reqBody = {
+        "clientSessionId": clientSessionId,
+        "remoteAddress": ""
+    }
+    $.ajax({
+        async: true, // false 일 경우 동기 요청으로 변경
+        type: "POST",
+        contentType: "application/json",
+        url: sendUrl,
+        data: JSON.stringify(reqBody),
+        dataType: 'json',
+        success: function (response) {
+        }
+    });
+}
+function getAccounts(baseUrl,type,id){
+    let sendUrl =  baseUrl + "/" +type +"/" + id+"/accounts";
+    $.ajax({
+        type: "GET",
+        cache: false,
+        url: sendUrl,
+        success: function (response) {
+            console.log(JSON.parse(response))
+        }
+    });
+
 }
