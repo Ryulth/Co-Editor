@@ -15,7 +15,22 @@ let pivotEndCaret = 0;
 let startCaret =0;
 let endCaret =0;
 let keycode = "";
+let caretVis;
+
+const setUserCaret = function(sessionId, start, end){
+    let R = Math.round(Math.random()*255);
+    let G = Math.round(Math.random()*255);
+    let B = Math.round(Math.random()*255);
+    let rgba = "rgba("+R+", "+G+", "+B+", .4)";
+    let rect =  getRangeBoundRect(editor, start, start);
+    if(rect != null){
+        caretVis.createCaret(sessionId, sessionId, rgba);
+        caretVis.moveCaret(sessionId, rect);
+    }
+}
+
 window.onload = function () {
+    caretVis = new Caret();
     getDocs();
     editor = document.getElementById("mokkiTextPreview");
     let bar = document.getElementById("mokkiButtonBar");
@@ -40,6 +55,7 @@ function getCaret(){
     let tempCaret = getCaretPosition(editor);
     startCaret = tempCaret[0];
     endCaret = tempCaret[1];
+    stompClient.send('/topic/position/'+docsId, {}, JSON.stringify({sessionId: clientSessionId, start: startCaret, end: endCaret}));
 }
 function getPivotCaret(){
     let tempCaret = getCaretPosition(editor);
@@ -218,6 +234,13 @@ function connect() {
         stompClient.subscribe('/topic/docs' + "/" + docsId, function (content) {
             response_body = JSON.parse(content.body);
             receiveContent(response_body) //
+        });
+        stompClient.subscribe('/topic/position/'+docsId, function(content){
+            let contentBody = JSON.parse(content.body);
+            console.log(contentBody)
+            if(contentBody.sessionId != clientSessionId){
+                setUserCaret(contentBody.sessionId, contentBody.start, contentBody.end);
+            }
         });
     });
 }
@@ -480,4 +503,43 @@ const getTextNodeList = function(element){
         }
     })
     return textNodeList;
+}
+
+const getRangeBoundRect = function(element, start, end){
+    let childTextLength = 0;
+    let textNodeList = getTextNodeList(element);
+    let startOffset = 0, endOffset = 0;
+    let startElement, endElement;
+    let countOfNewLine = 0;
+
+    textNodeList.forEach(function(textNode) {
+        let nodeTextLength = textNode.textContent.length;
+        let lineNode = getLineNode(element, textNode);
+        countOfNewLine = getCountOfNewLine(element, lineNode);
+
+        if(start <= childTextLength + countOfNewLine + nodeTextLength && startElement == null){
+            startOffset = start - (childTextLength + countOfNewLine);
+            startElement = textNode;
+        }
+        if(end <= childTextLength + countOfNewLine + nodeTextLength && endElement == null){
+            endOffset = end - (childTextLength + countOfNewLine);
+            endElement = textNode;
+            return;
+        }
+
+        childTextLength += nodeTextLength;
+    });
+
+    if (w3) {
+        try{
+            let range = window.getSelection().getRangeAt(0);
+            let clonedRange = range.cloneRange();
+            clonedRange.selectNodeContents(element);
+            clonedRange.setStart(startElement, startOffset);
+            clonedRange.setEnd(endElement, endOffset);
+            return clonedRange.getBoundingClientRect();
+        }
+        catch(e){}
+    }
+    return null;
 }
