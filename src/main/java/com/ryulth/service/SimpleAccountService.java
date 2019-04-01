@@ -21,18 +21,19 @@ public class SimpleAccountService implements  AccountService{
     private final Map<String,Long> cacheSessionTable = new HashMap<>();
     @Autowired
     ObjectMapper objectMapper;
+    @Autowired
+    EditorService editorService;
     @Override
     public void setAccount(Long docsId, Account newAccount) {
         if(cacheAccounts.get(docsId)==null){
             Set<Account> accounts = new HashSet<Account>();
             accounts.add(newAccount);
             cacheAccounts.put(docsId,accounts);
-
         }
         else {
             cacheAccounts.get(docsId).add(newAccount);
         }
-            cacheSessionTable.put(newAccount.getClientSessionId(), docsId);
+        cacheSessionTable.put(newAccount.getClientSessionId(), docsId);
     }
 
     @Override
@@ -56,6 +57,10 @@ public class SimpleAccountService implements  AccountService{
             Long docsId = cacheSessionTable.get(clientSessionId);
             Account deleteAccount = Account.builder().clientSessionId(clientSessionId).remoteAddress("").build();
             cacheAccounts.get(docsId).remove(deleteAccount);
+            if(cacheAccounts.get(docsId).size() == 0){
+                editorService.patchesAll(docsId);
+            }
+            cacheSessionTable.remove(clientSessionId);
     }
 
 

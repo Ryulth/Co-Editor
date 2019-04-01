@@ -1,7 +1,7 @@
 const ie = (typeof document.selection != "undefined" && document.selection.type != "Control") && true;
 const w3 = (typeof window.getSelection != "undefined") && true;
 const baseUrl = "http://10.77.34.204:8080";
-const docsId = 2;//location.href.substr(location.href.lastIndexOf('?') + 1);
+const docsId = 3;//location.href.substr(location.href.lastIndexOf('?') + 1);
 const dmp = new diff_match_patch();
 const inputType = /Trident/.test( navigator.userAgent ) ? 'textinput' : 'input';
 let editor;
@@ -106,7 +106,6 @@ window.onload = function () {
         editor.addEventListener("mouseup", mouseupAction);
         editor.addEventListener(inputType, inputAction);
         editor.addEventListener("keyup", keyupAction);
-        window.addEventListener("beforeunload", closeAction);
     }/*
     else {
         editor.attachEvent("onkeydown", keydownAction)
@@ -114,15 +113,7 @@ window.onload = function () {
         editor.attachEvent("oninput", attachEvent);
     }*/    
 }
-function closeAction(e){
-    // e = e || window.event;
-    // // For IE<8 and Firefox prior to version 4
-    // if (e) {
-    // e.returnValue = '';
-    // }
-    // For Chrome, Safari, IE8+ and Opera 12+
-    //accountLogout(baseUrl,"docs",docsId,clientSessionId);
-}
+
 function testgetAccount(){
     getAccounts(baseUrl,"docs",docsId);
 }
@@ -310,23 +301,26 @@ function connect() {
     stompClient.connect({}, function (frame) {
         clientSessionId = /\/([^\/]+)\/websocket/.exec(socket._transport.url)[1];
         setConnected(true);
-        //console.log("Connected" + frame);
+        accountLogin(baseUrl,"docs",docsId,clientSessionId);
         stompClient.subscribe('/topic/docs' + "/" + docsId, function (content) {
-            response_body = JSON.parse(content.body);
+            let response_body = JSON.parse(content.body);
             receiveContent(response_body) //
         });
         stompClient.subscribe('/topic/position/'+docsId, function(content){
             let contentBody = JSON.parse(content.body);
-            console.log(contentBody)
             if(contentBody.sessionId != clientSessionId){
                 setUserCaret(contentBody.sessionId, contentBody.start, contentBody.end);
             }
         });
+        stompClient.subscribe('/topic/docs/'+docsId+"/accounts", function(content){
+            let accounts = JSON.parse(content.body);
+            setAccountTable(accounts);
+        });
+        
     });
 }
 function setConnected(connected) {
     if (connected) {
-        accountLogin(baseUrl,"docs",docsId,clientSessionId)
         console.log("연결됨");
     } else {
         console.log("연결안됨");
@@ -652,22 +646,21 @@ function accountLogout(baseUrl,type,id,clientSessionId){
     });
 }
 function accountLogin(baseUrl,type,id,clientSessionId){
-    let sendUrl =  baseUrl + "/" +type +"/" + id+"/accounts";
-    let reqBody = {
-        "clientSessionId": clientSessionId,
-        "remoteAddress": ""
-    }
-    $.ajax({
-        async: true, // false 일 경우 동기 요청으로 변경
-        type: "POST",
-        contentType: "application/json",
-        url: sendUrl,
-        data: JSON.stringify(reqBody),
-        dataType: 'json',
-        success: function (response) {
+        let sendUrl =  baseUrl + "/" +type +"/" + id+"/accounts";
+        let reqBody = {
+            "clientSessionId": clientSessionId,
+            "remoteAddress": ""
         }
-    });
-
+        $.ajax({
+            async: true, // false 일 경우 동기 요청으로 변경
+            type: "POST",
+            contentType: "application/json",
+            url: sendUrl,
+            data: JSON.stringify(reqBody),
+            dataType: 'json',
+            success: function (response) {
+            }
+        });
 }
 function getAccounts(baseUrl,type,id){
     let sendUrl =  baseUrl + "/" +type +"/" + id+"/accounts";
