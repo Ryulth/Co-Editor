@@ -22,13 +22,79 @@ const setUserCaret = function(sessionId, start, end){
     let G = Math.round(Math.random()*255);
     let B = Math.round(Math.random()*255);
     let rgba = "rgba("+R+", "+G+", "+B+", .4)";
-    let rect =  getRangeBoundRect(editor, start, start);
-    if(rect != null){
-        caretVis.createCaret(sessionId, sessionId, rgba);
-        caretVis.moveCaret(sessionId, rect);
-    }
+    caretVis.createCaret(sessionId, sessionId, rgba);
+    setUserCaret2(editor, start, end, sessionId);
+    // let rect =  getRangeBoundRect(editor, end, end);
+    // if(rect != null){
+    //     caretVis.createCaret(sessionId, sessionId, rgba);
+    //     caretVis.moveCaret(sessionId, rect);
+    // }
 }
 
+const setUserCaret2 = function(element, start, end, key){
+    let childTextLength = 0;
+    let textNodeList = getTextNodeList(element);
+    let startOffset = 0, endOffset = 0;
+    let startElement, endElement;
+    let countOfNewLine = 0;
+    let isLast = false;
+    caretVis.removeDrags(key);
+        textNodeList.forEach(function(textNode) {
+            if(isLast){
+                return;
+            }
+            let nodeTextLength = textNode.textContent.length;
+            let lineNode = getLineNode(element, textNode);
+            countOfNewLine = getCountOfNewLine(element, lineNode);
+            endElement = null
+            if(start <= childTextLength + countOfNewLine + nodeTextLength){
+                startOffset = start - (childTextLength + countOfNewLine);
+                if(startElement != null){
+                    startOffset = 0;
+                } 
+                startElement = textNode;
+            }
+            if(end <= childTextLength + countOfNewLine + nodeTextLength){
+                endOffset = end - (childTextLength + countOfNewLine);
+                endElement = textNode;
+                isLast = true;
+            }
+            
+            if(startElement != null){
+                console.log(startElement, startOffset)
+                if(endElement == null){
+                    endElement = startElement;
+                    endOffset = startElement.length;
+                }
+                try{
+                    let range = window.getSelection().getRangeAt(0);
+                    let clonedRange = range.cloneRange();
+                    clonedRange.selectNodeContents(element);
+                    clonedRange.setStart(startElement, startOffset);
+                    clonedRange.setEnd(endElement, endOffset);
+                    caretVis.createDrag(key, clonedRange.getBoundingClientRect());
+                }catch(e){
+
+                }
+                
+            }
+            childTextLength += nodeTextLength;
+        });
+    if (w3) {
+        try{
+            let range = window.getSelection().getRangeAt(0);
+            let clonedRange = range.cloneRange();
+            clonedRange.selectNodeContents(element);
+            clonedRange.setStart(endElement, endOffset);
+            clonedRange.setEnd(endElement, endOffset);
+            caretVis.moveCaret(key, clonedRange.getBoundingClientRect());
+        }
+        catch(e){
+            
+        }
+    }
+    return null;
+}
 window.onload = function () {
     caretVis = new Caret();
     getDocs();
@@ -555,7 +621,6 @@ const getRangeBoundRect = function(element, start, end){
         if(end <= childTextLength + countOfNewLine + nodeTextLength && endElement == null){
             endOffset = end - (childTextLength + countOfNewLine);
             endElement = textNode;
-            return;
         }
 
         childTextLength += nodeTextLength;

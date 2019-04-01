@@ -28,6 +28,25 @@ class Caret {
         }
     }
 
+    createDrag(key, rect){
+        let caretWrapper = document.querySelector("#container-"+key); 
+        let caretDrag = document.createElement("SPAN");
+        caretDrag.classList.add("caret-drags");
+        caretDrag.style.top = rect.top+"px";
+        caretDrag.style.left = rect.left+"px";
+        caretDrag.style.width = rect.width+"px";
+        caretDrag.style.height = rect.height+"px";
+        caretDrag.style.backgroundColor = getComputedStyle(caretWrapper.querySelector(".caret-cursors")).backgroundColor;
+        caretWrapper.appendChild(caretDrag);
+    }
+
+    removeDrags(key){
+        let caretWrapper = document.querySelector("#container-"+key);
+        Array.prototype.slice.call(caretWrapper.querySelectorAll(".caret-drags")).forEach(element => {
+            element.remove();
+        });
+    }
+
     removeCaret(key){
         if(key in this.caretWrappers){
             let caretWrapper = document.querySelector("#container-"+key);
