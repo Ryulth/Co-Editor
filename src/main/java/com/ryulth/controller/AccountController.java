@@ -42,7 +42,6 @@ public class AccountController {
         StompHeaderAccessor sha = StompHeaderAccessor.wrap(event.getMessage());
         Long docsId = accountService.getDocsId(sha.getSessionId());
         accountService.deleteAccount(sha.getSessionId());
-
         this.simpMessagingTemplate.convertAndSend("/topic/docs/" + docsId+"/accounts",
                 accountService.getAccounts(docsId));
     }
