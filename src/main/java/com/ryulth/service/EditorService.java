@@ -8,4 +8,5 @@ import org.springframework.stereotype.Service;
 public interface EditorService {
     String editDocs(RequestDocsCommand requestDocsCommand,String remoteAddr) throws JsonProcessingException, InterruptedException;
     String getDocsOne(Long docsId) throws JsonProcessingException;
+    void patchesAll(Long docsId);
 }

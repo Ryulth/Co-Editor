@@ -116,6 +116,26 @@ public class SimpleEditorService implements EditorService {
         return objectMapper.writeValueAsString(responseDocsInit);
     }
 
+    @Override
+    public void patchesAll(Long docsId) {
+        Docs docs;
+        ArrayDeque<PatchInfo> patchInfos;
+        synchronized (cacheDocs) {
+            docs = cacheDocs.get(docsId);
+        }
+        synchronized (cachePatches) {
+            patchInfos = cachePatches.get(docsId);
+        }
+        Future<Boolean> future =editorAsyncService.updateDocsSnapshot(patchInfos, docs);
+        while (true) {
+            if (future.isDone()) {
+                docsRepository.save(docs);
+                break;
+            }
+        }
+
+    }
+
     private ArrayDeque<PatchInfo> getPatches(Docs finalDocs, Long docsId) {
         ArrayDeque<PatchInfo> patchInfo;
         synchronized (cachePatches) {
