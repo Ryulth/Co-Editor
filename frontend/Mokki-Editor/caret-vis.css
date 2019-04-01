@@ -1,0 +1,38 @@
+.caret-cursors-wrapper{
+    position: absolute;
+    margin-left: -9px;
+    padding: 0 9px;
+    z-index: 1;
+    height: 100%;
+}
+.caret-cursors{
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    margin-left: -1px;
+    background-color: red;
+}
+.caret-flag{
+    background-color: red;
+    transition-delay: 3000ms;
+    transition-duration: 400ms;
+    transition: opacity 0ms cubic-bezier(0.25, 0.46, 0.45, 0.94) 0ms, visibility 0ms cubic-bezier(0.25, 0.46, 0.45, 0.94) 0ms;
+    z-index: 1;
+    transform: translate3d(-1px, -100%, 0);
+    /* visibility: hidden; */
+    color: white;
+    padding-bottom: 2px;
+}
+.caret-name{
+    margin-left: 5px;
+    margin-right: 2.5px;
+    display: inline-block;
+    margin-top: -2px;
+}
+.caret-wrapper{
+    position: fixed;
+}
+.caret-container{
+    pointer-events: none;
+}
