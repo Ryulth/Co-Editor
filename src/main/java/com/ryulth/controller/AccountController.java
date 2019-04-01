@@ -36,24 +36,6 @@ public class AccountController {
     public String docsAccounts(@PathVariable Long docsId) throws JsonProcessingException {
         return accountService.getAccounts(docsId);
     }
-//    @CrossOrigin("*")
-//    @DeleteMapping("/docs/{docsId}/accounts/{clientSessionId}")
-//    public void docsLogout(@PathVariable("docsId") Long docsId,@PathVariable("clientSessionId") String clientSessionId, HttpServletRequest request){
-//        Account deleteAccount = Account.builder().clientSessionId(clientSessionId).remoteAddress(request.getRemoteAddr()).build();
-//        accountService.deleteAccount(docsId,deleteAccount);
-//    }
-
-//    @EventListener
-//    @Async
-//    public void handleWebsocketconnectListner(SessionConnectEvent event) throws JsonProcessingException {
-//        StompHeaderAccessor sha = StompHeaderAccessor.wrap(event.getMessage());
-//        logger.info("session open : " + sha.getSessionId());
-//        String clientSessionId = sha.getSessionId();
-//        Long docsId = accountService.getDocsId(sha.getSessionId());
-//        logger.info("docsid  "+docsId);
-//        this.simpMessagingTemplate.convertAndSend("/topic/docs/" + docsId+"/accounts",
-//                accountService.getAccountsBySessionId(clientSessionId));
-//    }
     @EventListener
     @Async
     public void handleWebsocketDisconnectListner(SessionDisconnectEvent event) throws JsonProcessingException {

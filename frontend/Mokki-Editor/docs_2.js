@@ -40,7 +40,6 @@ window.onload = function () {
         editor.addEventListener("mouseup", mouseupAction);
         editor.addEventListener(inputType, inputAction);
         editor.addEventListener("keyup", keyupAction);
-        window.addEventListener("beforeunload", closeAction);
     }/*
     else {
         editor.attachEvent("onkeydown", keydownAction)
@@ -48,15 +47,7 @@ window.onload = function () {
         editor.attachEvent("oninput", attachEvent);
     }*/    
 }
-function closeAction(e){
-    // e = e || window.event;
-    // // For IE<8 and Firefox prior to version 4
-    // if (e) {
-    // e.returnValue = '';
-    // }
-    // For Chrome, Safari, IE8+ and Opera 12+
-    //accountLogout(baseUrl,"docs",docsId,clientSessionId);
-}
+
 function testgetAccount(){
     getAccounts(baseUrl,"docs",docsId);
 }
