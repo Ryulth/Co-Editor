@@ -20,7 +20,7 @@
     transition: opacity 0ms cubic-bezier(0.25, 0.46, 0.45, 0.94) 0ms, visibility 0ms cubic-bezier(0.25, 0.46, 0.45, 0.94) 0ms;
     z-index: 1;
     transform: translate3d(-1px, -100%, 0);
-    /* visibility: hidden; */
+    visibility: hidden;
     color: white;
     padding-bottom: 2px;
 }
@@ -35,4 +35,12 @@
 }
 .caret-container{
     pointer-events: none;
+}
+
+.caret-cursors{
+    pointer-events: initial;
+}
+
+.caret-wrapper:hover > .caret-flag{
+    visibility: visible;
 }
