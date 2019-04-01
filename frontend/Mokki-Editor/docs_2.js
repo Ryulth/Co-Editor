@@ -572,7 +572,7 @@ const getRangeBoundRect = function(element, start, end){
         catch(e){}
     }
     return null;
-
+}
 //파일로 추출
 function accountLogout(baseUrl,type,id,clientSessionId){
     let sendUrl =  baseUrl + "/" +type +"/" + id+"/accounts/"+clientSessionId;
