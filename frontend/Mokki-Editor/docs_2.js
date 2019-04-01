@@ -21,7 +21,7 @@ const setUserCaret = function(sessionId, start, end){
     let R = Math.round(Math.random()*255);
     let G = Math.round(Math.random()*255);
     let B = Math.round(Math.random()*255);
-    let rgba = "rgba("+R+", "+G+", "+B+", .4)";
+    let rgba = "rgba("+R+", "+G+", "+B+", .6)";
     caretVis.createCaret(sessionId, sessionId, rgba);
     setUserCaret2(editor, start, end, sessionId);
     // let rect =  getRangeBoundRect(editor, end, end);
