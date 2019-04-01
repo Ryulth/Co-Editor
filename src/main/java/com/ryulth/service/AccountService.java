@@ -8,5 +8,7 @@ import org.springframework.stereotype.Service;
 public interface AccountService {
     void setAccount(Long docsId, Account newAccount);
     String getAccounts(Long docsId) throws JsonProcessingException;
-    void  deleteAccount(Long docsId,Account deleteAccount);
+    String getAccountsBySessionId(String clientSessionId) throws JsonProcessingException;
+    Long getDocsId(String clientSessionId);
+    void  deleteAccount(String clientSessionId);
 }

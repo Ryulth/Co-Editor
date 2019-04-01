@@ -1,7 +1,7 @@
 const ie = (typeof document.selection != "undefined" && document.selection.type != "Control") && true;
 const w3 = (typeof window.getSelection != "undefined") && true;
 const baseUrl = "http://10.77.34.204:8080";
-const docsId = 1;//location.href.substr(location.href.lastIndexOf('?') + 1);
+const docsId = 2;//location.href.substr(location.href.lastIndexOf('?') + 1);
 const dmp = new diff_match_patch();
 const inputType = /Trident/.test( navigator.userAgent ) ? 'textinput' : 'input';
 let editor;
@@ -34,7 +34,6 @@ window.onload = function () {
     getDocs();
     editor = document.getElementById("mokkiTextPreview");
     let bar = document.getElementById("mokkiButtonBar");
-    
     if (editor.addEventListener) {
         editor.addEventListener("keydown", keydownAction)
         bar.addEventListener("click",clickAction)
@@ -56,7 +55,7 @@ function closeAction(e){
     // e.returnValue = '';
     // }
     // For Chrome, Safari, IE8+ and Opera 12+
-    accountLogout(baseUrl,"docs",docsId,clientSessionId);
+    //accountLogout(baseUrl,"docs",docsId,clientSessionId);
 }
 function testgetAccount(){
     getAccounts(baseUrl,"docs",docsId);
@@ -235,6 +234,7 @@ function getDocs() {
             synchronized = true;
            // document.getElementById('text2b').value = content;
             connect();
+            //testgetAccount();
         }
     });
 }
@@ -257,6 +257,14 @@ function connect() {
             }
         });
     });
+}
+function setConnected(connected) {
+    if (connected) {
+        accountLogin(baseUrl,"docs",docsId,clientSessionId)
+        console.log("연결됨");
+    } else {
+        console.log("연결안됨");
+    }
 }
 function receiveContent(response_body) {
     let receiveSessionId = response_body.socketSessionId;
@@ -374,14 +382,7 @@ function disconnect() {
     console.log("Disconnected");
 }
 
-function setConnected(connected) {
-    if (connected) {
-        accountLogin(baseUrl,"docs",docsId,clientSessionId)
-        console.log("연결됨");
-    } else {
-        console.log("연결안됨");
-    }
-}
+
 function isHangul(inputText){
     if(inputText==null){
         return false;
@@ -601,6 +602,7 @@ function accountLogin(baseUrl,type,id,clientSessionId){
         success: function (response) {
         }
     });
+
 }
 function getAccounts(baseUrl,type,id){
     let sendUrl =  baseUrl + "/" +type +"/" + id+"/accounts";
@@ -610,7 +612,18 @@ function getAccounts(baseUrl,type,id){
         url: sendUrl,
         success: function (response) {
             console.log(JSON.parse(response))
+            setAccountTable(JSON.parse(response));
         }
     });
-
+}
+function setAccountTable(accounts){
+    tableBody = document.getElementById("accounts-table-body");
+    totalRow = "";
+    accounts.forEach(function (account){
+        row = "<tr><td>"+account.clientSessionId
+        +"</td><td>"+account.remoteAddress
+        +"</td></tr>";
+        totalRow += row;
+    });
+    tableBody.innerHTML = totalRow;
 }

@@ -9,7 +9,7 @@ import lombok.EqualsAndHashCode;
 @Data
 @Builder
 @AllArgsConstructor(onConstructor = @__(@JsonIgnore)) // Lombok builder use this
-@EqualsAndHashCode(callSuper = false)
+@EqualsAndHashCode(callSuper = false,of = {"clientSessionId"})
 public class Account {
     public Account(){
     }
