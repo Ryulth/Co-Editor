@@ -61,7 +61,6 @@ const setUserCaret2 = function(element, start, end, key){
             }
             
             if(startElement != null){
-                console.log(startElement, startOffset)
                 if(endElement == null){
                     endElement = startElement;
                     endOffset = startElement.length;
@@ -677,11 +676,21 @@ function getAccounts(baseUrl,type,id){
 function setAccountTable(accounts){
     tableBody = document.getElementById("accounts-table-body");
     totalRow = "";
+    let currentCaretUser = {};
+    Object.assign(currentCaretUser, caretVis.caretWrappers);
     accounts.forEach(function (account){
         row = "<tr><td>"+account.clientSessionId
         +"</td><td>"+account.remoteAddress
         +"</td></tr>";
         totalRow += row;
+        if(account.clientSessionId in currentCaretUser){
+            delete currentCaretUser[account.clientSessionId];
+        }
     });
+
+    Object.keys(currentCaretUser).forEach(key => {
+        caretVis.removeCaret(key);
+    });
+    
     tableBody.innerHTML = totalRow;
 }
