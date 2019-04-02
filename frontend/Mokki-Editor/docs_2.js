@@ -1,7 +1,7 @@
 const ie = (typeof document.selection != "undefined" && document.selection.type != "Control") && true;
 const w3 = (typeof window.getSelection != "undefined") && true;
 const baseUrl = "http://10.77.34.204:8080";
-const docsId = 3;//location.href.substr(location.href.lastIndexOf('?') + 1);
+const docsId = 1;//location.href.substr(location.href.lastIndexOf('?') + 1);
 const dmp = new diff_match_patch();
 const inputType = /Trident/.test( navigator.userAgent ) ? 'textinput' : 'input';
 let editor;
@@ -151,9 +151,9 @@ function setHangulSelection(resDiff){
     let inputString = resDiff[1].trim();
     let deleteString = resDiff[2].trim();
     if(isHangul(inputString)){
-        console.log("한글",inputString,startCaret,endCaret)
+        //console.log("한글",inputString,startCaret,endCaret)
         let isWriting = (startCaret == endCaret)? false : true;
-        if(inputString.length == 2 ){
+        if(inputString.length == 2 ){//&& Hangul.isComplete(inputString[0])){
             startCaret +=1;
             endCaret+=1;
         }
@@ -170,12 +170,13 @@ function setHangulSelection(resDiff){
                 }
             }
             else{
-                console.log("쵸여기",resDiff);
+              
             }
         }
         endCaret = (startCaret == endCaret)? endCaret+1 : endCaret;
-        console.log("st",startCaret,"ed",endCaret)
+        //console.log("st",startCaret,"ed",endCaret)
         setCaretPosition(editor,startCaret,endCaret);
+        console.log("한글셋","sc",startCaret ,"ec",endCaret);
     }
 }
 function sendPatch(prev,current) {
@@ -328,10 +329,13 @@ function receiveContent(response_body) {
             let snapshotVersion = response_body.snapshotVersion;
             let result = patchDocs(response_patcheInfos,snapshotText,snapshotVersion);
             if(originHTML != result){
+                console.log("과연>","sc",startCaret,"ec",endCaret)
                 getCaret();
+                console.log("과연>","sc",startCaret,"ec",endCaret)
                 let diff = dmp.diff_main(originHTML, result, true);
                 dmp.diff_cleanupSemantic(diff);        
                 editor.innerHTML = result;
+                console.log("여기서 온 것이냐")
                 calcCaret(diff)
                 setCaretPosition(editor,startCaret,endCaret);
             }   
@@ -432,6 +436,10 @@ function deleteDrag(startIdx, deleteString){
 
 function calcCaret(diff){
     let tempDiffs=setDiff(diff);
+    // if(tempDiffs.length>1){
+    //     tempDiffs.shift();
+    //     console.log(tempDiffs)
+    // }
     tempDiffs.forEach(function (tempDiff,index,array){
         let startIdx = tempDiff[0];
         let inputString = tempDiff[1];
@@ -462,6 +470,53 @@ function calcCaret(diff){
             // delete
             deleteCalcCaret(startIdx, deleteString);
         }
+    });
+}
+function calcCaret2(diff){
+    let tempDiffs=setDiff(diff);
+    tempDiffs.forEach(function (tempDiff,index,array){
+        console.log(index,"번째",tempDiff,"sc",startCaret ,"si", startIdx,"ec",endCaret,"ei",endIdx,"mv",moveIdx);
+        let inputString = tempDiff[1];
+        let deleteString = tempDiff[2];
+        let startIdx = tempDiff[0];
+        let moveIdx = inputString.length-deleteString.length;
+        let endIdx = startIdx - moveIdx;
+        
+        if(startIdx<=startCaret && endIdx<=startCaret){
+            if(tempDiff[1].length>1){
+            }
+            console.log("저기","sc",startCaret ,"si", startIdx,"ec",endCaret,"ei",endIdx,"mv",moveIdx)
+            startCaret += moveIdx;
+            endCaret +=moveIdx;
+        }
+        else if(startIdx<=startCaret && startCaret< endIdx){ // 범위안
+            console.log("요기","sc",startCaret ,"si", startIdx,"ec",endCaret,"ei",endIdx,"mv",moveIdx)
+           if(startCaret!=endCaret){
+                startCaret = startIdx ;
+                endCaret =startIdx;
+            }
+        }
+        else if(startCaret<startIdx && startIdx < endCaret){
+            console.log("쩌기")
+            // if(startCaret == startIdx || startIdx == endCaret){
+            //     console.log("같냐2!")
+            // }
+            endCaret +=moveIdx;
+        }
+        else{
+            // console.log(tempDiff)
+            // console.log("si",startIdx,"ei",endIdx)
+            // console.log("startCaret",startCaret,"endCaret",endCaret)
+            // console.log("else")
+            // console.log("여기이이이인가?")
+            if(endCaret == startIdx){
+                // console.log("여기이이이인가?")
+            }
+        }
+        if(startCaret == startIdx || startIdx == endCaret){
+            console.log("같냐!","sc",startCaret ,"si", startIdx,"ec",endCaret,"ei",endIdx,"mv",moveIdx)
+            //endCaret +=moveIdx;
+        }
 
     });
 }
@@ -487,7 +542,7 @@ function patchDocs(response_patches,content,startClientVersion) {
         
     });
     let ms_end = (new Date).getTime();
-    console.log("걸린시간",(ms_end - ms_start) /1000)
+    //console.log("걸린시간",(ms_end - ms_start) /1000)
     return result;
 }
 function disconnect() {

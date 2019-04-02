@@ -15,7 +15,7 @@ class Caret {
             caretWrapper.appendChild(getCreatedCaretFlag(value, color));
             this.caretContainer.appendChild(caretWrapper);
             this.caretWrappers[key] = caretWrapper;
-            console.log(this.caretWrappers)
+            //console.log(this.caretWrappers)
         }
     }
 
