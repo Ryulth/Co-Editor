@@ -24,11 +24,6 @@ const setUserCaret = function(sessionId, start, end){
     let rgba = "rgba("+R+", "+G+", "+B+", .6)";
     caretVis.createCaret(sessionId, sessionId, rgba);
     setUserCaret2(editor, start, end, sessionId);
-    // let rect =  getRangeBoundRect(editor, end, end);
-    // if(rect != null){
-    //     caretVis.createCaret(sessionId, sessionId, rgba);
-    //     caretVis.moveCaret(sessionId, rect);
-    // }
 }
 
 const setUserCaret2 = function(element, start, end, key){
@@ -39,54 +34,52 @@ const setUserCaret2 = function(element, start, end, key){
     let countOfNewLine = 0;
     let isLast = false;
     caretVis.removeDrags(key);
-        textNodeList.forEach(function(textNode) {
-            if(isLast){
-                return;
+    textNodeList.forEach(function(textNode) {
+        if(isLast){
+            return;
+        }
+        let nodeTextLength = textNode.textContent.length;
+        let lineNode = getLineNode(element, textNode);
+        countOfNewLine = getCountOfNewLine(element, lineNode);
+        endElement = null
+        if(start <= childTextLength + countOfNewLine + nodeTextLength){
+            startOffset = start - (childTextLength + countOfNewLine);
+            if(startElement != null){
+                startOffset = 0;
+            } 
+            startElement = textNode;
+        }
+        if(end <= childTextLength + countOfNewLine + nodeTextLength){
+            endOffset = end - (childTextLength + countOfNewLine);
+            endElement = textNode;
+            isLast = true;
+        }
+        
+        if(startElement != null){
+            if(endElement == null){
+                endElement = startElement;
+                endOffset = startElement.length;
             }
-            let nodeTextLength = textNode.textContent.length;
-            let lineNode = getLineNode(element, textNode);
-            countOfNewLine = getCountOfNewLine(element, lineNode);
-            endElement = null
-            if(start <= childTextLength + countOfNewLine + nodeTextLength){
-                startOffset = start - (childTextLength + countOfNewLine);
-                if(startElement != null){
-                    startOffset = 0;
-                } 
-                startElement = textNode;
-            }
-            if(end <= childTextLength + countOfNewLine + nodeTextLength){
-                endOffset = end - (childTextLength + countOfNewLine);
-                endElement = textNode;
-                isLast = true;
+            try{
+                let createdRange = document.createRange();
+                createdRange.selectNodeContents(element);
+                createdRange.setStart(startElement, startOffset);
+                createdRange.setEnd(endElement, endOffset);
+                caretVis.createDrag(key, createdRange.getBoundingClientRect());
+            }catch(e){
+
             }
             
-            if(startElement != null){
-                if(endElement == null){
-                    endElement = startElement;
-                    endOffset = startElement.length;
-                }
-                try{
-                    let range = window.getSelection().getRangeAt(0);
-                    let clonedRange = range.cloneRange();
-                    clonedRange.selectNodeContents(element);
-                    clonedRange.setStart(startElement, startOffset);
-                    clonedRange.setEnd(endElement, endOffset);
-                    caretVis.createDrag(key, clonedRange.getBoundingClientRect());
-                }catch(e){
-
-                }
-                
-            }
-            childTextLength += nodeTextLength;
-        });
+        }
+        childTextLength += nodeTextLength;
+    });
     if (w3) {
         try{
-            let range = window.getSelection().getRangeAt(0);
-            let clonedRange = range.cloneRange();
-            clonedRange.selectNodeContents(element);
-            clonedRange.setStart(endElement, endOffset);
-            clonedRange.setEnd(endElement, endOffset);
-            caretVis.moveCaret(key, clonedRange.getBoundingClientRect());
+            let createdRange = document.createRange();
+            createdRange.selectNodeContents(element);
+            createdRange.setStart(endElement, endOffset);
+            createdRange.setEnd(endElement, endOffset);
+            caretVis.moveCaret(key, createdRange.getBoundingClientRect());
         }
         catch(e){
             
@@ -95,7 +88,7 @@ const setUserCaret2 = function(element, start, end, key){
     return null;
 }
 window.onload = function () {
-    //caretVis = new Caret();
+    caretVis = new Caret();
     getDocs();
     editor = document.getElementById("mokkiTextPreview");
     let bar = document.getElementById("mokkiButtonBar");
@@ -123,7 +116,7 @@ function getCaret(){
     let tempCaret = getCaretPosition(editor);
     startCaret = tempCaret[0];
     endCaret = tempCaret[1];
-    //stompClient.send('/topic/position/'+docsId, {}, JSON.stringify({sessionId: clientSessionId, start: startCaret, end: endCaret}));
+    stompClient.send('/topic/position/'+docsId, {}, JSON.stringify({sessionId: clientSessionId, start: startCaret, end: endCaret}));
 }
 function getPivotCaret(){
     let tempCaret = getCaretPosition(editor);
@@ -305,12 +298,12 @@ function connect() {
             let response_body = JSON.parse(content.body);
             receiveContent(response_body) //
         });
-        // stompClient.subscribe('/topic/position/'+docsId, function(content){
-        //     let contentBody = JSON.parse(content.body);
-        //     if(contentBody.sessionId != clientSessionId){
-        //         setUserCaret(contentBody.sessionId, contentBody.start, contentBody.end);
-        //     }
-        // });
+        stompClient.subscribe('/topic/position/'+docsId, function(content){
+            let contentBody = JSON.parse(content.body);
+            if(contentBody.sessionId != clientSessionId){
+                setUserCaret(contentBody.sessionId, contentBody.start, contentBody.end);
+            }
+        });
         stompClient.subscribe('/topic/docs/'+docsId+"/accounts", function(content){
             let accounts = JSON.parse(content.body);
             setAccountTable(accounts);
@@ -594,44 +587,6 @@ const getTextNodeList = function(element){
     })
     return textNodeList;
 }
-
-const getRangeBoundRect = function(element, start, end){
-    let childTextLength = 0;
-    let textNodeList = getTextNodeList(element);
-    let startOffset = 0, endOffset = 0;
-    let startElement, endElement;
-    let countOfNewLine = 0;
-
-    textNodeList.forEach(function(textNode) {
-        let nodeTextLength = textNode.textContent.length;
-        let lineNode = getLineNode(element, textNode);
-        countOfNewLine = getCountOfNewLine(element, lineNode);
-
-        if(start <= childTextLength + countOfNewLine + nodeTextLength && startElement == null){
-            startOffset = start - (childTextLength + countOfNewLine);
-            startElement = textNode;
-        }
-        if(end <= childTextLength + countOfNewLine + nodeTextLength && endElement == null){
-            endOffset = end - (childTextLength + countOfNewLine);
-            endElement = textNode;
-        }
-
-        childTextLength += nodeTextLength;
-    });
-
-    if (w3) {
-        try{
-            let range = window.getSelection().getRangeAt(0);
-            let clonedRange = range.cloneRange();
-            clonedRange.selectNodeContents(element);
-            clonedRange.setStart(startElement, startOffset);
-            clonedRange.setEnd(endElement, endOffset);
-            return clonedRange.getBoundingClientRect();
-        }
-        catch(e){}
-    }
-    return null;
-}
 //파일로 추출
 function accountLogout(baseUrl,type,id,clientSessionId){
     let sendUrl =  baseUrl + "/" +type +"/" + id+"/accounts/"+clientSessionId;
@@ -677,20 +632,20 @@ function setAccountTable(accounts){
     tableBody = document.getElementById("accounts-table-body");
     totalRow = "";
     let currentCaretUser = {};
-    //Object.assign(currentCaretUser, caretVis.caretWrappers);
+    Object.assign(currentCaretUser, caretVis.caretWrappers);
     accounts.forEach(function (account){
         row = "<tr><td>"+account.clientSessionId
         +"</td><td>"+account.remoteAddress
         +"</td></tr>";
         totalRow += row;
-        // if(account.clientSessionId in currentCaretUser){
-        //     delete currentCaretUser[account.clientSessionId];
-        // }
+        if(account.clientSessionId in currentCaretUser){
+            delete currentCaretUser[account.clientSessionId];
+        }
     });
 
-    // Object.keys(currentCaretUser).forEach(key => {
-    //     caretVis.removeCaret(key);
-    // });
+    Object.keys(currentCaretUser).forEach(key => {
+        caretVis.removeCaret(key);
+    });
     
     tableBody.innerHTML = totalRow;
 }
