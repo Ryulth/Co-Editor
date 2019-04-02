@@ -332,6 +332,9 @@ function receiveContent(response_body) {
                 console.log("과연>","sc",startCaret,"ec",endCaret)
                 getCaret();
                 console.log("과연>","sc",startCaret,"ec",endCaret)
+                if(startCaret == endCaret){
+                    console.log("과연")
+                }
                 let diff = dmp.diff_main(originHTML, result, true);
                 dmp.diff_cleanupSemantic(diff);        
                 editor.innerHTML = result;
@@ -358,95 +361,12 @@ function receiveContent(response_body) {
         //document.getElementById('text2b').value = result;
     }
 }
-function insertCalcCaret(startIdx, inputString){
-    // insert 
-    if(startCaret == endCaret){
-        // 드래그 안 된 경우
-        if(startIdx < startCaret){
-            // 내 위치보다 앞에서 쓴 경우 뒤로 밀린다.
-            startCaret += inputString.length;
-            endCaret += inputString.length;
-        }
-    }else{
-        // 드래그 된 경우
-        if(startCaret < startIdx && startIdx < endCaret){
-            // 입력 값이 드래그 안에 있을 경우
-            // 드래그 뒤로만 늘려주면 됨
-            endCaret += inputString.length;
-        } else if(startIdx <= startCaret){
-            // 입력 값이 드래그 앞에서
-            // 드래그 된 시작 끝을 둘다 이동해야됨
-            startCaret += inputString.length;
-            endCaret += inputString.length;
-        }
-    }
-}
-function deleteCalcCaret(startIdx, deleteString){
-    if(startCaret == endCaret){
-        deleteNoDrag(startIdx, deleteString);
-    }else{
-        deleteDrag(startIdx, deleteString);
-    }
-}
-
-function deleteNoDrag(startIdx, deleteString){
-    // 내 커서가 드래그 안 된 경우
-    if(startIdx < startCaret){
-        // 일단 지우는 위치가 나보다 앞인지 검사
-        if(startCaret < startIdx + deleteString.length){
-            // 내 위치까지 지운 경우
-            startCaret = startIdx;
-            endCaret = startIdx;
-        }else{
-            // 내 위치 이전까지 지운경우
-            startCaret -= deleteString.length;
-            endCaret -= deleteString.length;
-        }
-    }
-}
-
-function deleteDrag(startIdx, deleteString){
-    // 내 커서가 드래그인 경우
-    if(startIdx < startCaret){
-        // 지우는 위치가 내 커서보다 앞인경우
-        if(startIdx + deleteString.length <= startCaret){
-            // 내가 드래그 한거 앞까지 지우는 경우
-            startCaret -= deleteString.length;
-            endCaret -= deleteString.length;
-        }else if(startCaret < startIdx + deleteString.length && 
-                startIdx + deleteString.length <= endCaret){
-            // 내가 드래그 한거 안에 지우는 경우
-            startCaret = startIdx;
-            let end_offset = endCaret - (startIdx + deleteString.length)
-            endCaret = startIdx + end_offset;
-            }
-        else if(endCaret < startIdx + deleteString.length){
-            // 내가 드래그 한거 다 지우는 경우
-            startCaret = startIdx;
-            endCaret = startIdx;
-        }
-    }else if(startCaret <= startIdx && startIdx < endCaret){
-        // 지우는 시작이 드래그 안에 부분 지우려고 할때
-        let end_offset = endCaret - (startIdx + deleteString.length);
-        if(0 <= end_offset){
-            endCaret = startIdx + end_offset;
-        }else{
-            endCaret = startIdx;
-        }
-    }
-}
-
 function calcCaret(diff){
     let tempDiffs=setDiff(diff);
-    // if(tempDiffs.length>1){
-    //     tempDiffs.shift();
-    //     console.log(tempDiffs)
-    // }
     tempDiffs.forEach(function (tempDiff,index,array){
         let startIdx = tempDiff[0];
         let inputString = tempDiff[1];
         let deleteString = tempDiff[2]
-
         if(inputString.length != 0 && deleteString.length != 0){
             // delete and insert case
             // delete 먼저하자
@@ -464,14 +384,14 @@ function calcCaret(diff){
                 // insert 
                 insertCalcCaret(startIdx, inputString);
             }
-
-        }else if(inputString.length != 0){
+            }else if(inputString.length != 0){
             // insert 
             insertCalcCaret(startIdx, inputString);
-        } else{
-            // delete
-            deleteCalcCaret(startIdx, deleteString);
-        }
+            } else{
+                // delete
+                deleteCalcCaret(startIdx, deleteString);
+            }
+        console.log(index,"번째",tempDiff,"sc",startCaret ,"si", startIdx,"ec",endCaret);
     });
 }
 function calcCaret2(diff){
@@ -769,4 +689,82 @@ function setAccountTable(accounts){
     });
     
     tableBody.innerHTML = totalRow;
+}
+/////////////
+function insertCalcCaret(startIdx, inputString){
+    // insert 
+    if(startCaret == endCaret){
+        // 드래그 안 된 경우
+        if(startIdx < startCaret){
+            // 내 위치보다 앞에서 쓴 경우 뒤로 밀린다.
+            startCaret += inputString.length;
+            endCaret += inputString.length;
+        }
+    }else{
+        // 드래그 된 경우
+        if(startCaret < startIdx && startIdx < endCaret){
+            // 입력 값이 드래그 안에 있을 경우
+            // 드래그 뒤로만 늘려주면 됨
+            endCaret += inputString.length;
+        } else if(startIdx <= startCaret){
+            // 입력 값이 드래그 앞에서
+            // 드래그 된 시작 끝을 둘다 이동해야됨
+            startCaret += inputString.length;
+            endCaret += inputString.length;
+        }
+    }
+}
+function deleteCalcCaret(startIdx, deleteString){
+    if(startCaret == endCaret){
+        deleteNoDrag(startIdx, deleteString);
+    }else{
+        deleteDrag(startIdx, deleteString);
+    }
+}
+
+function deleteNoDrag(startIdx, deleteString){
+    // 내 커서가 드래그 안 된 경우
+    if(startIdx < startCaret){
+        // 일단 지우는 위치가 나보다 앞인지 검사
+        if(startCaret < startIdx + deleteString.length){
+            // 내 위치까지 지운 경우
+            startCaret = startIdx;
+            endCaret = startIdx;
+        }else{
+            // 내 위치 이전까지 지운경우
+            startCaret -= deleteString.length;
+            endCaret -= deleteString.length;
+        }
+    }
+}
+
+function deleteDrag(startIdx, deleteString){
+    // 내 커서가 드래그인 경우
+    if(startIdx < startCaret){
+        // 지우는 위치가 내 커서보다 앞인경우
+        if(startIdx + deleteString.length <= startCaret){
+            // 내가 드래그 한거 앞까지 지우는 경우
+            startCaret -= deleteString.length;
+            endCaret -= deleteString.length;
+        }else if(startCaret < startIdx + deleteString.length && 
+                startIdx + deleteString.length <= endCaret){
+            // 내가 드래그 한거 안에 지우는 경우
+            startCaret = startIdx;
+            let end_offset = endCaret - (startIdx + deleteString.length)
+            endCaret = startIdx + end_offset;
+            }
+        else if(endCaret < startIdx + deleteString.length){
+            // 내가 드래그 한거 다 지우는 경우
+            startCaret = startIdx;
+            endCaret = startIdx;
+        }
+    }else if(startCaret <= startIdx && startIdx < endCaret){
+        // 지우는 시작이 드래그 안에 부분 지우려고 할때
+        let end_offset = endCaret - (startIdx + deleteString.length);
+        if(0 <= end_offset){
+            endCaret = startIdx + end_offset;
+        }else{
+            endCaret = startIdx;
+        }
+    }
 }
