@@ -8,20 +8,24 @@ class Caret {
 
     createCaret(key, value, color){
         if(!(key in this.caretWrappers)){
+            let caretFrame = document.createElement("SPAN");
             let caretWrapper = document.createElement("SPAN");
+            caretFrame.classList.add("caret-frame");
             caretWrapper.classList.add("caret-wrapper");
-            caretWrapper.id = "container-"+key;
+            caretFrame.id = "container-"+key;
             caretWrapper.appendChild(getCreatedCursorWrapper(color));
             caretWrapper.appendChild(getCreatedCaretFlag(value, color));
-            this.caretContainer.appendChild(caretWrapper);
+            caretFrame.appendChild(caretWrapper);
+            this.caretContainer.appendChild(caretFrame);
             this.caretWrappers[key] = caretWrapper;
-            //console.log(this.caretWrappers)
+            console.log(this.caretWrappers)
         }
     }
 
     moveCaret(key, rect){
         if(key in this.caretWrappers){
-            let caretWrapper = document.querySelector("#container-"+key);
+            let caretFrame = document.querySelector("#container-"+key);
+            let caretWrapper = caretFrame.querySelector(".caret-wrapper");
             caretWrapper.style.top = rect.top+"px";
             caretWrapper.style.left = rect.left+"px";
             caretWrapper.style.height = rect.height+"px";
@@ -29,27 +33,28 @@ class Caret {
     }
 
     createDrag(key, rect){
-        let caretWrapper = document.querySelector("#container-"+key); 
+        let caretFrame = document.querySelector("#container-"+key);
         let caretDrag = document.createElement("SPAN");
         caretDrag.classList.add("caret-drags");
         caretDrag.style.top = rect.top+"px";
         caretDrag.style.left = rect.left+"px";
         caretDrag.style.width = rect.width+"px";
         caretDrag.style.height = rect.height+"px";
-        caretDrag.style.backgroundColor = getComputedStyle(caretWrapper.querySelector(".caret-cursors")).backgroundColor;
-        caretWrapper.appendChild(caretDrag);
+        caretDrag.style.backgroundColor = getComputedStyle(caretFrame.querySelector(".caret-cursors")).backgroundColor;
+        caretFrame.appendChild(caretDrag);
     }
 
     removeDrags(key){
-        let caretWrapper = document.querySelector("#container-"+key);
-        Array.prototype.slice.call(caretWrapper.querySelectorAll(".caret-drags")).forEach(element => {
+        let caretFrame = document.querySelector("#container-"+key);
+        Array.prototype.slice.call(caretFrame.querySelectorAll(".caret-drags")).forEach(element => {
             element.remove();
         });
     }
 
     removeCaret(key){
         if(key in this.caretWrappers){
-            let caretWrapper = document.querySelector("#container-"+key);
+            let caretFrame = document.querySelector("#container-"+key);
+            let caretWrapper = caretFrame.querySelector(".caret-wrapper");
             caretWrapper.remove();
             delete this.caretWrappers[key];
         }

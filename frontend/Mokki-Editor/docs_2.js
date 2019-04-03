@@ -1,6 +1,6 @@
 const ie = (typeof document.selection != "undefined" && document.selection.type != "Control") && true;
 const w3 = (typeof window.getSelection != "undefined") && true;
-const baseUrl = "http://10.77.34.204:8080";
+const baseUrl = "http://10.77.34.203:8080";
 const docsId = 1;//location.href.substr(location.href.lastIndexOf('?') + 1);
 const dmp = new diff_match_patch();
 const inputType = /Trident/.test( navigator.userAgent ) ? 'textinput' : 'input';
@@ -754,7 +754,9 @@ function deleteDrag(startIdx, deleteString){
         }else if(startCaret < startIdx + deleteString.length && 
                 startIdx + deleteString.length <= endCaret){
             // 내가 드래그 한거 안에 지우는 경우
-            startCaret = startIdx + deleteString.length;
+            startCaret = startIdx;
+            let end_offset = endCaret - (startIdx + deleteString.length)
+            endCaret = startIdx + end_offset;
             }
         else if(endCaret < startIdx + deleteString.length){
             // 내가 드래그 한거 다 지우는 경우
