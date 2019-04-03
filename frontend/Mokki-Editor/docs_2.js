@@ -176,7 +176,7 @@ function setHangulSelection(resDiff){
         endCaret = (startCaret == endCaret)? endCaret+1 : endCaret;
         //console.log("st",startCaret,"ed",endCaret)
         setCaretPosition(editor,startCaret,endCaret);
-        console.log("한글셋","sc",startCaret ,"ec",endCaret);
+       // console.log("한글셋","sc",startCaret ,"ec",endCaret);
     }
 }
 function sendPatch(prev,current) {
@@ -329,16 +329,15 @@ function receiveContent(response_body) {
             let snapshotVersion = response_body.snapshotVersion;
             let result = patchDocs(response_patcheInfos,snapshotText,snapshotVersion);
             if(originHTML != result){
-                console.log("과연>","sc",startCaret,"ec",endCaret)
+              //  console.log("과연>","sc",startCaret,"ec",endCaret)
                 getCaret();
-                console.log("과연>","sc",startCaret,"ec",endCaret)
+                //console.log("과연>","sc",startCaret,"ec",endCaret)
                 if(startCaret == endCaret){
-                    console.log("과연")
+                  //  console.log("과연")
                 }
                 let diff = dmp.diff_main(originHTML, result, true);
                 dmp.diff_cleanupSemantic(diff);        
                 editor.innerHTML = result;
-                console.log("여기서 온 것이냐")
                 calcCaret(diff)
                 setCaretPosition(editor,startCaret,endCaret);
             }   
@@ -367,6 +366,8 @@ function calcCaret(diff){
         let startIdx = tempDiff[0];
         let inputString = tempDiff[1];
         let deleteString = tempDiff[2]
+        //console.log(index,"번째",tempDiff,"sc",startCaret ,"si", startIdx,"ec",endCaret);
+        
         if(inputString.length != 0 && deleteString.length != 0){
             // delete and insert case
             // delete 먼저하자
@@ -374,24 +375,28 @@ function calcCaret(diff){
             if(startCaret == endCaret){
                 deleteNoDrag(startIdx, deleteString);
                 // insert 된 크기 만큼 뒤로 간다.
-                startCaret += inputString.length;
-                endCaret += inputString.length;
+                if(startCaret>startIdx){    
+                    startCaret += inputString.length;
+                    endCaret += inputString.length;
+                }
             }else{
                 // 드래그 인 경우
                 deleteDrag(startIdx, deleteString);
-                // 다음 insert 
-                // delete 과정으로 드래그했던게 풀렸을수도 있음 
-                // insert 
+                  // 다음 insert 
+                    // delete 과정으로 드래그했던게 풀렸을수도 있음 
+                    // insert 
                 insertCalcCaret(startIdx, inputString);
-            }
-            }else if(inputString.length != 0){
+                }
+            // }
+        }else if(inputString.length != 0){
             // insert 
             insertCalcCaret(startIdx, inputString);
-            } else{
-                // delete
-                deleteCalcCaret(startIdx, deleteString);
-            }
-        console.log(index,"번째",tempDiff,"sc",startCaret ,"si", startIdx,"ec",endCaret);
+        } else{
+            // delete
+            deleteCalcCaret(startIdx, deleteString);
+        }
+        //console.log(index,"번째",tempDiff,"sc",startCaret ,"si", startIdx,"ec",endCaret);
+        
     });
 }
 function calcCaret2(diff){
