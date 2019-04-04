@@ -1,6 +1,6 @@
 const ie = (typeof document.selection != "undefined" && document.selection.type != "Control") && true;
 const w3 = (typeof window.getSelection != "undefined") && true;
-const baseUrl = "http://10.77.34.204:8080";
+const baseUrl = "http://10.77.34.205:8080";
 const docsId = 1;//location.href.substr(location.href.lastIndexOf('?') + 1);
 const dmp = new diff_match_patch();
 const inputType = /Trident/.test( navigator.userAgent ) ? 'textinput' : 'input';
@@ -130,17 +130,29 @@ function clickAction(){
         prevText = editor.innerHTML;
     }
 }
+var pprevText;
 function keydownAction(event){
     keycode = event.code;
     getCaret();
     if (synchronized) {
         prevText = editor.innerHTML;
     }
+    pprevText = editor.innerHTML;
 }
 
 function inputAction(event){
     if (synchronized) {
-        sendPatch(prevText,editor.innerHTML);
+        sendPatch(prevText,editor.innerHTML, true);
+    } 
+    else{
+        let diff = dmp.diff_main(pprevText, editor.innerHTML, true);
+        dmp.diff_cleanupSemantic(diff);
+        if ((diff.length > 1) || (diff.length == 1 && diff[0][0] != 0)) { // 1 이상이어야 변경 한 것이 있음
+            let res = setDiff(diff)[0];    
+            if (!(Hangul.disassemble(res[2]).length == Hangul.disassemble(res[1]).length + 1) || (keycode == "Backspace" || keycode == "Delete")) {
+                setHangulSelection(res)
+            }
+        }
     }
 }
 function keyupAction(){
@@ -179,14 +191,17 @@ function setHangulSelection(resDiff){
        // console.log("한글셋","sc",startCaret ,"ec",endCaret);
     }
 }
-function sendPatch(prev,current) {
+function sendPatch(prev,current, isis) {
     
     let diff = dmp.diff_main(prev, current, true);
     dmp.diff_cleanupSemantic(diff);
     if ((diff.length > 1) || (diff.length == 1 && diff[0][0] != 0)) { // 1 이상이어야 변경 한 것이 있음
         let res = setDiff(diff)[0];    
         if (!(Hangul.disassemble(res[2]).length == Hangul.disassemble(res[1]).length + 1) || (keycode == "Backspace" || keycode == "Delete")) {
-            setHangulSelection(res)
+            if(isis){
+                setHangulSelection(res)
+            }
+            
             synchronized = false;
             let inputLength = (res[1].length ==0 ) ? 0 : res[1].length-1;
             let deleteLength =(res[2].length ==0 ) ? 0 : 1-res[2].length;
@@ -324,10 +339,13 @@ function receiveContent(response_body) {
     let response_patcheInfos = response_body.patchInfos;
     let originHTML = editor.innerHTML;
     if (receiveSessionId == clientSessionId) {
+        console.log("asdgasdgasdgasdg : ", response_patcheInfos.length)
         if(response_patcheInfos.length > 1){ // 꼬여서 다시 부를 떄
             let snapshotText = response_body.snapshotText;
             let snapshotVersion = response_body.snapshotVersion;
             let result = patchDocs(response_patcheInfos,snapshotText,snapshotVersion);
+            console.log("originHTML : ", originHTML)
+            console.log("result : ", result)
             if(originHTML != result){
               //  console.log("과연>","sc",startCaret,"ec",endCaret)
                 getCaret();
@@ -346,7 +364,7 @@ function receiveContent(response_body) {
             clientVersion = response_patcheInfos[0].patchVersion;
         }
         synchronized = true;
-        sendPatch(prevText,originHTML);
+        sendPatch(prevText,originHTML, false);
     } 
     if(receiveSessionId != clientSessionId && synchronized){
         getCaret();
