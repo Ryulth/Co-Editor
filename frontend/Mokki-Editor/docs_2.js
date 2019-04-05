@@ -93,7 +93,7 @@ window.onload = function () {
     editor = document.getElementById("mokkiTextPreview");
     let bar = document.getElementById("mokkiButtonBar");
     if (editor.addEventListener) {
-        editor.addEventListener("keydown", keydownAction)
+        editor.addEventListener("keydown", keydownAction);
         bar.addEventListener("click",clickAction)
         editor.addEventListener("mouseup", mouseupAction);
         editor.addEventListener(inputType, inputAction);
@@ -132,9 +132,11 @@ function clickAction(){
 }
 var pprevText;
 function keydownAction(event){
+    console.log("synchronized : ", synchronized);
     keycode = event.code;
     getCaret();
     if (synchronized) {
+        console.log("keydown : ", editor.innerHTML);
         prevText = editor.innerHTML;
     }
     pprevText = editor.innerHTML;
@@ -142,6 +144,8 @@ function keydownAction(event){
 
 function inputAction(event){
     if (synchronized) {
+        console.log("prevText : ", prevText);
+        console.log("editor.innerHTML : ", editor.innerHTML);
         sendPatch(prevText,editor.innerHTML, true);
     } 
     else{
@@ -192,12 +196,14 @@ function setHangulSelection(resDiff){
     }
 }
 function sendPatch(prev,current, isis) {
-    
+    // console.log("prev : ", prev);
+    // console.log("current : ", current)
     let diff = dmp.diff_main(prev, current, true);
     dmp.diff_cleanupSemantic(diff);
     if ((diff.length > 1) || (diff.length == 1 && diff[0][0] != 0)) { // 1 이상이어야 변경 한 것이 있음
         let res = setDiff(diff)[0];    
         if (!(Hangul.disassemble(res[2]).length == Hangul.disassemble(res[1]).length + 1) || (keycode == "Backspace" || keycode == "Delete")) {
+            console.log("sendPatch : ", diff);
             if(isis){
                 setHangulSelection(res)
             }
@@ -338,14 +344,14 @@ function receiveContent(response_body) {
     let receiveSessionId = response_body.socketSessionId;
     let response_patcheInfos = response_body.patchInfos;
     let originHTML = editor.innerHTML;
+    let result;
     if (receiveSessionId == clientSessionId) {
-        console.log("asdgasdgasdgasdg : ", response_patcheInfos.length)
         if(response_patcheInfos.length > 1){ // 꼬여서 다시 부를 떄
             let snapshotText = response_body.snapshotText;
             let snapshotVersion = response_body.snapshotVersion;
-            let result = patchDocs(response_patcheInfos,snapshotText,snapshotVersion);
-            console.log("originHTML : ", originHTML)
-            console.log("result : ", result)
+            result = patchDocs(response_patcheInfos,snapshotText,snapshotVersion);
+            // console.log("originHTML : ", originHTML)
+            // console.log("result : ", result)
             if(originHTML != result){
               //  console.log("과연>","sc",startCaret,"ec",endCaret)
                 getCaret();
@@ -353,10 +359,23 @@ function receiveContent(response_body) {
                 if(startCaret == endCaret){
                   //  console.log("과연")
                 }
-                let diff = dmp.diff_main(originHTML, result, true);
+                
+                let diff = dmp.diff_main(prevText,originHTML, true);
+                let patches = dmp.patch_make(diff);
+                if(patches.length > 0){
+                    console.log("!!@$!$@!@$!@$!@$@!$@! : ", result);
+                    result = dmp.patch_apply(patches, result)[0];
+                    console.log("!!@$!$@!@$!@$!@$@!$@!@@@@@@@@@@@@@ : ", result);
+                }
+                
+                console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+                console.log("prevText : ", prevText);
+                console.log("result : ", result);
+                diff = dmp.diff_main(originHTML, result, true);
                 dmp.diff_cleanupSemantic(diff);        
                 editor.innerHTML = result;
-                calcCaret(diff)
+                calcCaret(diff);
+
                 setCaretPosition(editor,startCaret,endCaret);
             }   
         }
@@ -364,13 +383,18 @@ function receiveContent(response_body) {
             clientVersion = response_patcheInfos[0].patchVersion;
         }
         synchronized = true;
-        sendPatch(prevText,originHTML, false);
+        sendPatch(prevText,originHTML, false);  
+        if(result != null){
+            prevText = result;z
+        }
     } 
     if(receiveSessionId != clientSessionId && synchronized){
         getCaret();
+        console.log("sss originHTML : ", originHTML)
         let result = patchDocs(response_patcheInfos,originHTML,clientVersion);
         let diff = dmp.diff_main(originHTML, result, true);
         dmp.diff_cleanupSemantic(diff);
+        console.log("sss result : ", result);
         editor.innerHTML = result;        
         calcCaret(diff)
         setCaretPosition(editor,startCaret,endCaret);
