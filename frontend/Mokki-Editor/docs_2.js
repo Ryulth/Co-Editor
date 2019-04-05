@@ -1,6 +1,6 @@
 const ie = (typeof document.selection != "undefined" && document.selection.type != "Control") && true;
 const w3 = (typeof window.getSelection != "undefined") && true;
-const baseUrl = "http://10.77.34.205:8080";
+const baseUrl = "http://10.77.34.204:8080";
 const docsId = 1;//location.href.substr(location.href.lastIndexOf('?') + 1);
 const dmp = new diff_match_patch();
 const inputType = /Trident/.test( navigator.userAgent ) ? 'textinput' : 'input';
@@ -132,11 +132,9 @@ function clickAction(){
 }
 var pprevText;
 function keydownAction(event){
-    console.log("synchronized : ", synchronized);
     keycode = event.code;
     getCaret();
     if (synchronized) {
-        console.log("keydown : ", editor.innerHTML);
         prevText = editor.innerHTML;
     }
     pprevText = editor.innerHTML;
@@ -144,8 +142,6 @@ function keydownAction(event){
 
 function inputAction(event){
     if (synchronized) {
-        console.log("prevText : ", prevText);
-        console.log("editor.innerHTML : ", editor.innerHTML);
         sendPatch(prevText,editor.innerHTML, true);
     } 
     else{
@@ -203,11 +199,10 @@ function sendPatch(prev,current, isis) {
     if ((diff.length > 1) || (diff.length == 1 && diff[0][0] != 0)) { // 1 이상이어야 변경 한 것이 있음
         let res = setDiff(diff)[0];    
         if (!(Hangul.disassemble(res[2]).length == Hangul.disassemble(res[1]).length + 1) || (keycode == "Backspace" || keycode == "Delete")) {
-            console.log("sendPatch : ", diff);
+            //console.log("sendPatch : ", diff);
             if(isis){
                 setHangulSelection(res)
             }
-            
             synchronized = false;
             let inputLength = (res[1].length ==0 ) ? 0 : res[1].length-1;
             let deleteLength =(res[2].length ==0 ) ? 0 : 1-res[2].length;
@@ -363,14 +358,14 @@ function receiveContent(response_body) {
                 let diff = dmp.diff_main(prevText,originHTML, true);
                 let patches = dmp.patch_make(diff);
                 if(patches.length > 0){
-                    console.log("!!@$!$@!@$!@$!@$@!$@! : ", result);
+                    // console.log("!!@$!$@!@$!@$!@$@!$@! : ", result);
                     result = dmp.patch_apply(patches, result)[0];
-                    console.log("!!@$!$@!@$!@$!@$@!$@!@@@@@@@@@@@@@ : ", result);
+                    // console.log("!!@$!$@!@$!@$!@$@!$@!@@@@@@@@@@@@@ : ", result);
                 }
                 
-                console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-                console.log("prevText : ", prevText);
-                console.log("result : ", result);
+                // console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+                // console.log("prevText : ", prevText);
+                // console.log("result : ", result);
                 diff = dmp.diff_main(originHTML, result, true);
                 dmp.diff_cleanupSemantic(diff);        
                 editor.innerHTML = result;
@@ -385,16 +380,16 @@ function receiveContent(response_body) {
         synchronized = true;
         sendPatch(prevText,originHTML, false);  
         if(result != null){
-            prevText = result;z
+            prevText = result;
         }
     } 
     if(receiveSessionId != clientSessionId && synchronized){
         getCaret();
-        console.log("sss originHTML : ", originHTML)
+        // console.log("sss originHTML : ", originHTML)
         let result = patchDocs(response_patcheInfos,originHTML,clientVersion);
         let diff = dmp.diff_main(originHTML, result, true);
         dmp.diff_cleanupSemantic(diff);
-        console.log("sss result : ", result);
+        // console.log("sss result : ", result);
         editor.innerHTML = result;        
         calcCaret(diff)
         setCaretPosition(editor,startCaret,endCaret);
@@ -439,54 +434,6 @@ function calcCaret(diff){
         }
         //console.log(index,"번째",tempDiff,"sc",startCaret ,"si", startIdx,"ec",endCaret);
         
-    });
-}
-function calcCaret2(diff){
-    let tempDiffs=setDiff(diff);
-    tempDiffs.forEach(function (tempDiff,index,array){
-        console.log(index,"번째",tempDiff,"sc",startCaret ,"si", startIdx,"ec",endCaret,"ei",endIdx,"mv",moveIdx);
-        let inputString = tempDiff[1];
-        let deleteString = tempDiff[2];
-        let startIdx = tempDiff[0];
-        let moveIdx = inputString.length-deleteString.length;
-        let endIdx = startIdx - moveIdx;
-        
-        if(startIdx<=startCaret && endIdx<=startCaret){
-            if(tempDiff[1].length>1){
-            }
-            console.log("저기","sc",startCaret ,"si", startIdx,"ec",endCaret,"ei",endIdx,"mv",moveIdx)
-            startCaret += moveIdx;
-            endCaret +=moveIdx;
-        }
-        else if(startIdx<=startCaret && startCaret< endIdx){ // 범위안
-            console.log("요기","sc",startCaret ,"si", startIdx,"ec",endCaret,"ei",endIdx,"mv",moveIdx)
-           if(startCaret!=endCaret){
-                startCaret = startIdx ;
-                endCaret =startIdx;
-            }
-        }
-        else if(startCaret<startIdx && startIdx < endCaret){
-            console.log("쩌기")
-            // if(startCaret == startIdx || startIdx == endCaret){
-            //     console.log("같냐2!")
-            // }
-            endCaret +=moveIdx;
-        }
-        else{
-            // console.log(tempDiff)
-            // console.log("si",startIdx,"ei",endIdx)
-            // console.log("startCaret",startCaret,"endCaret",endCaret)
-            // console.log("else")
-            // console.log("여기이이이인가?")
-            if(endCaret == startIdx){
-                // console.log("여기이이이인가?")
-            }
-        }
-        if(startCaret == startIdx || startIdx == endCaret){
-            console.log("같냐!","sc",startCaret ,"si", startIdx,"ec",endCaret,"ei",endIdx,"mv",moveIdx)
-            //endCaret +=moveIdx;
-        }
-
     });
 }
 function removeTags(text){

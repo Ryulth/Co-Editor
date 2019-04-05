@@ -18,7 +18,6 @@ class Caret {
             caretFrame.appendChild(caretWrapper);
             this.caretContainer.appendChild(caretFrame);
             this.caretWrappers[key] = caretWrapper;
-            console.log(this.caretWrappers)
         }
     }
 
