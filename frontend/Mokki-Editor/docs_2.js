@@ -1,6 +1,6 @@
 const ie = (typeof document.selection != "undefined" && document.selection.type != "Control") && true;
 const w3 = (typeof window.getSelection != "undefined") && true;
-const baseUrl = "http://10.77.34.203:8080";
+const baseUrl = "http://10.77.34.204:8080";
 const docsId = 1;//location.href.substr(location.href.lastIndexOf('?') + 1);
 const dmp = new diff_match_patch();
 const inputType = /Trident/.test( navigator.userAgent ) ? 'textinput' : 'input';
@@ -22,8 +22,8 @@ const setUserCaret = function(sessionId, start, end){
     let G = Math.round(Math.random()*255);
     let B = Math.round(Math.random()*255);
     let rgba = "rgba("+R+", "+G+", "+B+", .6)";
-    caretVis.createCaret(sessionId, sessionId, rgba);
-    setUserCaret2(editor, start, end, sessionId);
+    // caretVis.createCaret(sessionId, sessionId, rgba);
+    // setUserCaret2(editor, start, end, sessionId);
 }
 
 const setUserCaret2 = function(element, start, end, key){
@@ -91,6 +91,10 @@ window.onload = function () {
     caretVis = new Caret();
     getDocs();
     editor = document.getElementById("mokkiTextPreview");
+    editor.setAttribute("autocorrect","off");
+    editor.setAttribute("autocapitalize","off");
+    editor.setAttribute("autocomplete","off");
+    editor.setAttribute("spellcheck",false);
     checkTextArea();
     let bar = document.getElementById("mokkiButtonBar");
     if (editor.addEventListener) {
@@ -346,6 +350,8 @@ function setConnected(connected) {
     }
 }
 function receiveContent(response_body) {
+    console.log("받기 시작")
+    let ms_start =  (new Date).getTime();
     let receiveSessionId = response_body.socketSessionId;
     let response_patcheInfos = response_body.patchInfos;
     let originHTML = editor.innerHTML;
@@ -406,6 +412,9 @@ function receiveContent(response_body) {
         prevText = result;
         //document.getElementById('text2b').value = result;
     }
+    
+    let ms_end =  (new Date).getTime();
+    console.log("받기 끝",(ms_end-ms_start)/1000)
 }
 function calcCaret(diff){
     let tempDiffs=setDiff(diff);
