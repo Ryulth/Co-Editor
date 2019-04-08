@@ -197,8 +197,9 @@ function sendPatch(prev,current, isis) {
     let diff = dmp.diff_main(prev, current, true);
     dmp.diff_cleanupSemantic(diff);
     if ((diff.length > 1) || (diff.length == 1 && diff[0][0] != 0)) { // 1 이상이어야 변경 한 것이 있음
-        let res = setDiff(diff)[0];    
-        if (!(Hangul.disassemble(res[2]).length == Hangul.disassemble(res[1]).length + 1) || (keycode == "Backspace" || keycode == "Delete")) {
+        let res = setDiff(diff)[0];
+        let isBadChim = (endCaret-startCaret==1) ? !(Hangul.disassemble(res[2]).length == Hangul.disassemble(res[1]).length + 1) : true
+        if ( isBadChim || (keycode == "Backspace" || keycode == "Delete")) { 
             //console.log("sendPatch : ", diff);
             if(isis){
                 setHangulSelection(res)
