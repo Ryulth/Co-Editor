@@ -4,6 +4,7 @@ const baseUrl = "http://10.77.34.204:8080";
 const docsId = 1;//location.href.substr(location.href.lastIndexOf('?') + 1);
 const dmp = new diff_match_patch();
 const inputType = /Trident/.test( navigator.userAgent ) ? 'textinput' : 'input';
+const editorType = "docs";
 let editor;
 let synchronized = true; 
 let clientVersion;
@@ -16,77 +17,8 @@ let startCaret =0;
 let endCaret =0;
 let keycode = "";
 let caretVis;
+let isPaste = false;
 
-const setUserCaret = function(sessionId, start, end){
-    let R = Math.round(Math.random()*255);
-    let G = Math.round(Math.random()*255);
-    let B = Math.round(Math.random()*255);
-    let rgba = "rgba("+R+", "+G+", "+B+", .6)";
-    // caretVis.createCaret(sessionId, sessionId, rgba);
-    // setUserCaret2(editor, start, end, sessionId);
-}
-
-const setUserCaret2 = function(element, start, end, key){
-    let childTextLength = 0;
-    let textNodeList = getTextNodeList(element);
-    let startOffset = 0, endOffset = 0;
-    let startElement, endElement;
-    let countOfNewLine = 0;
-    let isLast = false;
-    caretVis.removeDrags(key);
-    textNodeList.forEach(function(textNode) {
-        if(isLast){
-            return;
-        }
-        let nodeTextLength = textNode.textContent.length;
-        let lineNode = getLineNode(element, textNode);
-        countOfNewLine = getCountOfNewLine(element, lineNode);
-        endElement = null
-        if(start <= childTextLength + countOfNewLine + nodeTextLength){
-            startOffset = start - (childTextLength + countOfNewLine);
-            if(startElement != null){
-                startOffset = 0;
-            } 
-            startElement = textNode;
-        }
-        if(end <= childTextLength + countOfNewLine + nodeTextLength){
-            endOffset = end - (childTextLength + countOfNewLine);
-            endElement = textNode;
-            isLast = true;
-        }
-        
-        if(startElement != null){
-            if(endElement == null){
-                endElement = startElement;
-                endOffset = startElement.length;
-            }
-            try{
-                let createdRange = document.createRange();
-                createdRange.selectNodeContents(element);
-                createdRange.setStart(startElement, startOffset);
-                createdRange.setEnd(endElement, endOffset);
-                caretVis.createDrag(key, createdRange.getBoundingClientRect());
-            }catch(e){
-
-            }
-            
-        }
-        childTextLength += nodeTextLength;
-    });
-    if (w3) {
-        try{
-            let createdRange = document.createRange();
-            createdRange.selectNodeContents(element);
-            createdRange.setStart(endElement, endOffset);
-            createdRange.setEnd(endElement, endOffset);
-            caretVis.moveCaret(key, createdRange.getBoundingClientRect());
-        }
-        catch(e){
-            
-        }
-    }
-    return null;
-}
 window.onload = function () {
     caretVis = new Caret();
     getDocs();
@@ -95,7 +27,7 @@ window.onload = function () {
     editor.setAttribute("autocapitalize","off");
     editor.setAttribute("autocomplete","off");
     editor.setAttribute("spellcheck",false);
-    checkTextArea();
+    initTextArea();
     let bar = document.getElementById("mokkiButtonBar");
     if (editor.addEventListener) {
         editor.addEventListener("keydown", keydownAction);
@@ -103,6 +35,9 @@ window.onload = function () {
         editor.addEventListener("mouseup", mouseupAction);
         editor.addEventListener(inputType, inputAction);
         editor.addEventListener("keyup", keyupAction);
+        editor.addEventListener("paste", function(e){
+            isPaste = true;
+        });
     }/*
     else {
         editor.attachEvent("onkeydown", keydownAction)
@@ -110,8 +45,55 @@ window.onload = function () {
         editor.attachEvent("oninput", attachEvent);
     }*/    
 }
+function getDocs() {
+    $.ajax({
+        type: "GET",
+        url: baseUrl + "/"+editorType+"/" + docsId,
+        cache: false,
+        success: function (response) {
+            let response_body = JSON.parse(response);
+            let response_doc = response_body["docs"];
+            let content = response_doc["content"];
+            clientVersion = response_doc["version"];
+            let response_patches = response_body["patchInfos"];
+            if (response_patches.length >= 1) {
+                console.log(response_patches);
+                console.log(response_doc);
+                content = patchDocs(response_patches,content,clientVersion);
+            } 
+            document.getElementById("mokkiTextPreview").innerHTML = content;
+            prevText = content;
+            synchronized = true;
+            connect();
+        }
+    });
+}
+function connect() {
+    let socket = new SockJS(baseUrl + '/docs-websocket');
+    stompClient = Stomp.over(socket);
+    stompClient.connect({}, function (frame) {
+        clientSessionId = /\/([^\/]+)\/websocket/.exec(socket._transport.url)[1];
+        setConnected(true);
+        accountLogin(baseUrl,editorType,docsId,clientSessionId);
+        stompClient.subscribe('/topic/'+ editorType + "/" + docsId, function (content) {
+            let response_body = JSON.parse(content.body);
+            receiveContent(response_body) //
+        });
+        stompClient.subscribe('/topic/position/'+docsId, function(content){
+            let contentBody = JSON.parse(content.body);
+            if(contentBody.sessionId != clientSessionId){
+                setUserCaret(contentBody.sessionId, contentBody.start, contentBody.end);
+            }
+        });
+        stompClient.subscribe('/topic/'+ editorType +'/'+docsId+"/accounts", function(content){
+            let accounts = JSON.parse(content.body);
+            setAccountTable(accounts);
+        });
+        
+    });
+}
 
-function checkTextArea(){
+function initTextArea(){
     let text = document.getElementById("mokkiTextPreview").innerHTML.trim();
     if(text == ""){
         editor.innerHTML = "<p><br></p>"
@@ -119,7 +101,7 @@ function checkTextArea(){
 }
 
 function testgetAccount(){
-    getAccounts(baseUrl,"docs",docsId);
+    getAccounts(baseUrl,editorType,docsId);
 }
 function mouseupAction(){
     getCaret();
@@ -153,9 +135,9 @@ function keydownAction(event){
 }
 
 function inputAction(event){
-    checkTextArea();
+    initTextArea();
     if (synchronized) {
-        sendPatch(prevText,editor.innerHTML, true);
+        sendPatch(prevText,editor.innerHTML, false);
     } 
     else{
         let diff = dmp.diff_main(pprevText, editor.innerHTML, true);
@@ -168,17 +150,39 @@ function inputAction(event){
         }
     }
 }
+
 function keyupAction(){
     getCaret();
 }
+
+function sendContentPost(patchText,inputLength,deleteLength) {
+    let reqBody = {
+        "socketSessionId": clientSessionId,
+        "docsId": docsId,
+        "clientVersion": clientVersion,
+        "patchText": patchText ,
+        "startIdx" : startCaret -inputLength,
+        "endIdx" : endCaret + deleteLength
+    }
+    $.ajax({
+        async: true, // false 일 경우 동기 요청으로 변경
+        type: "POST",
+        contentType: "application/json",
+        url: baseUrl + "/"+editorType+"/" + docsId,
+        data: JSON.stringify(reqBody),
+        dataType: 'json',
+        success: function (response) {
+        }
+    });
+}
+
 function setHangulSelection(resDiff){
     let startIdx = resDiff[0];
     let inputString = resDiff[1].trim();
     let deleteString = resDiff[2].trim();
     if(isHangul(inputString)){
-        //console.log("한글",inputString,startCaret,endCaret)
         let isWriting = (startCaret == endCaret)? false : true;
-        if(inputString.length == 2 ){//&& Hangul.isComplete(inputString[0])){
+        if(inputString.length == 2 ){
             startCaret +=1;
             endCaret+=1;
         }
@@ -194,27 +198,30 @@ function setHangulSelection(resDiff){
                     }
                 }
             }
-            else{
-              
-            }
         }
         endCaret = (startCaret == endCaret)? endCaret+1 : endCaret;
-        //console.log("st",startCaret,"ed",endCaret)
         setCaretPosition(editor,startCaret,endCaret);
-       // console.log("한글셋","sc",startCaret ,"ec",endCaret);
     }
 }
-function sendPatch(prev,current, isis) {
-    // console.log("prev : ", prev);
-    // console.log("current : ", current)
+
+function isHangul(inputText){
+    if(inputText==null){
+        return false;
+    }
+    if(escape(inputText.charAt(0)).length == 6){
+        return true;
+    }
+    return false;
+}
+
+function sendPatch(prev,current, isBuffer) {
     let diff = dmp.diff_main(prev, current, true);
     dmp.diff_cleanupSemantic(diff);
     if ((diff.length > 1) || (diff.length == 1 && diff[0][0] != 0)) { // 1 이상이어야 변경 한 것이 있음
         let res = setDiff(diff)[0];
         let isBadChim = (endCaret-startCaret==1) ? !(Hangul.disassemble(res[2]).length == Hangul.disassemble(res[1]).length + 1) : true
         if ( isBadChim || (keycode == "Backspace" || keycode == "Delete")) { 
-            //console.log("sendPatch : ", diff);
-            if(isis){
+            if(!isBuffer && !isPaste){
                 setHangulSelection(res)
             }
             synchronized = false;
@@ -223,36 +230,14 @@ function sendPatch(prev,current, isis) {
             let patch_list = dmp.patch_make(prev, current, diff);
             let patch_text = dmp.patch_toText(patch_list);
             sendContentPost(patch_text,inputLength,deleteLength);
-            //let text1 = document.getElementById('text2b').value;
-            //let results = dmp.patch_apply(patch_list, text1);
-            //document.getElementById('text2b').value = results[0];
             prevText = editor.innerHTML;
         }
         keycode = "";
+        isPaste = false;
     }
     else{
         //TODO 변경한거 없다고 잡는 경우가 있다 제자리 변경 그경우 고려해야함        console.log(diff)
     }
-}
-function sendContentPost(patchText,inputLength,deleteLength) {
-    let reqBody = {
-        "socketSessionId": clientSessionId,
-        "docsId": docsId,
-        "clientVersion": clientVersion,
-        "patchText": patchText ,
-        "startIdx" : startCaret -inputLength,
-        "endIdx" : endCaret + deleteLength
-    }
-    $.ajax({
-        async: true, // false 일 경우 동기 요청으로 변경
-        type: "POST",
-        contentType: "application/json",
-        url: baseUrl + "/docs/" + docsId,
-        data: JSON.stringify(reqBody),
-        dataType: 'json',
-        success: function (response) {
-        }
-    });
 }
 
 function setDiff(diff) {
@@ -291,67 +276,9 @@ function setDiff(diff) {
     //return [idx, insertString, deleteString]
 }
 
-
-function getDocs() {
-    $.ajax({
-        type: "GET",
-        url: baseUrl + "/docs/" + docsId,
-        cache: false,
-        success: function (response) {
-            let response_body = JSON.parse(response);
-            let response_doc = response_body["docs"];
-            let content = response_doc["content"];
-            clientVersion = response_doc["version"];
-            let response_patches = response_body["patchInfos"];
-            if (response_patches.length >= 1) {
-                console.log(response_patches);
-                console.log(response_doc);
-                content = patchDocs(response_patches,content,clientVersion);
-            } 
-            document.getElementById("mokkiTextPreview").innerHTML = content;
-           // document.getElementById("mokkiTextPreview").appendChild(lastGC);
-            prevText = content;
-            synchronized = true;
-           // document.getElementById('text2b').value = content;
-            connect();
-            //testgetAccount();
-        }
-    });
-}
-function connect() {
-    let socket = new SockJS(baseUrl + '/docs-websocket');
-    stompClient = Stomp.over(socket);
-    stompClient.connect({}, function (frame) {
-        clientSessionId = /\/([^\/]+)\/websocket/.exec(socket._transport.url)[1];
-        setConnected(true);
-        accountLogin(baseUrl,"docs",docsId,clientSessionId);
-        stompClient.subscribe('/topic/docs' + "/" + docsId, function (content) {
-            let response_body = JSON.parse(content.body);
-            receiveContent(response_body) //
-        });
-        stompClient.subscribe('/topic/position/'+docsId, function(content){
-            let contentBody = JSON.parse(content.body);
-            if(contentBody.sessionId != clientSessionId){
-                setUserCaret(contentBody.sessionId, contentBody.start, contentBody.end);
-            }
-        });
-        stompClient.subscribe('/topic/docs/'+docsId+"/accounts", function(content){
-            let accounts = JSON.parse(content.body);
-            setAccountTable(accounts);
-        });
-        
-    });
-}
-function setConnected(connected) {
-    if (connected) {
-        console.log("연결됨");
-    } else {
-        console.log("연결안됨");
-    }
-}
 function receiveContent(response_body) {
-    console.log("받기 시작")
-    let ms_start =  (new Date).getTime();
+    // console.log("받기 시작")
+    // let ms_start =  (new Date).getTime();
     let receiveSessionId = response_body.socketSessionId;
     let response_patcheInfos = response_body.patchInfos;
     let originHTML = editor.innerHTML;
@@ -361,32 +288,17 @@ function receiveContent(response_body) {
             let snapshotText = response_body.snapshotText;
             let snapshotVersion = response_body.snapshotVersion;
             result = patchDocs(response_patcheInfos,snapshotText,snapshotVersion);
-            // console.log("originHTML : ", originHTML)
-            // console.log("result : ", result)
             if(originHTML != result){
-              //  console.log("과연>","sc",startCaret,"ec",endCaret)
                 getCaret();
-                //console.log("과연>","sc",startCaret,"ec",endCaret)
-                if(startCaret == endCaret){
-                  //  console.log("과연")
-                }
-                
                 let diff = dmp.diff_main(prevText,originHTML, true);
                 let patches = dmp.patch_make(diff);
                 if(patches.length > 0){
-                    // console.log("!!@$!$@!@$!@$!@$@!$@! : ", result);
                     result = dmp.patch_apply(patches, result)[0];
-                    // console.log("!!@$!$@!@$!@$!@$@!$@!@@@@@@@@@@@@@ : ", result);
                 }
-                
-                // console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-                // console.log("prevText : ", prevText);
-                // console.log("result : ", result);
                 diff = dmp.diff_main(originHTML, result, true);
                 dmp.diff_cleanupSemantic(diff);        
                 editor.innerHTML = result;
                 calcCaret(diff);
-
                 setCaretPosition(editor,startCaret,endCaret);
             }   
         }
@@ -394,36 +306,78 @@ function receiveContent(response_body) {
             clientVersion = response_patcheInfos[0].patchVersion;
         }
         synchronized = true;
-        sendPatch(prevText,originHTML, false);  
+        sendPatch(prevText,originHTML, true);  
         if(result != null){
             prevText = result;
         }
     } 
     if(receiveSessionId != clientSessionId && synchronized){
         getCaret();
-        // console.log("sss originHTML : ", originHTML)
         let result = patchDocs(response_patcheInfos,originHTML,clientVersion);
         let diff = dmp.diff_main(originHTML, result, true);
         dmp.diff_cleanupSemantic(diff);
-        // console.log("sss result : ", result);
         editor.innerHTML = result;        
         calcCaret(diff)
         setCaretPosition(editor,startCaret,endCaret);
         prevText = result;
-        //document.getElementById('text2b').value = result;
     }
-    
-    let ms_end =  (new Date).getTime();
-    console.log("받기 끝",(ms_end-ms_start)/1000)
+    // let ms_end =  (new Date).getTime();
+    // console.log("받기 끝",(ms_end-ms_start)/1000)
 }
+
+function patchDocs(response_patches,content,startClientVersion) {
+    let result = content;
+    // let ms_start = (new Date).getTime();
+    response_patches.forEach(function (item, index, array) {
+        let patches = dmp.patch_fromText(item["patchText"]);
+        if (startClientVersion < item["patchVersion"]) {
+            let results = dmp.patch_apply(patches, result);
+            result = results[0];
+            startClientVersion += 1;
+        }
+        if (index == (array.length -1) && patches.length != 0) {
+            clientVersion = item["patchVersion"];
+        }
+        
+    });
+    // let ms_end = (new Date).getTime();
+    //console.log("걸린시간",(ms_end - ms_start) /1000)
+    return result;
+}
+
+function removeTags(text){
+    let resText = text.replace(/<\p>/ig, " "); //엔터에 대한 계산위한용도
+    resText = resText.replace("&nbsp;"," ");
+    resText = resText.replace(/<(\/)?([a-zA-Z]*)(\s[a-zA-Z]*=[^>]*)?(\s)*(\/)?>/ig, "");
+    return resText;
+}
+
+function disconnect() {
+    if (stompClient !== null) {
+        stompClient.disconnect();
+    }
+    setConnected(false);
+    console.log("Disconnected");
+}
+
+function setConnected(connected) {
+    if (connected) {
+        console.log("연결됨");
+    } else {
+        console.log("연결안됨");
+    }
+}
+
+
+/*
+TODO : 커서 파일로 추출
+*/
 function calcCaret(diff){
     let tempDiffs=setDiff(diff);
     tempDiffs.forEach(function (tempDiff,index,array){
         let startIdx = tempDiff[0];
         let inputString = tempDiff[1];
         let deleteString = tempDiff[2]
-        //console.log(index,"번째",tempDiff,"sc",startCaret ,"si", startIdx,"ec",endCaret);
-        
         if(inputString.length != 0 && deleteString.length != 0){
             // delete and insert case
             // delete 먼저하자
@@ -451,59 +405,9 @@ function calcCaret(diff){
             // delete
             deleteCalcCaret(startIdx, deleteString);
         }
-        //console.log(index,"번째",tempDiff,"sc",startCaret ,"si", startIdx,"ec",endCaret);
-        
     });
 }
-function removeTags(text){
-    let resText = text.replace(/<\p>/ig, " "); //엔터에 대한 계산위한용도
-    resText = resText.replace("&nbsp;"," ");
-    resText = resText.replace(/<(\/)?([a-zA-Z]*)(\s[a-zA-Z]*=[^>]*)?(\s)*(\/)?>/ig, "");
-    return resText;
-}
-function patchDocs(response_patches,content,startClientVersion) {
-    let result = content;
-    let ms_start = (new Date).getTime();
-    response_patches.forEach(function (item, index, array) {
-        let patches = dmp.patch_fromText(item["patchText"]);
-        if (startClientVersion < item["patchVersion"]) {
-            let results = dmp.patch_apply(patches, result);
-            result = results[0];
-            startClientVersion += 1;
-        }
-        if (index == (array.length -1) && patches.length != 0) {
-            clientVersion = item["patchVersion"];
-        }
-        
-    });
-    let ms_end = (new Date).getTime();
-    //console.log("걸린시간",(ms_end - ms_start) /1000)
-    return result;
-}
-function disconnect() {
-    if (stompClient !== null) {
-        stompClient.disconnect();
-    }
-    setConnected(false);
-    console.log("Disconnected");
-}
-
-
-function isHangul(inputText){
-    if(inputText==null){
-        return false;
-    }
-    if(escape(inputText.charAt(0)).length == 6){
-        return true;
-    }
-    return false;
-}
-
-
-//////커서
 const getCaretPosition = function(element){
-    //document.getElementById("caretBegin").innerText = getCaretPositionStart(element);
-    //document.getElementById("caretEnd").innerText = getCaretPositionEnd(element);
     return [getCaretPositionStart(element), getCaretPositionEnd(element)];
 }
 
@@ -630,69 +534,6 @@ const getTextNodeList = function(element){
     })
     return textNodeList;
 }
-//파일로 추출
-function accountLogout(baseUrl,type,id,clientSessionId){
-    let sendUrl =  baseUrl + "/" +type +"/" + id+"/accounts/"+clientSessionId;
-    $.ajax({
-        async: true, // false 일 경우 동기 요청으로 변경
-        type: "DELETE",
-        contentType: "application/json",
-        url: sendUrl,
-        success: function (response) {
-        }
-    });
-}
-function accountLogin(baseUrl,type,id,clientSessionId){
-        let sendUrl =  baseUrl + "/" +type +"/" + id+"/accounts";
-        let reqBody = {
-            "clientSessionId": clientSessionId,
-            "remoteAddress": ""
-        }
-        $.ajax({
-            async: true, // false 일 경우 동기 요청으로 변경
-            type: "POST",
-            contentType: "application/json",
-            url: sendUrl,
-            data: JSON.stringify(reqBody),
-            dataType: 'json',
-            success: function (response) {
-            }
-        });
-}
-function getAccounts(baseUrl,type,id){
-    let sendUrl =  baseUrl + "/" +type +"/" + id+"/accounts";
-    $.ajax({
-        type: "GET",
-        cache: false,
-        url: sendUrl,
-        success: function (response) {
-            console.log(JSON.parse(response))
-            setAccountTable(JSON.parse(response));
-        }
-    });
-}
-function setAccountTable(accounts){
-    tableBody = document.getElementById("accounts-table-body");
-    totalRow = "";
-    let currentCaretUser = {};
-    Object.assign(currentCaretUser, caretVis.caretWrappers);
-    accounts.forEach(function (account){
-        row = "<tr><td>"+account.clientSessionId
-        +"</td><td>"+account.remoteAddress
-        +"</td></tr>";
-        totalRow += row;
-        if(account.clientSessionId in currentCaretUser){
-            delete currentCaretUser[account.clientSessionId];
-        }
-    });
-
-    Object.keys(currentCaretUser).forEach(key => {
-        caretVis.removeCaret(key);
-    });
-    
-    tableBody.innerHTML = totalRow;
-}
-/////////////
 function insertCalcCaret(startIdx, inputString){
     // insert 
     if(startCaret == endCaret){
@@ -769,4 +610,145 @@ function deleteDrag(startIdx, deleteString){
             endCaret = startIdx;
         }
     }
+}
+/*
+TODO : 외부 커서 파일 
+ */
+const setUserCaret = function(sessionId, start, end){
+    // console.log("커서 시작")
+    // let ms_start = (new Date).getDate();
+    let R = Math.round(Math.random()*255);
+    let G = Math.round(Math.random()*255);
+    let B = Math.round(Math.random()*255);
+    let rgba = "rgba("+R+", "+G+", "+B+", .6)";
+    caretVis.createCaret(sessionId, sessionId, rgba);
+    calcUserCaret(editor, start, end, sessionId);
+    // let ms_end = (new Date).getDate();
+    // console.log("커서끝",(ms_end-ms_start)/1000);
+}
+
+const calcUserCaret = function(element, start, end, key){
+    let childTextLength = 0;
+    let textNodeList = getTextNodeList(element);
+    let startOffset = 0, endOffset = 0;
+    let startElement, endElement;
+    let countOfNewLine = 0;
+    let isLast = false;
+    caretVis.removeDrags(key);
+    textNodeList.forEach(function(textNode) {
+        if(isLast){
+            return;
+        }
+        let nodeTextLength = textNode.textContent.length;
+        let lineNode = getLineNode(element, textNode);
+        countOfNewLine = getCountOfNewLineOver(element, lineNode, countOfNewLine);
+        endElement = null
+        if(start <= childTextLength + countOfNewLine + nodeTextLength){
+            startOffset = start - (childTextLength + countOfNewLine);
+            if(startElement != null){
+                startOffset = 0;
+            } 
+            startElement = textNode;
+        }
+        if(end <= childTextLength + countOfNewLine + nodeTextLength){
+            endOffset = end - (childTextLength + countOfNewLine);
+            endElement = textNode;
+            isLast = true;
+        }
+        
+        if(startElement != null){
+            if(endElement == null){
+                endElement = startElement;
+                endOffset = startElement.length;
+            }
+            try{
+                let createdRange = document.createRange();
+                createdRange.selectNodeContents(element);
+                createdRange.setStart(startElement, startOffset);
+                createdRange.setEnd(endElement, endOffset);
+                caretVis.createDrag(key, createdRange.getBoundingClientRect());
+            }catch(e){
+
+            }
+            
+        }
+        childTextLength += nodeTextLength;
+    });
+    if (w3) {
+        try{
+            let createdRange = document.createRange();
+            createdRange.selectNodeContents(element);
+            createdRange.setStart(endElement, endOffset);
+            createdRange.setEnd(endElement, endOffset);
+            caretVis.moveCaret(key, createdRange.getBoundingClientRect());
+        }
+        catch(e){
+            
+        }
+    }
+    return null;
+}
+/*
+TODO : account 파일로 추출;
+  */
+function accountLogout(baseUrl,type,id,clientSessionId){
+    let sendUrl =  baseUrl + "/" +type +"/" + id+"/accounts/"+clientSessionId;
+    $.ajax({
+        async: true, // false 일 경우 동기 요청으로 변경
+        type: "DELETE",
+        contentType: "application/json",
+        url: sendUrl,
+        success: function (response) {
+        }
+    });
+}
+function accountLogin(baseUrl,type,id,clientSessionId){
+        let sendUrl =  baseUrl + "/" +type +"/" + id+"/accounts";
+        let reqBody = {
+            "clientSessionId": clientSessionId,
+            "remoteAddress": ""
+        }
+        $.ajax({
+            async: true, // false 일 경우 동기 요청으로 변경
+            type: "POST",
+            contentType: "application/json",
+            url: sendUrl,
+            data: JSON.stringify(reqBody),
+            dataType: 'json',
+            success: function (response) {
+            }
+        });
+}
+function getAccounts(baseUrl,type,id){
+    let sendUrl =  baseUrl + "/" +type +"/" + id+"/accounts";
+    $.ajax({
+        type: "GET",
+        cache: false,
+        url: sendUrl,
+        success: function (response) {
+            console.log(JSON.parse(response))
+            setAccountTable(JSON.parse(response));
+        }
+    });
+}
+function setAccountTable(accounts){
+    tableBody = document.getElementById("accounts-table-body");
+    totalRow = "";
+    let currentCaretUser = {};
+    Object.assign(currentCaretUser, caretVis.caretWrappers);
+    accounts.forEach(function (account){
+        row = "<tr><td>"+account.clientSessionId
+        +"</td><td>"+account.remoteAddress
+        +"</td></tr>";
+        totalRow += row;
+        if(account.clientSessionId in currentCaretUser){
+            delete currentCaretUser[account.clientSessionId];
+        }
+    });
+
+    Object.keys(currentCaretUser).forEach(key => {
+        caretVis.removeCaret(key);
+    });
+    
+    tableBody.innerHTML = totalRow;
 }
