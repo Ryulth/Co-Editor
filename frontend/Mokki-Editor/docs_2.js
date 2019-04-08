@@ -1,6 +1,6 @@
 const ie = (typeof document.selection != "undefined" && document.selection.type != "Control") && true;
 const w3 = (typeof window.getSelection != "undefined") && true;
-const baseUrl = "http://10.77.34.204:8080";
+const baseUrl = "http://10.77.34.203:8080";
 const docsId = 1;//location.href.substr(location.href.lastIndexOf('?') + 1);
 const dmp = new diff_match_patch();
 const inputType = /Trident/.test( navigator.userAgent ) ? 'textinput' : 'input';
@@ -91,6 +91,7 @@ window.onload = function () {
     caretVis = new Caret();
     getDocs();
     editor = document.getElementById("mokkiTextPreview");
+    checkTextArea();
     let bar = document.getElementById("mokkiButtonBar");
     if (editor.addEventListener) {
         editor.addEventListener("keydown", keydownAction);
@@ -104,6 +105,13 @@ window.onload = function () {
         bar.attachEvent("onclick",clickAction)
         editor.attachEvent("oninput", attachEvent);
     }*/    
+}
+
+function checkTextArea(){
+    let text = document.getElementById("mokkiTextPreview").innerHTML.trim();
+    if(text == ""){
+        editor.innerHTML = "<p><br></p>"
+    }
 }
 
 function testgetAccount(){
@@ -141,6 +149,7 @@ function keydownAction(event){
 }
 
 function inputAction(event){
+    checkTextArea();
     if (synchronized) {
         sendPatch(prevText,editor.innerHTML, true);
     } 
@@ -553,26 +562,15 @@ const getLineNode = function(element, node){
 }
 
 const getCountOfNewLine = function(element, lineNode) {
-    let count = 0;
-    let isFirstLine = true;
+    return Array.prototype.slice.call(element.childNodes).indexOf(lineNode);
+}
+
+const getCountOfNewLineOver = function(element, lineNode, countOfNewLine) {
     let list = element.childNodes;
-    for(idx in list){
-        if(isFirstLine){
-            if(list[idx].nodeName == "DIV" || list[idx].nodeName == "P"){
-                isFirstLine = false;
-                count += 1;
-            }
-            if(list[idx] == lineNode){
-                break;
-            }
-        }else{
-            count += 1;
-            if(list[idx] == lineNode){
-                break;
-            }
-        }
+    while(lineNode != list[countOfNewLine]){
+        countOfNewLine++;
     }
-    return count;
+    return countOfNewLine;
 }
 
 const setCaretPosition = function(element, start, end){
@@ -587,7 +585,7 @@ const setCaretPosition = function(element, start, end){
     textNodeList.forEach(function(textNode) {
         let nodeTextLength = textNode.textContent.length;
         let lineNode = getLineNode(element, textNode);
-        countOfNewLine = getCountOfNewLine(element, lineNode);
+        countOfNewLine = getCountOfNewLineOver(element, lineNode, countOfNewLine);
 
         if(start <= childTextLength + countOfNewLine + nodeTextLength && startElement == null){
             startOffset = start - (childTextLength + countOfNewLine);
