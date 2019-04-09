@@ -1,6 +1,6 @@
 const ie = (typeof document.selection != "undefined" && document.selection.type != "Control") && true;
 const w3 = (typeof window.getSelection != "undefined") && true;
-const baseUrl = "http://10.77.34.204:8080";
+const baseUrl = "http://10.77.34.205:8080";
 const docsId = 1;//location.href.substr(location.href.lastIndexOf('?') + 1);
 const dmp = new diff_match_patch();
 const inputType = /Trident/.test( navigator.userAgent ) ? 'textinput' : 'input';
@@ -16,6 +16,7 @@ let endCaret =0;
 let keycode = "";
 let caretVis;
 let isPaste = false;
+let cursorInterval;
 
 window.onload = function () {
     caretVis = new Caret();
@@ -37,8 +38,10 @@ window.onload = function () {
             isPaste = true;
         });
         document.onselectionchange = function() {
-            getCaret();
-            stompClient.send('/topic/position/'+docsId, {}, JSON.stringify({sessionId: clientSessionId, start: startCaret, end: endCaret}));
+            if(cursorInterval != null){
+                clearInterval(cursorInterval);
+            } 
+            cursorInterval = setInterval(sendCursorPos, 500);
         };
     }/*
     else {
@@ -46,6 +49,11 @@ window.onload = function () {
         bar.attachEvent("onclick",clickAction)
         editor.attachEvent("oninput", attachEvent);
     }*/    
+}
+const sendCursorPos = function(){
+    getCaret();
+    stompClient.send('/topic/position/'+docsId, {}, JSON.stringify({sessionId: clientSessionId, start: startCaret, end: endCaret}));
+    clearInterval(cursorInterval);
 }
 function getDocs() {
     $.ajax({
