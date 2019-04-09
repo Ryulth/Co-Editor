@@ -36,6 +36,10 @@ window.onload = function () {
         editor.addEventListener("paste", function(e){
             isPaste = true;
         });
+        document.onselectionchange = function() {
+            getCaret();
+            stompClient.send('/topic/position/'+docsId, {}, JSON.stringify({sessionId: clientSessionId, start: startCaret, end: endCaret}));
+        };
     }/*
     else {
         editor.attachEvent("onkeydown", keydownAction)
@@ -108,7 +112,6 @@ function getCaret(){
     let tempCaret = getCaretPosition(editor);
     startCaret = tempCaret[0];
     endCaret = tempCaret[1];
-    stompClient.send('/topic/position/'+docsId, {}, JSON.stringify({sessionId: clientSessionId, start: startCaret, end: endCaret}));
 }
 
 function clickAction(){
