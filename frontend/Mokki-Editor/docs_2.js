@@ -11,8 +11,6 @@ let clientVersion;
 let stompClient;
 let clientSessionId;
 let prevText;
-let pivotStartCaret = 0;
-let pivotEndCaret = 0;
 let startCaret =0;
 let endCaret =0;
 let keycode = "";
@@ -112,11 +110,7 @@ function getCaret(){
     endCaret = tempCaret[1];
     stompClient.send('/topic/position/'+docsId, {}, JSON.stringify({sessionId: clientSessionId, start: startCaret, end: endCaret}));
 }
-function getPivotCaret(){
-    let tempCaret = getCaretPosition(editor);
-    pivotStartCaret = tempCaret[0];
-    pivotEndCaret = tempCaret[1];
-}
+
 function clickAction(){
     getCaret();
  
@@ -277,8 +271,7 @@ function setDiff(diff) {
 }
 
 function receiveContent(response_body) {
-    // console.log("받기 시작")
-    // let ms_start =  (new Date).getTime();
+    
     let receiveSessionId = response_body.socketSessionId;
     let response_patcheInfos = response_body.patchInfos;
     let originHTML = editor.innerHTML;
@@ -313,7 +306,15 @@ function receiveContent(response_body) {
     } 
     if(receiveSessionId != clientSessionId && synchronized){
         getCaret();
-        let result = patchDocs(response_patcheInfos,originHTML,clientVersion);
+        let result;
+        if(response_patcheInfos.length > 1){ // 꼬여서 다시 부를 떄
+            let snapshotText = response_body.snapshotText;
+            let snapshotVersion = response_body.snapshotVersion;
+            result = patchDocs(response_patcheInfos,snapshotText,snapshotVersion);
+        }
+        else{
+            result = patchDocs(response_patcheInfos,originHTML,clientVersion);
+        }
         let diff = dmp.diff_main(originHTML, result, true);
         dmp.diff_cleanupSemantic(diff);
         editor.innerHTML = result;        
@@ -433,6 +434,7 @@ const getCaretPositionStart = function(element) {
         createdTextRange.setStartPoint("StartToStart", textRange);
         position = createdTextRange.text.length;
     }
+    position = (position < 0) ? 0 : position;
     return position;
 }
 
@@ -457,6 +459,7 @@ const getCaretPositionEnd = function(element) {
         createdTextRange.setStartPoint("StartToStart", textRange);
         position = createdTextRange.text.length;
     }
+    position = (position < 0) ? 0 : position;
     return position;
 }
 
