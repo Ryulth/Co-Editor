@@ -255,7 +255,6 @@ function setDiff(diff) {
         switch (element[0]) {
             case 0: // retain
                 if (isCycle) {
-//                    return [idx, insertString, deleteString]
                     isCycle = false;
                     res.push([idx, insertString, deleteString]);
                     insertString = "";
@@ -278,7 +277,6 @@ function setDiff(diff) {
         
     }
     return res;
-    //return [idx, insertString, deleteString]
 }
 
 function receiveContent(response_body) {
@@ -389,7 +387,7 @@ function calcCaret(diff){
     tempDiffs.forEach(function (tempDiff,index,array){
         let startIdx = tempDiff[0];
         let inputString = tempDiff[1];
-        let deleteString = tempDiff[2]
+        let deleteString = tempDiff[2];
         if(inputString.length != 0 && deleteString.length != 0){
             // delete and insert case
             // delete 먼저하자
@@ -581,14 +579,14 @@ function deleteCalcCaret(startIdx, deleteString){
 
 function deleteNoDrag(startIdx, deleteString){
     // 내 커서가 드래그 안 된 경우
-    if(startIdx < startCaret){
+    if(startIdx <= startCaret){
         // 일단 지우는 위치가 나보다 앞인지 검사
         if(startCaret < startIdx + deleteString.length){
             // 내 위치까지 지운 경우
-            startCaret = startIdx;
-            endCaret = startIdx;
+            startCaret = startIdx-1;
+            endCaret = startIdx-1;
         }else{
-            // 내 위치 이전까지 지운경우
+            // 내 위치 왼쪽에서 지운경우
             startCaret -= deleteString.length;
             endCaret -= deleteString.length;
         }

@@ -87,10 +87,12 @@ public class SimpleEditorService implements EditorService {
                 .patchText(patchText)
                 .patchInfos(tempPatchInfo)
                 .socketSessionId(requestDocsCommand.getSocketSessionId())
-                .snapshotText(docs.getContent())
-                .snapshotVersion(docs.getVersion())
+                //.snapshotText(docs.getContent())
+                //.snapshotVersion(docs.getVersion())
                 .serverVersion(serverVersion + 1).build();
-        if (requestClientVersion < serverVersion) {
+        if (tempPatchInfo.size()>1) {
+            responseDocsCommand.setSnapshotText(docs.getContent());
+            responseDocsCommand.setSnapshotVersion(docs.getVersion());
             logger.info("버젼 충돌", requestClientVersion);
         }
         //Thread.sleep(1000);
