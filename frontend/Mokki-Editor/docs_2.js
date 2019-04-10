@@ -760,6 +760,7 @@ function setAccountTable(accounts){
 
     Object.keys(currentCaretUser).forEach(key => {
         caretVis.removeCaret(key);
+        caretVis.removeDrags(key);
     });
     
     tableBody.innerHTML = totalRow;
