@@ -367,6 +367,29 @@ function removeTags(text){
     resText = resText.replace(/<(\/)?([a-zA-Z]*)(\s[a-zA-Z]*=[^>]*)?(\s)*(\/)?>/ig, "");
     return resText;
 }
+function checkFistofLine(find,replace,string){
+    if(string.indexOf(find) == 0){
+        let lastString = string.substring(find.length);
+        return replace+lastString;
+    }
+    return string;
+}
+function isLastTag(find,string){
+    if ( string.lastIndexOf(find) + find.length == string.length){
+        return true;
+    }
+    return false;
+}
+function replaceLast(find, replace, string) {
+    let lastIndex = string.lastIndexOf(find);
+    if (lastIndex == -1) {
+        return string;
+    }
+    let beginString = string.substring(0, lastIndex);
+    let endString = string.substring(lastIndex + find.length);
+    
+    return beginString + replace + endString;
+}
 
 function disconnect() {
     if (stompClient !== null) {
