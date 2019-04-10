@@ -356,7 +356,7 @@ function patchDocs(response_patches,content,startClientVersion) {
 }
 
 function removeTags(text){
-    let resText = text.replace(/<\p>/ig, " "); //엔터에 대한 계산위한용도
+    let resText = text.replace(/<\/p>/ig, " "); //엔터에 대한 계산위한용도
     resText = resText.replace("&nbsp;"," ");
     resText = resText.replace(/<(\/)?([a-zA-Z]*)(\s[a-zA-Z]*=[^>]*)?(\s)*(\/)?>/ig, "");
     return resText;
@@ -579,12 +579,12 @@ function deleteCalcCaret(startIdx, deleteString){
 
 function deleteNoDrag(startIdx, deleteString){
     // 내 커서가 드래그 안 된 경우
-    if(startIdx <= startCaret){
+    if(startIdx < startCaret){
         // 일단 지우는 위치가 나보다 앞인지 검사
         if(startCaret < startIdx + deleteString.length){
             // 내 위치까지 지운 경우
-            startCaret = startIdx-1;
-            endCaret = startIdx-1;
+            startCaret = startIdx;
+            endCaret = startIdx;
         }else{
             // 내 위치 왼쪽에서 지운경우
             startCaret -= deleteString.length;
