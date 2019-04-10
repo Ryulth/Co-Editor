@@ -260,10 +260,16 @@ function setDiff(diff) {
                     insertString = "";
                     deleteString = "";
                 }
+                if(element[1].match(/<\p>$/gi)){
+                    idx--;
+                }
                 idx += removeTags(element[1]).length;
                 break;
             case -1: // delete
                 isCycle = true;
+                if(element[1].match(/^<\p>/gi)){
+                    idx--;
+                }
                 deleteString = removeTags(element[1]);
                 break;
             case 1: // insert
@@ -758,7 +764,7 @@ function setAccountTable(accounts){
         }
     });
 
-    Object.keys(currentCaretUser).forEach(key => {
+    Object.keys(currentCaretUser).forEach(function(key) {
         caretVis.removeCaret(key);
         caretVis.removeDrags(key);
     });
