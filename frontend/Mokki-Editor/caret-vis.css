@@ -1,3 +1,7 @@
+/* .mokkiEditor #mokkiTextPreview {
+    max-height: 200px;
+    overflow: auto;
+} */
 .caret-cursors-wrapper{
     position: absolute;
     margin-left: -9px;
@@ -14,6 +18,7 @@
     /* background-color: red; */
 }
 .caret-drags{
+    z-index: 1;
     position: absolute;
     /* top: 0;
     bottom: 0;
@@ -41,9 +46,13 @@
     margin-top: -2px;
 }
 .caret-wrapper{
+    z-index: 1;
     position: absolute;
 }
 .caret-container{
+    position: fixed;
+    top: 0px;
+    left: 0px;
     pointer-events: none;
 }
 
