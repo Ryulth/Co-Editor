@@ -269,21 +269,18 @@ function setDiff(diff) {
     diff.forEach(function (element) {
         switch (element[0]) {
             case 0: // retain
-                console.log(idx,isCycle)
                 if (isCycle) {
                     isCycle = false;
-                    if(removeTags(element[1]).length>0 && element[1] != "</p>"){
+                    if(removeTags(element[1]).length>0 && element[1].indexOf("</p>") != 0){
                         idx++;
                     }
                     res.push([idx, insertString, deleteString]);
-                    console.log(res)
                     insertString = "";
                     deleteString = "";
                 }
                 if(element[1].match(/<\p>$/gi)){
                     idx--;
                 }
-                console.log(idx)
                 idx += removeTags(element[1]).length;
                 break;
             case -1: // delete
@@ -298,7 +295,6 @@ function setDiff(diff) {
                     idx++;
                 }
                 deleteString = removeTags(element[1]);
-                console.log("ds",deleteString)
                 break;
             case 1: // insert
                 isCycle = true;
@@ -306,7 +302,6 @@ function setDiff(diff) {
                     idx++;
                 }
                 insertString = removeTags(element[1]);
-                console.log("is",insertString)
                 break;
         }
     });
@@ -365,8 +360,6 @@ function receiveContent(response_body) {
         let diff = dmp.diff_main(originHTML, result, true);
         dmp.diff_cleanupSemantic(diff);
         editor.innerHTML = result;       
-        console.log(diff)
-        console.log(startCaret,endCaret) 
         calcCaret(diff)
         setCaretPosition(editor,startCaret,endCaret);
         prevText = result;
@@ -447,7 +440,6 @@ TODO : 커서 파일로 추출
 */
 function calcCaret(diff){
     let tempDiffs=setDiff(diff);
-    console.log(tempDiffs)
     tempDiffs.forEach(function (tempDiff,index,array){
         let startIdx = tempDiff[0];
         let inputString = tempDiff[1];

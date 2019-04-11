@@ -32,7 +32,7 @@ class Caret {
     }
 
     createDrag(key, rect){
-        console.log(rect.top+document.documentElement.scrollTop+document.getElementById("mokkiTextPreview").scrollTop);
+        //console.log(rect.top+document.documentElement.scrollTop+document.getElementById("mokkiTextPreview").scrollTop);
         let caretFrame = document.querySelector("#container-"+key);
         let caretDrag = document.createElement("SPAN");
         caretDrag.classList.add("caret-drags");
