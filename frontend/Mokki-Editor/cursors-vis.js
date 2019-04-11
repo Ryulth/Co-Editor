@@ -25,17 +25,18 @@ class Caret {
         if(key in this.caretWrappers){
             let caretFrame = document.querySelector("#container-"+key);
             let caretWrapper = caretFrame.querySelector(".caret-wrapper");
-            caretWrapper.style.top = rect.top+document.documentElement.scrollTop+"px";
+            caretWrapper.style.top = rect.top+document.documentElement.scrollTop+document.getElementById("mokkiTextPreview").scrollTop+"px";
             caretWrapper.style.left = rect.left+"px";
             caretWrapper.style.height = rect.height+"px";
         }
     }
 
     createDrag(key, rect){
+        console.log(rect.top+document.documentElement.scrollTop+document.getElementById("mokkiTextPreview").scrollTop);
         let caretFrame = document.querySelector("#container-"+key);
         let caretDrag = document.createElement("SPAN");
         caretDrag.classList.add("caret-drags");
-        caretDrag.style.top = rect.top+document.documentElement.scrollTop+"px";
+        caretDrag.style.top = rect.top+document.documentElement.scrollTop+document.getElementById("mokkiTextPreview").scrollTop+"px";
         caretDrag.style.left = rect.left+"px";
         caretDrag.style.width = rect.width+"px";
         caretDrag.style.height = rect.height+"px";
