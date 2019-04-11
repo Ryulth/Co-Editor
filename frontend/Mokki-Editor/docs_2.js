@@ -17,7 +17,7 @@ let keycode = "";
 let caretVis;
 let isPaste = false;
 let cursorInterval;
-
+let intervalCount = 0;
 window.onload = function () {
     caretVis = new Caret();
     getDocs();
@@ -41,7 +41,11 @@ window.onload = function () {
             if(cursorInterval != null){
                 clearInterval(cursorInterval);
             } 
+            if(intervalCount == 50){
+                sendCursorPos();
+            }
             cursorInterval = setInterval(sendCursorPos, 100);
+            intervalCount++;
         };
     }/*
     else {
@@ -50,11 +54,14 @@ window.onload = function () {
         editor.attachEvent("oninput", attachEvent);
     }*/    
 }
+
 const sendCursorPos = function(){
+    intervalCount = 0;
     getCaret();
     stompClient.send('/topic/position/'+docsId, {}, JSON.stringify({sessionId: clientSessionId, start: startCaret, end: endCaret}));
     clearInterval(cursorInterval);
 }
+
 function getDocs() {
     $.ajax({
         type: "GET",
@@ -548,11 +555,23 @@ const setCaretPosition = function(element, start, end){
         if(end <= childTextLength + countOfNewLine + nodeTextLength && endElement == null){
             endOffset = end - (childTextLength + countOfNewLine);
             endElement = textNode;
-            return;
         }
 
         childTextLength += nodeTextLength;
     });
+
+    let totalLength = childTextLength+countOfNewLine;
+
+    if(totalLength < start){
+        startElement = textNodeList[textNodeList.length - 1];
+        startOffset = startElement.length;
+        endElement = startElement;
+        startOffset = startOffset;
+    } else if(totalLength < end){
+        endElement = textNodeList[textNodeList.length - 1];
+        endOffset = endElement.length;
+    }
+
     try{
     range.setStart(startElement, startOffset);
     range.setEnd(endElement, endOffset);
