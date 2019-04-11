@@ -18,8 +18,10 @@ let caretVis;
 let isPaste = false;
 let cursorInterval;
 let intervalCount = 0;
+let caretContainer;
 window.onload = function () {
     caretVis = new Caret();
+    caretContainer = document.getElementsByClassName("caret-container")[0];
     getDocs();
     editor = document.getElementById("mokkiTextPreview");
     editor.setAttribute("autocorrect","off");
@@ -37,6 +39,12 @@ window.onload = function () {
         editor.addEventListener("paste", function(e){
             isPaste = true;
         });
+        editor.addEventListener("scroll", function(){
+            caretContainer.style.top = -editor.scrollTop+"px";
+        })
+        document.addEventListener("scroll", function(){
+            caretContainer.style.top = -document.documentElement.scrollTop+"px";
+        })
         document.onselectionchange = function() {
             if(cursorInterval != null){
                 clearInterval(cursorInterval);
