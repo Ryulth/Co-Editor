@@ -281,6 +281,9 @@ function setDiff(diff) {
                 break;
             case 1: // insert
                 isCycle = true;
+                if(element[1]=="<br>"){ // TODO 지금 에디터가 한 줄이 삭제시 <br> 태그를 넣어버림
+                    idx++;
+                }
                 insertString = removeTags(element[1]);
                 break;
         }
