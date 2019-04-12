@@ -15,7 +15,7 @@
     let startCaret =0;
     let endCaret =0;
     let keycode = "";
-    let caretVis;
+//    let caretVis;
     let isPaste = false;
     let cursorInterval;
     let intervalCount = 0;
@@ -26,7 +26,8 @@
         editor.setAttribute("autocapitalize","off");
         editor.setAttribute("autocomplete","off");
         editor.setAttribute("spellcheck",false);
-        caretVis = new Caret();
+//        caretVis = new Caret();
+        caretVis.init();
         caretContainer = document.getElementsByClassName("caret-container")[0];
         getDocs();
         initTextArea();
@@ -46,19 +47,31 @@
             document.addEventListener("scroll", function(){
                 caretContainer.style.top = -document.documentElement.scrollTop+"px";
             })
-            document.onselectionchange = function() {
-                if(cursorInterval != null){
-                    clearInterval(cursorInterval);
-                } 
-                if(intervalCount == 50){
-                    sendCursorPos();
-                }
-                cursorInterval = setInterval(sendCursorPos, 100);
-                intervalCount++;
-            };
+            document.addEventListener("selectionchange", selectionChangeAction);
+//            document.onselectionchange = function() {
+//                if(cursorInterval != null){
+//                    clearInterval(cursorInterval);
+//                }
+//                if(intervalCount == 50){
+//                    sendCursorPos();
+//                }
+//                cursorInterval = setInterval(sendCursorPos, 100);
+//                intervalCount++;
+//            };
         }
     }
     
+    const selectionChangeAction = function(){
+        if(cursorInterval != null){
+            clearInterval(cursorInterval);
+        }
+        if(intervalCount == 50){
+            sendCursorPos();
+        }
+        cursorInterval = setInterval(sendCursorPos, 100);
+        intervalCount++;
+    }
+
     const sendCursorPos = function(){
         intervalCount = 0;
         getCaret();
@@ -167,7 +180,10 @@
         }
     }
 
-    function keyupAction(){
+    function keyupAction(e){
+        if(e.keycode = 'Backspace'){
+            selectionChangeAction();
+        }
         getCaret();
     }
 
@@ -582,7 +598,7 @@
             startElement = textNodeList[textNodeList.length - 1];
             startOffset = startElement.length;
             endElement = startElement;
-            startOffset = startOffset;
+            endOffset = startOffset;
         } else if(totalLength < end){
             endElement = textNodeList[textNodeList.length - 1];
             endOffset = endElement.length;
@@ -744,12 +760,24 @@
                     createdRange.setEnd(endElement, endOffset);
                     caretVis.createDrag(key, createdRange.getBoundingClientRect());
                 }catch(e){
-
+                    
                 }
                 
             }
             childTextLength += nodeTextLength;
         });
+        let totalLength = childTextLength+countOfNewLine;
+
+        if(totalLength < start){
+            console.log("asdgasdgkjasdklgasd")
+            startElement = textNodeList[textNodeList.length - 1];
+            startOffset = startElement.length;
+            endElement = startElement;
+            endOffset = startOffset;
+        } else if(totalLength < end){
+            endElement = textNodeList[textNodeList.length - 1];
+            endOffset = endElement.length-1;
+        }
         if (w3) {
             try{
                 let createdRange = document.createRange();
