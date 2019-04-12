@@ -1,5 +1,4 @@
 (function(){
-    
     const baseUrl = "http://10.77.34.204:8080";
     const coeditId = 1;//location.href.substr(location.href.lastIndexOf('?') + 1);
     const dmp = new diff_match_patch();
@@ -11,6 +10,7 @@
     let stompClient;
     let clientSessionId;
     let prevText;
+    let pprevText;
     let startCaret =0;
     let endCaret =0;
     let keycode = "";
@@ -18,21 +18,20 @@
     let cursorInterval;
     let intervalCount = 0;
     let caretContainer;
-    let setEditor = function (editorEl){
+    let setEditor = function (editorEl,editorBarEl){
         CaretVis.init();
+        let editorBar = editorBarEl;
         editor = editorEl;
         editor.setAttribute("autocorrect","off");
         editor.setAttribute("autocapitalize","off");
         editor.setAttribute("autocomplete","off");
         editor.setAttribute("spellcheck",false);
-        caretVis.init();
         caretContainer = document.getElementsByClassName("caret-container")[0];
         getDocs();
         initTextArea();
-        let bar = document.getElementById("mokkiButtonBar");
         if (editor.addEventListener) {
             editor.addEventListener("keydown", keydownAction);
-            bar.addEventListener("click",clickAction)
+            editorBar.addEventListener("click",clickAction)
             editor.addEventListener("mouseup", mouseupAction);
             editor.addEventListener(inputType, inputAction);
             editor.addEventListener("keyup", keyupAction);
@@ -48,25 +47,6 @@
             document.addEventListener("selectionchange", selectionChangeAction);
         }
     }
-    
-    const selectionChangeAction = function(){
-        if(cursorInterval != null){
-            clearInterval(cursorInterval);
-        }
-        if(intervalCount == 50){
-            sendCursorPos();
-        }
-        cursorInterval = setInterval(sendCursorPos, 100);
-        intervalCount++;
-    }
-
-    const sendCursorPos = function(){
-        intervalCount = 0;
-        getCaret();
-        stompClient.send('/topic/'+ editorType +'/position/'+coeditId, {}, JSON.stringify({sessionId: clientSessionId, start: startCaret, end: endCaret}));
-        clearInterval(cursorInterval);
-    }
-
     function getDocs() {
         $.ajax({
             type: "GET",
@@ -104,7 +84,7 @@
             stompClient.subscribe('/topic/'+ editorType +'/position/'+coeditId, function(content){
                 let contentBody = JSON.parse(content.body);
                 if(contentBody.sessionId != clientSessionId){
-                    setUserCaret(contentBody.sessionId, contentBody.start, contentBody.end);
+                    CaretVis.setUserCaret(editor,contentBody.sessionId, contentBody.start, contentBody.end);
                 }
             });
             stompClient.subscribe('/topic/'+ editorType +'/'+coeditId+"/accounts", function(content){
@@ -115,6 +95,26 @@
         });
     }
 
+    const selectionChangeAction = function(){
+        if(cursorInterval != null){
+            clearInterval(cursorInterval);
+        }
+        if(intervalCount == 50){
+            sendCursorPos();
+        }
+        cursorInterval = setInterval(sendCursorPos, 200);
+        intervalCount++;
+    }
+
+    const sendCursorPos = function(){
+        intervalCount = 0;
+        getCaret();
+        stompClient.send('/topic/'+ editorType +'/position/'+coeditId, {}, JSON.stringify({sessionId: clientSessionId, start: startCaret, end: endCaret}));
+        clearInterval(cursorInterval);
+    }
+
+    
+
     function initTextArea(){
         let text = editor.innerHTML.trim();
         if(text == ""){
@@ -122,9 +122,6 @@
         }
     }
 
-    function testgetAccount(){
-        getAccounts(baseUrl,editorType,coeditId);
-    }
     function mouseupAction(){
         getCaret();
     }
@@ -141,7 +138,7 @@
             prevText = editor.innerHTML;
         }
     }
-    var pprevText;
+    
     function keydownAction(event){
         keycode = event.code;
         getCaret();
@@ -162,27 +159,27 @@
             if ((diff.length > 1) || (diff.length == 1 && diff[0][0] != 0)) { // 1 이상이어야 변경 한 것이 있음
                 let res = setDiff(diff)[0];    
                 if (!(Hangul.disassemble(res[2]).length == Hangul.disassemble(res[1]).length + 1) || (keycode == "Backspace" || keycode == "Delete")) {
+                    if(!isPaste){
                     setHangulSelection(res)
+                    }
                 }
             }
         }
     }
 
     function keyupAction(e){
-        if(e.keycode = 'Backspace'){
+        if(e.keycode == 'Backspace'){
             selectionChangeAction();
         }
         getCaret();
     }
 
-    function sendContentPost(patchText,inputLength,deleteLength) {
+    function sendContentPost(patchText) {
         let reqBody = {
             "socketSessionId": clientSessionId,
             "docsId": coeditId,
             "clientVersion": clientVersion,
-            "patchText": patchText ,
-            "startIdx" : startCaret -inputLength,
-            "endIdx" : endCaret + deleteLength
+            "patchText": patchText 
         }
         $.ajax({
             async: true, // false 일 경우 동기 요청으로 변경
@@ -244,16 +241,18 @@
                 if(!isBuffer && !isPaste){
                     setHangulSelection(res)
                 }
+                
                 synchronized = false;
                 let inputLength = (res[1].length ==0 ) ? 0 : res[1].length-1;
                 let deleteLength =(res[2].length ==0 ) ? 0 : 1-res[2].length;
                 let patch_list = dmp.patch_make(prev, current, diff);
                 let patch_text = dmp.patch_toText(patch_list);
-                sendContentPost(patch_text,inputLength,deleteLength);
+                sendContentPost(patch_text);
                 prevText = editor.innerHTML;
             }
             keycode = "";
             isPaste = false;
+            
         }
         else{
             //TODO 변경한거 없다고 잡는 경우가 있다 제자리 변경 그경우 고려해야함        console.log(diff)
@@ -395,29 +394,6 @@
         resText = resText.replace(/<(\/)?([a-zA-Z]*)(\s[a-zA-Z]*=[^>]*)?(\s)*(\/)?>/ig, "");
         return resText;
     }
-    function checkFistofLine(find,replace,string){
-        if(string.indexOf(find) == 0){
-            let lastString = string.substring(find.length);
-            return replace+lastString;
-        }
-        return string;
-    }
-    function isLastTag(find,string){
-        if ( string.lastIndexOf(find) + find.length == string.length){
-            return true;
-        }
-        return false;
-    }
-    function replaceLast(find, replace, string) {
-        let lastIndex = string.lastIndexOf(find);
-        if (lastIndex == -1) {
-            return string;
-        }
-        let beginString = string.substring(0, lastIndex);
-        let endString = string.substring(lastIndex + find.length);
-        
-        return beginString + replace + endString;
-    }
 
     function disconnect() {
         if (stompClient !== null) {
@@ -433,91 +409,6 @@
         } else {
             console.log("연결안됨");
         }
-    }
-
-    /*
-    TODO : 외부 커서 파일 
-    */
-    const setUserCaret = function(sessionId, start, end){
-        let R = Math.round(Math.random()*255);
-        let G = Math.round(Math.random()*255);
-        let B = Math.round(Math.random()*255);
-        let rgba = "rgba("+R+", "+G+", "+B+", .6)";
-        CaretVis.createCaret(sessionId, sessionId, rgba);
-        calcUserCaret(editor, start, end, sessionId);
-    }
-
-    const calcUserCaret = function(element, start, end, key){
-        let childTextLength = 0;
-        let textNodeList = Caret.getTextNodeList(element);
-        let startOffset = 0, endOffset = 0;
-        let startElement, endElement;
-        let countOfNewLine = 0;
-        let isLast = false;
-        CaretVis.removeDrags(key);
-        textNodeList.forEach(function(textNode) {
-            if(isLast){
-                return;
-            }
-            let nodeTextLength = textNode.textContent.length;
-            let lineNode = Caret.getLineNode(element, textNode);
-            countOfNewLine = Caret.getCountOfNewLineOver(element, lineNode, countOfNewLine);
-            endElement = null
-            if(start <= childTextLength + countOfNewLine + nodeTextLength){
-                startOffset = start - (childTextLength + countOfNewLine);
-                if(startElement != null){
-                    startOffset = 0;
-                } 
-                startElement = textNode;
-            }
-            if(end <= childTextLength + countOfNewLine + nodeTextLength){
-                endOffset = end - (childTextLength + countOfNewLine);
-                endElement = textNode;
-                isLast = true;
-            }
-            
-            if(startElement != null){
-                if(endElement == null){
-                    endElement = startElement;
-                    endOffset = startElement.length;
-                }
-                try{
-                    let createdRange = document.createRange();
-                    createdRange.selectNodeContents(element);
-                    createdRange.setStart(startElement, startOffset);
-                    createdRange.setEnd(endElement, endOffset);
-                    CaretVis.createDrag(key, createdRange.getBoundingClientRect());
-                }catch(e){
-                    
-                }
-                
-            }
-            childTextLength += nodeTextLength;
-        });
-        let totalLength = childTextLength+countOfNewLine;
-
-        if(totalLength < start){
-            startElement = textNodeList[textNodeList.length - 1];
-            startOffset = startElement.length;
-            endElement = startElement;
-            endOffset = startOffset;
-        } else if(totalLength < end){
-            endElement = textNodeList[textNodeList.length - 1];
-            endOffset = endElement.length-1;
-        }
-        if (w3) {
-            try{
-                let createdRange = document.createRange();
-                createdRange.selectNodeContents(element);
-                createdRange.setStart(endElement, endOffset);
-                createdRange.setEnd(endElement, endOffset);
-                CaretVis.moveCaret(key, createdRange.getBoundingClientRect());
-            }
-            catch(e){
-                
-            }
-        }
-        return null;
     }
     /*
     TODO : account 파일로 추출;
@@ -566,7 +457,7 @@
         tableBody = document.getElementById("accounts-table-body");
         totalRow = "";
         let currentCaretUser = {};
-        Object.assign(currentCaretUser, CaretVis.caretWrappers);
+        Object.assign(currentCaretUser, CaretVis.getCaretWrappers());
         accounts.forEach(function (account){
             row = "<tr><td>"+account.clientSessionId
             +"</td><td>"+account.remoteAddress
@@ -576,15 +467,13 @@
                 delete currentCaretUser[account.clientSessionId];
             }
         });
-
         Object.keys(currentCaretUser).forEach(function(key) {
             CaretVis.removeCaret(key);
             CaretVis.removeDrags(key);
         });
-        
         tableBody.innerHTML = totalRow;
     }
-    let coedit = {
+    const coedit = {
         setEditor : setEditor
     };
     if (typeof define == 'function' && define.amd) {

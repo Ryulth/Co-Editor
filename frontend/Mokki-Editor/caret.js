@@ -256,7 +256,7 @@
             }
         }
     }
-    let caret = {
+    const caret = {
         getCaretPosition : getCaretPosition,
         setCaretPosition : setCaretPosition,
         getTextNodeList : getTextNodeList,

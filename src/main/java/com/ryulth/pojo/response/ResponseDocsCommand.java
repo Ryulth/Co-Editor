@@ -21,5 +21,4 @@ public class ResponseDocsCommand {
     String patchText;
     String snapshotText;
     ArrayDeque<PatchInfo> patchInfos;
-    Long authorCaret;
 }

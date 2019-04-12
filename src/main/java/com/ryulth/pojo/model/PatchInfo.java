@@ -17,6 +17,4 @@ public class PatchInfo {
     String patchText;
     String clientSessionId;
     String remoteAddress;
-    int startIdx;
-    int endIdx;
 }

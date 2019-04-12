@@ -41,8 +41,6 @@ public class SimpleEditorService implements EditorService {
         Long docsId = requestDocsCommand.getDocsId();
         Long requestClientVersion = requestDocsCommand.getClientVersion();
         String patchText = requestDocsCommand.getPatchText();
-        int startIdx = requestDocsCommand.getStartIdx();
-        int endIdx = requestDocsCommand.getEndIdx();
         synchronized (cacheDocs) {
             docs = cacheDocs.get(docsId);
         }
@@ -58,8 +56,7 @@ public class SimpleEditorService implements EditorService {
                     .clientSessionId(requestDocsCommand.getSocketSessionId())
                     .remoteAddress(remoteAddr)
                     .patchVersion(serverVersion+1)
-                    .startIdx(startIdx)
-                    .endIdx(endIdx).build();
+                    .build();
             cachePatches.get(docsId).add(newPatchInfo);
             tempPatchInfo.add(newPatchInfo);
             tempPatchInfo.poll();
@@ -87,8 +84,6 @@ public class SimpleEditorService implements EditorService {
                 .patchText(patchText)
                 .patchInfos(tempPatchInfo)
                 .socketSessionId(requestDocsCommand.getSocketSessionId())
-                //.snapshotText(docs.getContent())
-                //.snapshotVersion(docs.getVersion())
                 .serverVersion(serverVersion + 1).build();
         if (tempPatchInfo.size()>1) {
             responseDocsCommand.setSnapshotText(docs.getContent());

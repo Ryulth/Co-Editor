@@ -10,7 +10,4 @@ public class RequestDocsCommand {
     Long docsId;
     Long clientVersion;
     String patchText;
-    Long authorCaret;
-    int startIdx;
-    int endIdx;
 }
