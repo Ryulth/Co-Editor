@@ -88,6 +88,6 @@
     } else if (typeof module !== 'undefined') {
         module.exports = caretVis;
     } else {
-        window.caretVis = caretVis;
+        window.CaretVis = caretVis;
     }
 })();
