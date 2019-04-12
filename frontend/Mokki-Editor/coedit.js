@@ -91,7 +91,11 @@
                 let accounts = JSON.parse(content.body);
                 setAccountTable(accounts);
             });
-            
+        }, function(message) {
+            // check message for disconnect
+            if(!stompClient.connected){
+                console.log(message);
+            }
         });
     }
 
@@ -395,9 +399,10 @@
         return resText;
     }
 
-    function disconnect() {
+    const disconnect =function () {
         if (stompClient !== null) {
             stompClient.disconnect();
+            
         }
         setConnected(false);
         console.log("Disconnected");
@@ -474,7 +479,8 @@
         tableBody.innerHTML = totalRow;
     }
     const coedit = {
-        setEditor : setEditor
+        setEditor : setEditor,
+        disconnect : disconnect
     };
     if (typeof define == 'function' && define.amd) {
         define(function(){
