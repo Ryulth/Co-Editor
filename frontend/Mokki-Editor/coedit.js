@@ -15,18 +15,17 @@
     let startCaret =0;
     let endCaret =0;
     let keycode = "";
-//    let caretVis;
     let isPaste = false;
     let cursorInterval;
     let intervalCount = 0;
     let caretContainer;
     let setEditor = function (editorId){
+        CaretVis.init();
         editor = document.getElementById(editorId);
         editor.setAttribute("autocorrect","off");
         editor.setAttribute("autocapitalize","off");
         editor.setAttribute("autocomplete","off");
         editor.setAttribute("spellcheck",false);
-//        caretVis = new Caret();
         caretVis.init();
         caretContainer = document.getElementsByClassName("caret-container")[0];
         getDocs();
@@ -48,16 +47,6 @@
                 caretContainer.style.top = -document.documentElement.scrollTop+"px";
             })
             document.addEventListener("selectionchange", selectionChangeAction);
-//            document.onselectionchange = function() {
-//                if(cursorInterval != null){
-//                    clearInterval(cursorInterval);
-//                }
-//                if(intervalCount == 50){
-//                    sendCursorPos();
-//                }
-//                cursorInterval = setInterval(sendCursorPos, 100);
-//                intervalCount++;
-//            };
         }
     }
     
@@ -75,7 +64,7 @@
     const sendCursorPos = function(){
         intervalCount = 0;
         getCaret();
-        stompClient.send('/topic/position/'+coeditId, {}, JSON.stringify({sessionId: clientSessionId, start: startCaret, end: endCaret}));
+        stompClient.send('/topic/'+ editorType +'/position/'+coeditId, {}, JSON.stringify({sessionId: clientSessionId, start: startCaret, end: endCaret}));
         clearInterval(cursorInterval);
     }
 
@@ -113,7 +102,7 @@
                 let response_body = JSON.parse(content.body);
                 receiveContent(response_body) //
             });
-            stompClient.subscribe('/topic/position/'+coeditId, function(content){
+            stompClient.subscribe('/topic/'+ editorType +'/position/'+coeditId, function(content){
                 let contentBody = JSON.parse(content.body);
                 if(contentBody.sessionId != clientSessionId){
                     setUserCaret(contentBody.sessionId, contentBody.start, contentBody.end);
@@ -713,7 +702,7 @@
         let G = Math.round(Math.random()*255);
         let B = Math.round(Math.random()*255);
         let rgba = "rgba("+R+", "+G+", "+B+", .6)";
-        caretVis.createCaret(sessionId, sessionId, rgba);
+        CaretVis.createCaret(sessionId, sessionId, rgba);
         calcUserCaret(editor, start, end, sessionId);
         // let ms_end = (new Date).getDate();
         // console.log("커서끝",(ms_end-ms_start)/1000);
@@ -726,7 +715,7 @@
         let startElement, endElement;
         let countOfNewLine = 0;
         let isLast = false;
-        caretVis.removeDrags(key);
+        CaretVis.removeDrags(key);
         textNodeList.forEach(function(textNode) {
             if(isLast){
                 return;
@@ -758,7 +747,7 @@
                     createdRange.selectNodeContents(element);
                     createdRange.setStart(startElement, startOffset);
                     createdRange.setEnd(endElement, endOffset);
-                    caretVis.createDrag(key, createdRange.getBoundingClientRect());
+                    CaretVis.createDrag(key, createdRange.getBoundingClientRect());
                 }catch(e){
                     
                 }
@@ -769,7 +758,6 @@
         let totalLength = childTextLength+countOfNewLine;
 
         if(totalLength < start){
-            console.log("asdgasdgkjasdklgasd")
             startElement = textNodeList[textNodeList.length - 1];
             startOffset = startElement.length;
             endElement = startElement;
@@ -784,7 +772,7 @@
                 createdRange.selectNodeContents(element);
                 createdRange.setStart(endElement, endOffset);
                 createdRange.setEnd(endElement, endOffset);
-                caretVis.moveCaret(key, createdRange.getBoundingClientRect());
+                CaretVis.moveCaret(key, createdRange.getBoundingClientRect());
             }
             catch(e){
                 
@@ -839,7 +827,7 @@
         tableBody = document.getElementById("accounts-table-body");
         totalRow = "";
         let currentCaretUser = {};
-        Object.assign(currentCaretUser, caretVis.caretWrappers);
+        Object.assign(currentCaretUser, CaretVis.caretWrappers);
         accounts.forEach(function (account){
             row = "<tr><td>"+account.clientSessionId
             +"</td><td>"+account.remoteAddress
@@ -851,8 +839,8 @@
         });
 
         Object.keys(currentCaretUser).forEach(function(key) {
-            caretVis.removeCaret(key);
-            caretVis.removeDrags(key);
+            CaretVis.removeCaret(key);
+            CaretVis.removeDrags(key);
         });
         
         tableBody.innerHTML = totalRow;

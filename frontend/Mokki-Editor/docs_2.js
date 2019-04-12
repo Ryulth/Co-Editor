@@ -19,9 +19,9 @@ let cursorInterval;
 let intervalCount = 0;
 let caretContainer;
 window.onload = function () {
-    caretVis.init();
     let editorId = "mokkiTextPreview";
     Coedit.setEditor(editorId);
+    // play.setEditor(editorId);
     //setEditor(editorId);    
 }
 function setEditor(editorId){
