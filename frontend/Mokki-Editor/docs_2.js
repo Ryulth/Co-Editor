@@ -20,9 +20,14 @@ let intervalCount = 0;
 let caretContainer;
 window.onload = function () {
     caretVis.init();
+    let editorId = "mokkiTextPreview";
+    Coedit.setEditor(editorId);
+    //setEditor(editorId);    
+}
+function setEditor(editorId){
     caretContainer = document.getElementsByClassName("caret-container")[0];
     getDocs();
-    editor = document.getElementById("mokkiTextPreview");
+    editor = document.getElementById(editorId);
     editor.setAttribute("autocorrect","off");
     editor.setAttribute("autocapitalize","off");
     editor.setAttribute("autocomplete","off");
@@ -59,9 +64,8 @@ window.onload = function () {
         editor.attachEvent("onkeydown", keydownAction)
         bar.attachEvent("onclick",clickAction)
         editor.attachEvent("oninput", attachEvent);
-    }*/    
+    }*/   
 }
-
 const sendCursorPos = function(){
     intervalCount = 0;
     getCaret();
