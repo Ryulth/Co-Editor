@@ -1,43 +1,9 @@
 (function(){
-    function calcCaret(diff){
-        let tempDiffs=setDiff(diff);
-        tempDiffs.forEach(function (tempDiff,index,array){
-            let startIdx = tempDiff[0];
-            let inputString = tempDiff[1];
-            let deleteString = tempDiff[2];
-            if(inputString.length != 0 && deleteString.length != 0){
-                // delete and insert case
-                // delete 먼저하자
-                // 드래그 안 된 경우
-                if(startCaret == endCaret){
-                    deleteNoDrag(startIdx, deleteString);
-                    // insert 된 크기 만큼 뒤로 간다.
-                    if(startCaret>startIdx){    
-                        startCaret += inputString.length;
-                        endCaret += inputString.length;
-                    }
-                }else{
-                    // 드래그 인 경우
-                    deleteDrag(startIdx, deleteString);
-                    // 다음 insert 
-                        // delete 과정으로 드래그했던게 풀렸을수도 있음 
-                        // insert 
-                    insertCalcCaret(startIdx, inputString);
-                    }
-                // }
-            }else if(inputString.length != 0){
-                // insert 
-                insertCalcCaret(startIdx, inputString);
-            } else{
-                // delete
-                deleteCalcCaret(startIdx, deleteString);
-            }
-        });
-    }
+    let startCaret;
+    let endCaret;
     const getCaretPosition = function(element){
         return [getCaretPositionStart(element), getCaretPositionEnd(element)];
     }
-
     const getCaretPositionStart = function(element) {
         let position = 0;
         if (w3) {
@@ -175,6 +141,44 @@
         })
         return textNodeList;
     }
+    const calcCaret = function (setDiffs,sc,ec){
+        startCaret = sc;
+        endCaret = ec;
+        setDiffs.forEach(function (tempDiff,index,array){
+            let startIdx = tempDiff[0];
+            let inputString = tempDiff[1];
+            let deleteString = tempDiff[2];
+            if(inputString.length != 0 && deleteString.length != 0){
+                // delete and insert case
+                // delete 먼저하자
+                // 드래그 안 된 경우
+                if(startCaret == endCaret){
+                    deleteNoDrag(startIdx, deleteString);
+                    // insert 된 크기 만큼 뒤로 간다.
+                    if(startCaret>startIdx){    
+                        startCaret += inputString.length;
+                        endCaret += inputString.length;
+                    }
+                }else{
+                    // 드래그 인 경우
+                    deleteDrag(startIdx, deleteString);
+                    // 다음 insert 
+                        // delete 과정으로 드래그했던게 풀렸을수도 있음 
+                        // insert 
+                    insertCalcCaret(startIdx, inputString);
+                    }
+                // }
+            }else if(inputString.length != 0){
+                // insert 
+                insertCalcCaret(startIdx, inputString);
+            } else{
+                // delete
+                deleteCalcCaret(startIdx, deleteString);
+            }
+        });
+        return [startCaret,endCaret]
+    }
+    
     function insertCalcCaret(startIdx, inputString){
         // insert 
         if(startCaret == endCaret){
@@ -252,4 +256,21 @@
             }
         }
     }
-});
+    let caret = {
+        getCaretPosition : getCaretPosition,
+        setCaretPosition : setCaretPosition,
+        getTextNodeList : getTextNodeList,
+        getCountOfNewLineOver : getCountOfNewLineOver,
+        getLineNode : getLineNode,
+        calcCaret : calcCaret
+    };
+    if (typeof define == 'function' && define.amd) {
+        define(function(){
+          return caret;
+        });
+      } else if (typeof module !== 'undefined') {
+        module.exports = caret;
+      } else {
+        window.Caret = caret;
+      }
+})();
