@@ -14,13 +14,12 @@ let prevText;
 let startCaret =0;
 let endCaret =0;
 let keycode = "";
-let caretVis;
 let isPaste = false;
 let cursorInterval;
 let intervalCount = 0;
 let caretContainer;
 window.onload = function () {
-    caretVis = new Caret();
+    caretVis.init();
     caretContainer = document.getElementsByClassName("caret-container")[0];
     getDocs();
     editor = document.getElementById("mokkiTextPreview");
