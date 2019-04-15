@@ -44,20 +44,20 @@
             caretWrappers[key] = caretWrapper;
         }
     };
-    const moveCaret= function(key, rect){
+    const moveCaret= function(key, rect, editor){
         if(key in caretWrappers){
             let caretFrame = document.querySelector("#container-"+key);
             let caretWrapper = caretFrame.querySelector(".caret-wrapper");
-            caretWrapper.style.top = rect.top+document.documentElement.scrollTop+document.getElementById("mokkiTextPreview").scrollTop+"px";
+            caretWrapper.style.top = rect.top+editor.scrollTop+"px";
             caretWrapper.style.left = rect.left+"px";
             caretWrapper.style.height = rect.height+"px";
         }
     };
-    const createDrag = function(key, rect){
+    const createDrag = function(key, rect, editor){
         let caretFrame = document.querySelector("#container-"+key);
         let caretDrag = document.createElement("SPAN");
         caretDrag.classList.add("caret-drags");
-        caretDrag.style.top = rect.top+document.documentElement.scrollTop+document.getElementById("mokkiTextPreview").scrollTop+"px";
+        caretDrag.style.top = rect.top+editor.scrollTop+"px";
         caretDrag.style.left = rect.left+"px";
         caretDrag.style.width = rect.width+"px";
         caretDrag.style.height = rect.height+"px";
@@ -126,7 +126,7 @@
                     createdRange.selectNodeContents(element);
                     createdRange.setStart(startElement, startOffset);
                     createdRange.setEnd(endElement, endOffset);
-                    createDrag(key, createdRange.getBoundingClientRect());
+                    createDrag(key, createdRange.getBoundingClientRect(), element);
                 }catch(e){
                     
                 }
@@ -151,7 +151,7 @@
                 createdRange.selectNodeContents(element);
                 createdRange.setStart(endElement, endOffset);
                 createdRange.setEnd(endElement, endOffset);
-                moveCaret(key, createdRange.getBoundingClientRect());
+                moveCaret(key, createdRange.getBoundingClientRect(), element);
             }
             catch(e){
                 
