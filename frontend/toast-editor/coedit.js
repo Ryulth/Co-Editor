@@ -5,6 +5,7 @@
     const inputType = /Trident/.test( navigator.userAgent ) ? 'textinput' : 'input';
     const editorType = "docs";
     let editor;
+    let editorScroll;
     let synchronized = true; 
     let clientVersion;
     let stompClient;
@@ -21,6 +22,7 @@
     let setEditor = function (editorEl,editorBarEl){
         CaretVis.init();
         let editorBar = editorBarEl;
+        editorScroll = document.getElementsByClassName("te-editor")[1];
         editor = editorEl;
         editor.setAttribute("autocorrect","off");
         editor.setAttribute("autocapitalize","off");
@@ -38,8 +40,8 @@
             editor.addEventListener("paste", function(e){
                 isPaste = true;
             });
-            editor.addEventListener("scroll", function(){
-                caretContainer.style.top = -editor.scrollTop+"px";
+            editorScroll.addEventListener("scroll", function(){
+                caretContainer.style.top = -editorScroll.scrollTop+"px";
             })
             document.addEventListener("scroll", function(){
                 caretContainer.style.top = -document.documentElement.scrollTop+"px";
@@ -84,7 +86,7 @@
             stompClient.subscribe('/topic/'+ editorType +'/position/'+coeditId, function(content){
                 let contentBody = JSON.parse(content.body);
                 if(contentBody.sessionId != clientSessionId){
-                    CaretVis.setUserCaret(editor,contentBody.sessionId, contentBody.start, contentBody.end);
+                    CaretVis.setUserCaret(editor, editorScroll, contentBody.sessionId, contentBody.start, contentBody.end);
                 }
             });
             stompClient.subscribe('/topic/'+ editorType +'/'+coeditId+"/accounts", function(content){

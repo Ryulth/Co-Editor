@@ -44,28 +44,28 @@
             caretWrappers[key] = caretWrapper;
         }
     };
-    const moveCaret= function(key, rect, editor){
+    const moveCaret= function(key, rect, editorScroll){
         let scrollHeight = 0;
-        if(editor.scrollHeight == editor.clientHeight){
+        if(editorScroll.scrollHeight == editorScroll.clientHeight){
             scrollHeight = caretContainer.offsetTop;
         }
         if(key in caretWrappers){
             let caretFrame = document.querySelector("#container-"+key);
             let caretWrapper = caretFrame.querySelector(".caret-wrapper");
-            caretWrapper.style.top = rect.top+editor.scrollTop-scrollHeight+"px";
+            caretWrapper.style.top = rect.top+editorScroll.scrollTop-scrollHeight+"px";
             caretWrapper.style.left = rect.left+"px";
             caretWrapper.style.height = rect.height+"px";
         }
     };
-    const createDrag = function(key, rect, editor){
+    const createDrag = function(key, rect, editorScroll){
         let scrollHeight = 0;
-        if(editor.scrollHeight == editor.clientHeight){
+        if(editorScroll.scrollHeight == editorScroll.clientHeight){
             scrollHeight = caretContainer.offsetTop;
         }
         let caretFrame = document.querySelector("#container-"+key);
         let caretDrag = document.createElement("SPAN");
         caretDrag.classList.add("caret-drags");
-        caretDrag.style.top = rect.top+editor.scrollTop-scrollHeight+"px";
+        caretDrag.style.top = rect.top+editorScroll.scrollTop-scrollHeight+"px";
         caretDrag.style.left = rect.left+"px";
         caretDrag.style.width = rect.width+"px";
         caretDrag.style.height = rect.height+"px";
@@ -86,16 +86,16 @@
             delete caretWrappers[key];
         }
     }
-    const setUserCaret = function(editorEl,sessionId, start, end){
+    const setUserCaret = function(editorEl, editorScroll, sessionId, start, end){
         let R = Math.round(Math.random()*255);
         let G = Math.round(Math.random()*255);
         let B = Math.round(Math.random()*255);
         let rgba = "rgba("+R+", "+G+", "+B+", .6)";
         createCaret(sessionId, sessionId, rgba);
-        calcUserCaret(editorEl, start, end, sessionId);
+        calcUserCaret(editorEl, editorScroll, start, end, sessionId);
     }
 
-    const calcUserCaret = function(element, start, end, key){
+    const calcUserCaret = function(element, editorScroll, start, end, key){
         let childTextLength = 0;
         let textNodeList = Caret.getTextNodeList(element);
         let startOffset = 0, endOffset = 0;
@@ -134,7 +134,7 @@
                     createdRange.selectNodeContents(element);
                     createdRange.setStart(startElement, startOffset);
                     createdRange.setEnd(endElement, endOffset);
-                    createDrag(key, createdRange.getBoundingClientRect(), element);
+                    createDrag(key, createdRange.getBoundingClientRect(), editorScroll);
                 }catch(e){
                     
                 }
@@ -159,7 +159,7 @@
                 createdRange.selectNodeContents(element);
                 createdRange.setStart(endElement, endOffset);
                 createdRange.setEnd(endElement, endOffset);
-                moveCaret(key, createdRange.getBoundingClientRect(), element);
+                moveCaret(key, createdRange.getBoundingClientRect(), editorScroll);
             }
             catch(e){
                 
