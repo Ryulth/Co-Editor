@@ -71041,6 +71041,9 @@ exports.default = SquireExt;
 					this._mutation && this._mutation.disconnect(), delete this._root.__squire__, this._undoIndex = -1, this._undoStack = [], this._undoStackLength = 0
 			}, ot.handleEvent = function(e) {
                     this.fireEvent(e.type, e)
+                    if(e.defaultPrevented){
+                        ee = document.createEvent('HTMLEvents'), ee.initEvent('input', false, true), e.target.dispatchEvent(ee);
+                    }
 			}, ot.addEventListener = function(e, t) {
 					var n = this._events[e],
 							o = this._root;
