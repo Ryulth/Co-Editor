@@ -32,7 +32,7 @@
         getDocs();
         if (editor.addEventListener) {
             editor.addEventListener("keydown", keydownAction);
-            editorBar.addEventListener("click",clickAction)
+            editorBar.addEventListener("mousedown",clickAction);
             editor.addEventListener("mouseup", mouseupAction);
             editor.addEventListener(inputType, inputAction);
             editor.addEventListener("keyup", keyupAction);
