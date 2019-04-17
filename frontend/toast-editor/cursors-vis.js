@@ -1,10 +1,10 @@
 (function(){
     let caretContainer;
     let caretWrappers;
-    const getCaretWrappers = function(){
+    function getCaretWrappers(){
         return caretWrappers;
     }
-    const getCreatedCursorWrapper = function(color){
+    function getCreatedCursorWrapper(color){
         let cursorWrapper = document.createElement("SPAN");
         let caretCursorElement = document.createElement("SPAN");
         cursorWrapper.classList.add("caret-cursors-wrapper");
@@ -14,7 +14,7 @@
         return cursorWrapper;
     }
     
-    const getCreatedCaretFlag = function(name, color){
+    function getCreatedCaretFlag(name, color){
         let caretFlag = document.createElement("DIV");
         let caretName = document.createElement("SMALL");
         caretFlag.classList.add("caret-flag");
@@ -24,13 +24,13 @@
         caretName.innerText = name;
         return caretFlag;
     }
-    const init = function(){
+    function init(){
         caretContainer = document.createElement("DIV");
         caretContainer.classList.add("caret-container");
         document.body.appendChild(caretContainer);
         caretWrappers = {};
     };
-    const createCaret =  function(key, value, color){
+    function createCaret(key, value, color){
         if(!(key in caretWrappers)){
             let caretFrame = document.createElement("SPAN");
             let caretWrapper = document.createElement("SPAN");
@@ -44,7 +44,7 @@
             caretWrappers[key] = caretWrapper;
         }
     };
-    const moveCaret= function(key, rect, editorScroll){
+    function moveCaret(key, rect, editorScroll){
         let scrollHeight = 0;
         if(editorScroll.scrollHeight == editorScroll.clientHeight){
             scrollHeight = caretContainer.offsetTop;
@@ -57,7 +57,7 @@
             caretWrapper.style.height = rect.height+"px";
         }
     };
-    const createDrag = function(key, rect, editorScroll){
+    function createDrag(key, rect, editorScroll){
         let scrollHeight = 0;
         if(editorScroll.scrollHeight == editorScroll.clientHeight){
             scrollHeight = caretContainer.offsetTop;
@@ -72,13 +72,13 @@
         caretDrag.style.backgroundColor = getComputedStyle(caretFrame.querySelector(".caret-cursors")).backgroundColor;
         caretFrame.appendChild(caretDrag);
     };
-    const removeDrags = function(key){
+    function removeDrags(key){
         let caretFrame = document.querySelector("#container-"+key);
         Array.prototype.slice.call(caretFrame.querySelectorAll(".caret-drags")).forEach(element => {
             element.remove();
         });
     };
-    const removeCaret = function(key){
+    function removeCaret(key){
         if(key in caretWrappers){
             let caretFrame = document.querySelector("#container-"+key);
             let caretWrapper = caretFrame.querySelector(".caret-wrapper");
@@ -86,7 +86,7 @@
             delete caretWrappers[key];
         }
     }
-    const setUserCaret = function(editorEl, editorScroll, sessionId, start, end){
+    function setUserCaret(editorEl, editorScroll, sessionId, start, end){
         let R = Math.round(Math.random()*255);
         let G = Math.round(Math.random()*255);
         let B = Math.round(Math.random()*255);
@@ -95,7 +95,7 @@
         calcUserCaret(editorEl, editorScroll, start, end, sessionId);
     }
 
-    const calcUserCaret = function(element, editorScroll, start, end, key){
+    function calcUserCaret(element, editorScroll, start, end, key){
         let childTextLength = 0;
         let textNodeList = Caret.getTextNodeList(element);
         let startOffset = 0, endOffset = 0;

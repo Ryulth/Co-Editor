@@ -1,10 +1,10 @@
 (function(){
     let startCaret;
     let endCaret;
-    const getCaretPosition = function(element){
+    function getCaretPosition(element){
         return [getCaretPositionStart(element), getCaretPositionEnd(element)];
     }
-    const getCaretPositionStart = function(element) {
+    function getCaretPositionStart(element) {
         let position = 0;
         if (w3) {
             try{
@@ -30,7 +30,7 @@
         return position;
     }
 
-    const getCaretPositionEnd = function(element) {
+    function getCaretPositionEnd(element) {
         let position = 0;
         if (w3) {
             try{
@@ -55,7 +55,7 @@
         return position;
     }
 
-    const getLineNode = function(element, node){
+    function getLineNode(element, node){
         let lineNode = node;
 
         if(element == lineNode){
@@ -69,11 +69,11 @@
         return lineNode;
     }
 
-    const getCountOfNewLine = function(element, lineNode) {
+    function getCountOfNewLine(element, lineNode) {
         return Array.prototype.slice.call(element.childNodes).indexOf(lineNode);
     }
 
-    const getCountOfNewLineOver = function(element, lineNode, countOfNewLine) {
+    function getCountOfNewLineOver(element, lineNode, countOfNewLine) {
         let list = element.childNodes;
         while(lineNode != list[countOfNewLine]){
             countOfNewLine++;
@@ -81,7 +81,7 @@
         return countOfNewLine;
     }
 
-    const setCaretPosition = function(element, start, end){
+    function setCaretPosition(element, start, end){
         let childTextLength = 0;
         let textNodeList = getTextNodeList(element);
         let startOffset = 0, endOffset = 0;
@@ -127,7 +127,7 @@
         sel.addRange(range);
     }
 
-    const getTextNodeList = function(element){
+    function getTextNodeList(element){
         let childNodeList = element.childNodes;
         let textNodeList = [];
         Array.prototype.slice.call(childNodeList).forEach(function(childElement){
@@ -141,7 +141,7 @@
         })
         return textNodeList;
     }
-    const calcCaret = function (setDiffs,sc,ec){
+    function calcCaret(setDiffs,sc,ec){
         startCaret = sc;
         endCaret = ec;
         setDiffs.forEach(function (tempDiff,index,array){

@@ -100,7 +100,7 @@
         });
     }
 
-    const selectionChangeAction = function(){
+    function selectionChangeAction(){
         if(cursorInterval != null){
             clearInterval(cursorInterval);
         }
@@ -111,7 +111,7 @@
         intervalCount++;
     }
 
-    const sendCursorPos = function(){
+    function sendCursorPos(){
         intervalCount = 0;
         getCaret();
         stompClient.send('/topic/'+ editorType +'/position/'+coeditId, {}, JSON.stringify({sessionId: clientSessionId, start: startCaret, end: endCaret}));
@@ -390,7 +390,7 @@
         return resText;
     }
 
-    const disconnect =function () {
+    function disconnect() {
         if (stompClient !== null) {
             stompClient.disconnect();
             
