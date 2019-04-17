@@ -30,7 +30,6 @@
         editor.setAttribute("spellcheck",false);
         caretContainer = document.getElementsByClassName("caret-container")[0];
         getDocs();
-        initTextArea();
         if (editor.addEventListener) {
             editor.addEventListener("keydown", keydownAction);
             editorBar.addEventListener("click",clickAction)
@@ -119,15 +118,6 @@
         clearInterval(cursorInterval);
     }
 
-    
-
-    function initTextArea(){
-        let text = editor.innerHTML.trim();
-        if(text == ""){
-            editor.innerHTML = "<p><br></p>"
-        }
-    }
-
     function mouseupAction(){
         getCaret();
     }
@@ -155,7 +145,6 @@
     }
 
     function inputAction(event){
-        initTextArea();
         if (synchronized) {
             sendPatch(prevText,editor.innerHTML, false);
         } 
