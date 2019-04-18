@@ -5356,8 +5356,10 @@ jQuery.event = {
                 // when an event is called after a page has unloaded
                 let returnValue = typeof jQuery !== "undefined" && jQuery.event.triggered !== e.type ?
                 jQuery.event.dispatch.apply( elem, arguments ) : undefined;
-                let ee = document.createEvent('HTMLEvents');
-                ee.initEvent('input', false, true), editorEl.dispatchEvent(ee);
+                if(e.type == 'click'){
+                    let ee = document.createEvent('HTMLEvents');
+                    ee.initEvent('input', false, true), window.tui.Editor.getInstances()[0].getSquire()._root.dispatchEvent(ee);
+                }
 				return returnValue;
 			};
 		}
@@ -71043,9 +71045,12 @@ exports.default = SquireExt;
 					for (e in t) this.removeEventListener(e);
 					this._mutation && this._mutation.disconnect(), delete this._root.__squire__, this._undoIndex = -1, this._undoStack = [], this._undoStackLength = 0
 			}, ot.handleEvent = function(e) {
+                    if(e.type == 'mousedown' && e.target.classList[0] == 'task-list-item'){
+                        ee = document.createEvent('HTMLEvents'), ee.initEvent('keydown', true, true), this._root.dispatchEvent(ee);
+                    }
                     this.fireEvent(e.type, e)
-                    if(e.defaultPrevented){
-                        ee = document.createEvent('HTMLEvents'), ee.initEvent('input', false, true), e.target.dispatchEvent(ee);
+                    if(e.defaultPrevented || (e.type == 'mousedown' && e.target.classList[0] == 'task-list-item')){
+                        ee = document.createEvent('HTMLEvents'), ee.initEvent('input', true, true), this._root.dispatchEvent(ee);
                     }
 			}, ot.addEventListener = function(e, t) {
 					var n = this._events[e],
