@@ -69996,7 +69996,11 @@ var SquireExt = function (_Squire) {
 
       if (_domUtils2.default.getNodeName(lastBlock[0]) !== 'DIV') {
         this._ignoreChange = true;
-        (0, _jquery2.default)(this.createDefaultBlock()).insertAfter(lastBlock);
+        if(!(this._root.childNodes.length == 1 && this._root.childNodes[0].nodeName == 'BR')){
+            (0, _jquery2.default)(this.createDefaultBlock()).insertAfter(lastBlock);
+        } else{
+            console.log("문제가 발생했을 수 있음!!");
+        }
       }
     }
   }, {
