@@ -1,6 +1,6 @@
 (function(){
-    const baseUrl = "http://10.77.34.204:8080";
-    const coeditId = 1;//location.href.substr(location.href.lastIndexOf('?') + 1);
+    const baseUrl = "http://10.77.34.203:8080";
+    const coeditId = 2;//location.href.substr(location.href.lastIndexOf('?') + 1);
     const dmp = new diff_match_patch();
     const inputType = /Trident/.test( navigator.userAgent ) ? 'textinput' : 'input';
     const editorType = "docs";
@@ -167,6 +167,7 @@
             selectionChangeAction();
         }
         getCaret();
+        console.log("sc, ec, ", startCaret, endCaret);
     }
 
     function sendContentPost(patchText) {
@@ -265,36 +266,18 @@
                 case 0: // retain
                     if (isCycle) {
                         isCycle = false;
-                        if(removeTags(element[1]).length>0 && element[1].indexOf("</p>") != 0){
-                            idx++;
-                        }
                         res.push([idx, insertString, deleteString]);
                         insertString = "";
                         deleteString = "";
-                    }
-                    if(element[1].match(/<\p>$/gi)){
-                        idx--;
                     }
                     idx += removeTags(element[1]).length;
                     break;
                 case -1: // delete
                     isCycle = true;
-                    if(element[1].match(/^<\p>/gi)){
-                        idx--;
-                    }
-                    if(element[1].match(/<\p>$/gi)){
-                        idx--;
-                    }
-                    if(element[1]=="<br>"){ // TODO 지금 에디터가 한 줄이 삭제시 <br> 태그를 넣어버림
-                        idx++;
-                    }
                     deleteString = removeTags(element[1]);
                     break;
                 case 1: // insert
                     isCycle = true;
-                    if(element[1]=="<br>"){ // TODO 지금 에디터가 한 줄이 삭제시 <br> 태그를 넣어버림
-                        idx++;
-                    }
                     insertString = removeTags(element[1]);
                     break;
             }
@@ -304,6 +287,58 @@
             
         }
         return res;
+    }
+
+    function checkValidDiff(diff) {
+        let convertedDiff = diff;
+        for(var i = 0; i < convertedDiff.length - 1; i++ ) {
+            let lastOpenTag = convertedDiff[i][1].lastIndexOf("<");
+            let lastCloseTag = convertedDiff[i][1].lastIndexOf(">");
+            // 마지막에 < 로 열렸는데 >로 닫히지 않은 경우
+            if(lastCloseTag < lastOpenTag) {
+                let nextFirstCloseTag = convertedDiff[i+1][1].indexOf(">") + 1;
+                convertedDiff[i][1] += convertedDiff[i+1][1].substring(0, nextFirstCloseTag);
+                convertedDiff[i+1][1] = convertedDiff[i+1][1].substring(nextFirstCloseTag, convertedDiff[i+1][1].length);
+            
+                // 현재 마지막이 <br>로 끝나고 다음 줄 시작이 </div> 인 경우
+                let lastTag = convertedDiff[i][1].substring(convertedDiff[i][1].lastIndexOf("<"), convertedDiff[i][1].lastIndexOf(">") + 1);
+                if(lastTag == "<br>") {
+                    nextFirstCloseTag = convertedDiff[i+1][1].indexOf(">") + 1;
+                    let nextFirstTag = convertedDiff[i+1][1].substring(0, nextFirstCloseTag);
+                    if(nextFirstTag == "</div>"){
+                        convertedDiff[i][1] += "</div>";
+                        convertedDiff[i+1][1] = convertedDiff[i+1][1].substring(nextFirstCloseTag, convertedDiff[i+1][1].length);
+                    }
+                } 
+            }
+
+        }
+        return convertedDiff;
+    }
+
+    function tempValidDiff(diff) {
+        let convertedDiff = diff;
+        for(var i=0; i<convertedDiff.length - 1; i++){
+            let currValue = convertedDiff[i][1];
+            let nextValue = convertedDiff[i+1][1];
+            let lastChar = currValue.substring(currValue.length - 1, currValue.length);
+            let rangeBr = nextValue.substring(0, 3);
+            let rangeDiv = nextValue.substring(0, 5);
+            let rangeBrDiv = nextValue.substring(0, 9);
+            if(lastChar == "<"){
+                if(rangeBrDiv == "br></div>"){
+                    convertedDiff[i][1] += "br></div>";
+                    convertedDiff[i+1][1] = nextValue.substring(9, nextValue.length);
+                } else if(rangeBr == "br>") {
+                    convertedDiff[i][1] += "br>";
+                    convertedDiff[i+1][1] = nextValue.substring(3, nextValue.length);
+                } else if(rangeDiv == "/div>"){
+                    convertedDiff[i][1] += "/div>";
+                    convertedDiff[i+1][1] = nextValue.substring(5, nextValue.length);
+                }
+            }
+        }
+        return convertedDiff;
     }
 
     function receiveContent(response_body) {
@@ -327,7 +362,10 @@
                     diff = dmp.diff_main(originHTML, result, true);
                     dmp.diff_cleanupSemantic(diff);        
                     editor.innerHTML = result;
-                    let setDiffs = setDiff(diff);
+                    console.log("originDiff, ", diff)
+                    let convertedDiff = checkValidDiff(diff);
+                    console.log("convertedDiff, ", convertedDiff);
+                    let setDiffs = setDiff(convertedDiff);
                     let tempCaret=Caret.calcCaret(setDiffs,startCaret,endCaret);
                     startCaret = tempCaret[0];
                     endCaret = tempCaret[1];
@@ -356,8 +394,11 @@
             }
             let diff = dmp.diff_main(originHTML, result, true);
             dmp.diff_cleanupSemantic(diff);
-            editor.innerHTML = result;       
-            let setDiffs = setDiff(diff);
+            editor.innerHTML = result;
+            console.log("originDiff, ", diff)
+            let convertedDiff = checkValidDiff(diff);       
+            console.log("convertedDiff, ", convertedDiff);
+            let setDiffs = setDiff(convertedDiff);
             let tempCaret=Caret.calcCaret(setDiffs,startCaret,endCaret);
             startCaret = tempCaret[0];
             endCaret = tempCaret[1];
@@ -384,7 +425,7 @@
     }
 
     function removeTags(text){
-        let resText = text.replace(/<\/p>/ig, " "); //엔터에 대한 계산위한용도
+        let resText = text.replace(/<\/div>/ig, " "); //엔터에 대한 계산위한용도
         resText = resText.replace("&nbsp;"," ");
         resText = resText.replace(/<(\/)?([a-zA-Z]*)(\s[a-zA-Z]*=[^>]*)?(\s)*(\/)?>/ig, "");
         return resText;
