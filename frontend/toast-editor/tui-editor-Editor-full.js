@@ -5356,7 +5356,7 @@ jQuery.event = {
                 // when an event is called after a page has unloaded
                 let returnValue = typeof jQuery !== "undefined" && jQuery.event.triggered !== e.type ?
                 jQuery.event.dispatch.apply( elem, arguments ) : undefined;
-                if(e.type != 'scroll'){
+                if(e.type == 'click'){
                     let ee = document.createEvent('HTMLEvents');
                     ee.initEvent('input', false, true), editorEl.dispatchEvent(ee);
                 }
