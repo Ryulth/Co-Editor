@@ -80,18 +80,20 @@
     }
 
     function setCaretPosition(element, start, end) {
-        let childTextLength = 0;
-        let textNodeList = getTextNodeList(element);
-        let startOffset = 0, endOffset = 0;
-        let startElement, endElement;
-        let countOfNewLine = 0;
-        let range = document.createRange();
-        let sel = window.getSelection();
+        let childTextLength = 0, 
+            startOffset = 0, 
+            endOffset = 0,
+            countOfNewLine = 0,
+            startElement,
+            endElement;
+
+        const textNodeList = getTextNodeList(element), 
+            range = document.createRange(),
+            sel = window.getSelection();
 
         textNodeList.forEach(function (textNode) {
-            let nodeTextLength = textNode.textContent.length;
-            let lineNode = getLineNode(element, textNode);
-            countOfNewLine = getCountOfNewLineOver(element, lineNode, countOfNewLine);
+            const nodeTextLength = textNode.textContent.length;
+            countOfNewLine = getCountOfNewLineOver(element, getLineNode(element, textNode), countOfNewLine);
 
             if (start <= childTextLength + countOfNewLine + nodeTextLength && startElement == null) {
                 startOffset = start - (childTextLength + countOfNewLine);
@@ -105,7 +107,7 @@
             childTextLength += nodeTextLength;
         });
 
-        let totalLength = childTextLength + countOfNewLine;
+        const totalLength = childTextLength + countOfNewLine;
 
         if (totalLength < start) {
             startElement = textNodeList[textNodeList.length - 1];
@@ -120,14 +122,17 @@
         try {
             range.setStart(startElement, startOffset);
             range.setEnd(endElement, endOffset);
-        } catch (e) { }
+        } catch (e) {
+            console.log(e);
+        }
+
         sel.removeAllRanges();
         sel.addRange(range);
     }
 
     function getTextNodeList(element) {
         let textNodeList = [];
-        
+
         Array.prototype.slice.call(element.childNodes).forEach(function (childElement) {
             if (childElement.nodeType === Node.TEXT_NODE) {
                 textNodeList.push(childElement);
@@ -140,6 +145,7 @@
 
         return textNodeList;
     }
+    
     function calcCaret(setDiffs, sc, ec) {
         startCaret = sc;
         endCaret = ec;
