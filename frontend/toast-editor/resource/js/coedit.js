@@ -1,5 +1,5 @@
 (function(){
-    const baseUrl = "http://10.77.34.203:8080";
+    const baseUrl = "http://10.77.34.204:8080";
     const coeditId = 2;//location.href.substr(location.href.lastIndexOf('?') + 1);
     const dmp = new diff_match_patch();
     const inputType = /Trident/.test( navigator.userAgent ) ? 'textinput' : 'input';
@@ -21,18 +21,13 @@
     let caretContainer;
     let setEditor = function (editorEl,editorBarEl){
         CaretVis.init();
-        let editorBar = editorBarEl;
         editorScroll = document.getElementsByClassName("te-editor")[1];
         editor = editorEl;
-        editor.setAttribute("autocorrect","off");
-        editor.setAttribute("autocapitalize","off");
-        editor.setAttribute("autocomplete","off");
-        editor.setAttribute("spellcheck",false);
         caretContainer = document.getElementsByClassName("caret-container")[0];
         getDocs();
         if (editor.addEventListener) {
             editor.addEventListener("keydown", keydownAction);
-            editorBar.addEventListener("mousedown",clickAction);
+            editorBarEl.addEventListener("mousedown",clickAction);
             editor.addEventListener("mouseup", mouseupAction);
             editor.addEventListener(inputType, inputAction);
             editor.addEventListener("keyup", keyupAction);
@@ -51,12 +46,12 @@
     function getDocs() {
         $.ajax({
             type: "GET",
-            url: baseUrl + "/"+editorType+"/" + coeditId,
+            url: `${baseUrl}/${editorType}/${coeditId}`,
             cache: false,
             success: function (response) {
                 const responseBody = JSON.parse(response);
                 const responseDoc = responseBody[editorType];
-                const content = responseDoc.content;
+                let content = responseDoc.content;
                 clientVersion = responseDoc.version;
                 const responsePatches = responseBody.patchInfos;
                 if (responsePatches.length >= 1) {
@@ -70,23 +65,23 @@
         });
     }
     function connect() {
-        let socket = new SockJS(baseUrl + '/docs-websocket');
+        let socket = new SockJS(`${baseUrl}/docs-websocket`);
         stompClient = Stomp.over(socket);
         stompClient.connect({}, function (frame) {
             clientSessionId = /\/([^\/]+)\/websocket/.exec(socket._transport.url)[1];
             setConnected(true);
             accountLogin(baseUrl,editorType,coeditId,clientSessionId);
-            stompClient.subscribe('/topic/'+ editorType + "/" + coeditId, function (content) {
+            stompClient.subscribe(`/topic/${editorType}/${coeditId}`, function (content) {
                 let response_body = JSON.parse(content.body);
-                receiveContent(response_body) //
+                receiveContent(response_body) 
             });
-            stompClient.subscribe('/topic/'+ editorType +'/position/'+coeditId, function(content){
+            stompClient.subscribe(`/topic/${editorType}/position/${coeditId}`, function(content){
                 let contentBody = JSON.parse(content.body);
                 if(contentBody.sessionId != clientSessionId){
                     CaretVis.setUserCaret(editor, editorScroll, contentBody.sessionId, contentBody.start, contentBody.end);
                 }
             });
-            stompClient.subscribe('/topic/'+ editorType +'/'+coeditId+"/accounts", function(content){
+            stompClient.subscribe(`/topic/${editorType}/${coeditId}/accounts`, function(content){
                 let accounts = JSON.parse(content.body);
                 setAccountTable(accounts);
             });
@@ -112,10 +107,9 @@
     function sendCursorPos(){
         intervalCount = 0;
         getCaret();
-        stompClient.send('/topic/'+ editorType +'/position/'+coeditId, {}, JSON.stringify({sessionId: clientSessionId, start: startCaret, end: endCaret}));
+        stompClient.send(`/topic/${editorType}/position/${coeditId}`, {}, JSON.stringify({sessionId: clientSessionId, start: startCaret, end: endCaret}));
         clearInterval(cursorInterval);
     }
-
     function mouseupAction(){
         getCaret();
     }
@@ -127,7 +121,6 @@
 
     function clickAction(){
         getCaret();
-    
         if(synchronized){
             prevText = editor.innerHTML;
         }
@@ -165,7 +158,6 @@
             selectionChangeAction();
         }
         getCaret();
-        console.log("sc, ec, ", startCaret, endCaret);
     }
 
     function sendContentPost(patchText) {
@@ -447,18 +439,16 @@
     TODO : account 파일로 추출;
     */
     function accountLogout(baseUrl,type,id,clientSessionId){
-        let sendUrl =  baseUrl + "/" +type +"/" + id+"/accounts/"+clientSessionId;
         $.ajax({
             async: true, // false 일 경우 동기 요청으로 변경
             type: "DELETE",
             contentType: "application/json",
-            url: sendUrl,
+            url: `${baseUrl}/${type}/${id}/accounts/${clientSessionId}`,
             success: function (response) {
             }
         });
     }
     function accountLogin(baseUrl,type,id,clientSessionId){
-            let sendUrl =  baseUrl + "/" +type +"/" + id+"/accounts";
             let reqBody = {
                 "clientSessionId": clientSessionId,
                 "remoteAddress": ""
@@ -467,7 +457,7 @@
                 async: true, // false 일 경우 동기 요청으로 변경
                 type: "POST",
                 contentType: "application/json",
-                url: sendUrl,
+                url: `${baseUrl}/${type}/${id}/accounts`,
                 data: JSON.stringify(reqBody),
                 dataType: 'json',
                 success: function (response) {
@@ -475,11 +465,10 @@
             });
     }
     function getAccounts(baseUrl,type,id){
-        let sendUrl =  baseUrl + "/" +type +"/" + id+"/accounts";
         $.ajax({
             type: "GET",
             cache: false,
-            url: sendUrl,
+            url: `${baseUrl}/${type}/${id}/accounts`,
             success: function (response) {
                 console.log(JSON.parse(response))
                 setAccountTable(JSON.parse(response));

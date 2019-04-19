@@ -20,18 +20,13 @@
     let caretContainer;
     let setEditor = function (editorEl,editorBarEl){
         CaretVis.init();
-        let editorBar = editorBarEl;
         editor = editorEl;
-        editor.setAttribute("autocorrect","off");
-        editor.setAttribute("autocapitalize","off");
-        editor.setAttribute("autocomplete","off");
-        editor.setAttribute("spellcheck",false);
         caretContainer = document.getElementsByClassName("caret-container")[0];
         getDocs();
         initTextArea();
         if (editor.addEventListener) {
             editor.addEventListener("keydown", keydownAction);
-            editorBar.addEventListener("click",clickAction)
+            editorBarEl.addEventListener("click",clickAction)
             editor.addEventListener("mouseup", mouseupAction);
             editor.addEventListener(inputType, inputAction);
             editor.addEventListener("keyup", keyupAction);
