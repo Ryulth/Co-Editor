@@ -81,8 +81,8 @@
             startOffset = 0, 
             endOffset = 0,
             countOfNewLine = 0,
-            startElement,
-            endElement;
+            startElement = null,
+            endElement = null;
 
         const textNodeList = getTextNodeList(element), 
             range = document.createRange(),
@@ -92,11 +92,11 @@
             const nodeTextLength = textNode.textContent.length;
             countOfNewLine = getCountOfNewLineOver(element, getLineNode(element, textNode), countOfNewLine);
 
-            if (start <= childTextLength + countOfNewLine + nodeTextLength && startElement == null) {
+            if (start <= childTextLength + countOfNewLine + nodeTextLength && startElement === null) {
                 startOffset = start - (childTextLength + countOfNewLine);
                 startElement = textNode;
             }
-            if (end <= childTextLength + countOfNewLine + nodeTextLength && endElement == null) {
+            if (end <= childTextLength + countOfNewLine + nodeTextLength && endElement === null) {
                 endOffset = end - (childTextLength + countOfNewLine);
                 endElement = textNode;
             }
@@ -133,7 +133,7 @@
         Array.prototype.slice.call(element.childNodes).forEach(function (childElement) {
             if (childElement.nodeType === Node.TEXT_NODE) {
                 textNodeList.push(childElement);
-            } else if (childElement.nodeName == "BR") {
+            } else if (childElement.nodeName === "BR") {
                 textNodeList.push(childElement);
             } else {
                 textNodeList = textNodeList.concat(getTextNodeList(childElement));
@@ -148,7 +148,7 @@
             const startIdx = tempDiff[0];
             const inputString = tempDiff[1];
             const deleteString = tempDiff[2];
-            if (inputString.length != 0 && deleteString.length != 0) {
+            if (inputString.length !== 0 && deleteString.length !== 0) {
                 // delete and insert case
                 // delete 먼저하자
                 // 드래그 안 된 경우
@@ -271,7 +271,7 @@
         calcCaret: calcCaret
     };
 
-    if (typeof define == 'function' && define.amd) {
+    if (typeof define === 'function' && define.amd) {
         define(function () {
             return caret;
         });
