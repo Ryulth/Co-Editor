@@ -126,10 +126,10 @@
     }
 
     function getTextNodeList(element) {
-        let childNodeList = element.childNodes;
         let textNodeList = [];
-        Array.prototype.slice.call(childNodeList).forEach(function (childElement) {
-            if (childElement.nodeType == Node.TEXT_NODE) {
+        
+        Array.prototype.slice.call(element.childNodes).forEach(function (childElement) {
+            if (childElement.nodeType === Node.TEXT_NODE) {
                 textNodeList.push(childElement);
             } else if (childElement.nodeName == "BR") {
                 textNodeList.push(childElement);
@@ -137,6 +137,7 @@
                 textNodeList = textNodeList.concat(getTextNodeList(childElement));
             }
         })
+
         return textNodeList;
     }
     function calcCaret(setDiffs, sc, ec) {
