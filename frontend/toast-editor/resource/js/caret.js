@@ -54,11 +54,11 @@
     function getLineNode(element, node) {
         let lineNode = node;
 
-        if (element == lineNode) {
+        if (element === lineNode) {
             return lineNode;
         }
 
-        while ((lineNode.parentNode.id != element.id) || (lineNode.parentNode.classList != element.classList)) {
+        while ((lineNode.parentNode.id !== element.id) || (lineNode.parentNode.classList !== element.classList)) {
             lineNode = lineNode.parentNode;
         }
 
@@ -70,10 +70,12 @@
     }
 
     function getCountOfNewLineOver(element, lineNode, countOfNewLine) {
-        let list = element.childNodes;
-        while (lineNode != list[countOfNewLine]) {
+        const list = element.childNodes;
+
+        while (lineNode !== list[countOfNewLine]) {
             countOfNewLine++;
         }
+
         return countOfNewLine;
     }
 
