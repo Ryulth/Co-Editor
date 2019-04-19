@@ -2,58 +2,53 @@
     let startCaret;
     let endCaret;
 
-    function getCaretPosition(element) {
+    const POSITION = {
+        START: 'start',
+        END: 'end'
+    }
+
+    function getStartAndEndCaretPosition(element) {
         return [getCaretPositionStart(element), getCaretPositionEnd(element)];
     }
+
     function getCaretPositionStart(element) {
-        let position = 0;
-        if (w3) {
-            try {
-                let range = window.getSelection().getRangeAt(0);
-                let clonedRange = range.cloneRange();
-                clonedRange.selectNodeContents(element);
-                clonedRange.setEnd(range.startContainer, range.startOffset);
-                position = clonedRange.toString().length;
-
-                let lineNode = getLineNode(element, clonedRange.endContainer);
-
-                position += getCountOfNewLine(element, lineNode);
-            }
-            catch (e) { }
-        } else if (ie) {
-            let textRange = document.selection.createRange();
-            let createdTextRange = document.body.createTextRange();
-            createdTextRange.moveToElementText(element);
-            createdTextRange.setStartPoint("StartToStart", textRange);
-            position = createdTextRange.text.length;
-        }
-        position = (position < 0) ? 0 : position;
-        return position;
+        return getCaretPosition(element, POSITION.START);
     }
 
     function getCaretPositionEnd(element) {
+        return getCaretPosition(element, POSITION.END);
+    }
+
+    function getCaretPosition(element, position) {
         let position = 0;
         if (w3) {
             try {
-                let range = window.getSelection().getRangeAt(0);
-                let clonedRange = range.cloneRange();
+                const range = window.getSelection().getRangeAt(0);
+                const clonedRange = range.cloneRange();
+
                 clonedRange.selectNodeContents(element);
-                clonedRange.setEnd(range.endContainer, range.endOffset);
+                if (position === POSITION.START) {
+                    clonedRange.setEnd(range.startContainer, range.startOffset);
+                } else if (position === POSITION.END) {
+                    clonedRange.setEnd(range.endContainer, range.endOffset);
+                } else {
+                    throw 'Position Error!';
+                }
+
                 position = clonedRange.toString().length;
 
-                let lineNode = getLineNode(element, clonedRange.endContainer);
-
-                position += getCountOfNewLine(element, lineNode);
-            } catch (e) { }
+                position += getCountOfNewLine(element, getLineNode(element, clonedRange.endContainer));
+            } catch (e) {
+                console.log(e);
+            }
         } else if (ie) {
-            var textRange = document.selection.createRange();
-            var createdTextRange = document.body.createTextRange();
+            const createdTextRange = document.body.createTextRange();
             createdTextRange.moveToElementText(element);
-            createdTextRange.setStartPoint("StartToStart", textRange);
+            createdTextRange.setStartPoint("StartToStart", document.selection.createRange());
             position = createdTextRange.text.length;
         }
-        position = (position < 0) ? 0 : position;
-        return position;
+
+        return (position < 0) ? 0 : position;
     }
 
     function getLineNode(element, node) {
@@ -258,7 +253,7 @@
         }
     }
     const caret = {
-        getCaretPosition: getCaretPosition,
+        getCaretPosition: getStartAndEndCaretPosition,
         setCaretPosition: setCaretPosition,
         getTextNodeList: getTextNodeList,
         getCountOfNewLineOver: getCountOfNewLineOver,
