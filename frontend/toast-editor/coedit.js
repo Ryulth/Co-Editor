@@ -218,12 +218,10 @@
     }
 
     function isHangul(inputText){
-        if(inputText==null){
-            return false;
-        }
-        if(escape(inputText.charAt(0)).length == 6){
-            return true;
-        }
+        c = inputText.charCodeAt(0);
+        if( 0x1100<=c && c<=0x11FF ) return true;
+        if( 0x3130<=c && c<=0x318F ) return true;
+        if( 0xAC00<=c && c<=0xD7A3 ) return true;
         return false;
     }
 
