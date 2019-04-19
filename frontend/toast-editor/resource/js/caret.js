@@ -2,7 +2,7 @@
     let startCaret;
     let endCaret;
 
-    const POSITION = {
+    const LOCATION = {
         START: 'start',
         END: 'end'
     }
@@ -12,14 +12,14 @@
     }
 
     function getCaretPositionStart(element) {
-        return getCaretPosition(element, POSITION.START);
+        return getCaretPosition(element, LOCATION.START);
     }
 
     function getCaretPositionEnd(element) {
-        return getCaretPosition(element, POSITION.END);
+        return getCaretPosition(element, LOCATION.END);
     }
 
-    function getCaretPosition(element, position) {
+    function getCaretPosition(element, location) {
         let position = 0;
         if (w3) {
             try {
@@ -27,9 +27,9 @@
                 const clonedRange = range.cloneRange();
 
                 clonedRange.selectNodeContents(element);
-                if (position === POSITION.START) {
+                if (location === LOCATION.START) {
                     clonedRange.setEnd(range.startContainer, range.startOffset);
-                } else if (position === POSITION.END) {
+                } else if (location === LOCATION.END) {
                     clonedRange.setEnd(range.endContainer, range.endOffset);
                 } else {
                     throw 'Position Error!';
