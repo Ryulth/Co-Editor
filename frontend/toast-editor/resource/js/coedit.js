@@ -54,15 +54,13 @@
             url: baseUrl + "/"+editorType+"/" + coeditId,
             cache: false,
             success: function (response) {
-                let response_body = JSON.parse(response);
-                let response_doc = response_body[editorType];
-                let content = response_doc["content"];
-                clientVersion = response_doc["version"];
-                let response_patches = response_body["patchInfos"];
-                if (response_patches.length >= 1) {
-                    console.log(response_patches);
-                    console.log(response_doc);
-                    content = patchDocs(response_patches,content,clientVersion);
+                const responseBody = JSON.parse(response);
+                const responseDoc = responseBody[editorType];
+                const content = responseDoc.content;
+                clientVersion = responseDoc.version;
+                const responsePatches = responseBody.patchInfos;
+                if (responsePatches.length >= 1) {
+                    content = patchDocs(responsePatches, content, clientVersion);
                 } 
                 editor.innerHTML = content;
                 prevText = content;
