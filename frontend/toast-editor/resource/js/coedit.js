@@ -143,7 +143,7 @@
             let diff = dmp.diff_main(pprevText, editor.innerHTML, true);
             dmp.diff_cleanupSemantic(diff);
             if ((diff.length > 1) || (diff.length == 1 && diff[0][0] != 0)) { // 1 이상이어야 변경 한 것이 있음
-                let res = setDiff(diff)[0];    
+                let res = makeCustomDiff(diff)[0];    
                 if (!(Hangul.disassemble(res[2]).length == Hangul.disassemble(res[1]).length + 1) || (keycode == "Backspace" || keycode == "Delete")) {
                     if(!isPaste){
                     setHangulSelection(res)
@@ -219,7 +219,7 @@
         let diff = dmp.diff_main(prev, current, true);
         dmp.diff_cleanupSemantic(diff);
         if ((diff.length > 1) || (diff.length == 1 && diff[0][0] != 0)) { // 1 이상이어야 변경 한 것이 있음
-            let res = setDiff(diff)[0];
+            let res = makeCustomDiff(diff)[0];
             let isBadChim = (endCaret-startCaret==1) ? !(Hangul.disassemble(res[2]).length == Hangul.disassemble(res[1]).length + 1) : true
             if ( isBadChim || (keycode == "Backspace" || keycode == "Delete")) { 
                 if(!isBuffer && !isPaste){
@@ -227,8 +227,6 @@
                 }
                 
                 synchronized = false;
-                let inputLength = (res[1].length ==0 ) ? 0 : res[1].length-1;
-                let deleteLength =(res[2].length ==0 ) ? 0 : 1-res[2].length;
                 let patch_list = dmp.patch_make(prev, current, diff);
                 let patch_text = dmp.patch_toText(patch_list);
                 sendContentPost(patch_text);
@@ -236,14 +234,10 @@
             }
             keycode = "";
             isPaste = false;
-            
-        }
-        else{
-            //TODO 변경한거 없다고 잡는 경우가 있다 제자리 변경 그경우 고려해야함        console.log(diff)
         }
     }
 
-    function setDiff(diff) {
+    function makeCustomDiff(diff) {
         let idx = 0;
         let insertString = "";
         let deleteString = "";
@@ -353,8 +347,8 @@
                     console.log("originDiff, ", diff)
                     let convertedDiff = checkValidDiff(diff);
                     console.log("convertedDiff, ", convertedDiff);
-                    let setDiffs = setDiff(convertedDiff);
-                    let tempCaret=Caret.calcCaret(setDiffs,startCaret,endCaret);
+                    let makeCustomDiffs = makeCustomDiff(convertedDiff);
+                    let tempCaret=Caret.calcCaret(makeCustomDiffs,startCaret,endCaret);
                     startCaret = tempCaret[0];
                     endCaret = tempCaret[1];
                     Caret.setCaretPosition(editor,startCaret,endCaret);
@@ -386,8 +380,8 @@
             console.log("originDiff, ", diff)
             let convertedDiff = checkValidDiff(diff);       
             console.log("convertedDiff, ", convertedDiff);
-            let setDiffs = setDiff(convertedDiff);
-            let tempCaret=Caret.calcCaret(setDiffs,startCaret,endCaret);
+            let makeCustomDiffs = makeCustomDiff(convertedDiff);
+            let tempCaret=Caret.calcCaret(makeCustomDiffs,startCaret,endCaret);
             startCaret = tempCaret[0];
             endCaret = tempCaret[1];
             Caret.setCaretPosition(editor,startCaret,endCaret);
