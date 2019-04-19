@@ -71060,7 +71060,9 @@ exports.default = SquireExt;
 			}, ot.handleEvent = function(e) {
                     if(e.type == 'mousedown' && e.target.classList[0] == 'task-list-item'){
                         ee = document.createEvent('HTMLEvents'), ee.initEvent('keydown', true, true), this._root.dispatchEvent(ee);
-                    }
+                    }else if(e.type == 'keydown' && e.called == null){
+											ee = document.createEvent('HTMLEvents'), ee.initEvent('keydown', true, true), ee.code = e.code, ee.called = true, this._root.dispatchEvent(ee);
+										}
                     this.fireEvent(e.type, e)
                     if(e.defaultPrevented || (e.type == 'mousedown' && e.target.classList[0] == 'task-list-item')){
                         ee = document.createEvent('HTMLEvents'), ee.initEvent('input', true, true), this._root.dispatchEvent(ee);
