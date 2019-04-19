@@ -1,7 +1,4 @@
 (function () {
-    let startCaret;
-    let endCaret;
-
     const LOCATION = {
         START: 'start',
         END: 'end'
@@ -145,20 +142,19 @@
 
         return textNodeList;
     }
-    
-    function calcCaret(setDiffs, sc, ec) {
-        startCaret = sc;
-        endCaret = ec;
-        setDiffs.forEach(function (tempDiff, index, array) {
-            let startIdx = tempDiff[0];
-            let inputString = tempDiff[1];
-            let deleteString = tempDiff[2];
+
+    function calcCaret(diff, startCaret, endCaret) {
+        diff.forEach(function (tempDiff, _, _) {
+            const startIdx = tempDiff[0];
+            const inputString = tempDiff[1];
+            const deleteString = tempDiff[2];
             if (inputString.length != 0 && deleteString.length != 0) {
                 // delete and insert case
                 // delete 먼저하자
                 // 드래그 안 된 경우
-                if (startCaret == endCaret) {
-                    deleteNoDrag(startIdx, deleteString);
+                
+                if (startCaret === endCaret) {
+                    [startCaret, endCaret] = deleteNoDrag(startIdx, deleteString, startCaret, endCaret);
                     // insert 된 크기 만큼 뒤로 간다.
                     if (startCaret > startIdx) {
                         startCaret += inputString.length;
@@ -166,27 +162,27 @@
                     }
                 } else {
                     // 드래그 인 경우
-                    deleteDrag(startIdx, deleteString);
+                    [startCaret, endCaret] = deleteDrag(startIdx, deleteString, startCaret, endCaret);
                     // 다음 insert 
                     // delete 과정으로 드래그했던게 풀렸을수도 있음 
                     // insert 
-                    insertCalcCaret(startIdx, inputString);
+                    [startCaret, endCaret] = insertCalcCaret(startIdx, inputString, startCaret, endCaret);
                 }
                 // }
-            } else if (inputString.length != 0) {
+            } else if (inputString.length !== 0) {
                 // insert 
-                insertCalcCaret(startIdx, inputString);
+                [startCaret, endCaret] = insertCalcCaret(startIdx, inputString, startCaret, endCaret);
             } else {
                 // delete
-                deleteCalcCaret(startIdx, deleteString);
+                [startCaret, endCaret] = deleteCalcCaret(startIdx, deleteString, startCaret, endCaret);
             }
         });
         return [startCaret, endCaret]
     }
 
-    function insertCalcCaret(startIdx, inputString) {
+    function insertCalcCaret(startIdx, inputString, startCaret, endCaret) {
         // insert 
-        if (startCaret == endCaret) {
+        if (startCaret === endCaret) {
             // 드래그 안 된 경우
             if (startIdx < startCaret) {
                 // 내 위치보다 앞에서 쓴 경우 뒤로 밀린다.
@@ -206,16 +202,18 @@
                 endCaret += inputString.length;
             }
         }
+        return [startCaret, endCaret]
     }
-    function deleteCalcCaret(startIdx, deleteString) {
-        if (startCaret == endCaret) {
-            deleteNoDrag(startIdx, deleteString);
+
+    function deleteCalcCaret(startIdx, deleteString, startCaret, endCaret) {
+        if (startCaret === endCaret) {
+            return deleteNoDrag(startIdx, deleteString);
         } else {
-            deleteDrag(startIdx, deleteString);
+            return deleteDrag(startIdx, deleteString);
         }
     }
 
-    function deleteNoDrag(startIdx, deleteString) {
+    function deleteNoDrag(startIdx, deleteString, startCaret, endCaret) {
         // 내 커서가 드래그 안 된 경우
         if (startIdx < startCaret) {
             // 일단 지우는 위치가 나보다 앞인지 검사
@@ -229,9 +227,10 @@
                 endCaret -= deleteString.length;
             }
         }
+        return [startCaret, endCaret]
     }
 
-    function deleteDrag(startIdx, deleteString) {
+    function deleteDrag(startIdx, deleteString, startCaret, endCaret) {
         // 내 커서가 드래그인 경우
         if (startIdx < startCaret) {
             // 지우는 위치가 내 커서보다 앞인경우
@@ -260,7 +259,9 @@
                 endCaret = startIdx;
             }
         }
+        return [startCaret, endCaret]
     }
+
     const caret = {
         getCaretPosition: getStartAndEndCaretPosition,
         setCaretPosition: setCaretPosition,
@@ -269,6 +270,7 @@
         getLineNode: getLineNode,
         calcCaret: calcCaret
     };
+
     if (typeof define == 'function' && define.amd) {
         define(function () {
             return caret;
