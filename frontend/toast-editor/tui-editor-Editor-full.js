@@ -70910,11 +70910,16 @@ exports.default = SquireExt;
 									c || (s = null)
 							}
 							if (s) {
+                                    let parentEvent = e;
 									for (e.preventDefault(), t = s.length; t--;) {
 											if (n = s[t], o = n.type, !d && "text/html" === o) return void n.getAsString(function(e) {
-													u.insertHTML(e, !0)
+                                                    u.insertHTML(e, !0)
+                                                    if(parentEvent.type == 'paste'){
+                                                        let ee = document.createEvent('HTMLEvents');
+                                                        ee.initEvent('input', true, true), window.tui.Editor.getInstances()[0].getSquire()._root.dispatchEvent(ee);
+                                                    }
 											});
-											"text/plain" === o && (h = n), !d && /^image\/.*/.test(o) && (c = !0)
+                                            "text/plain" === o && (h = n), !d && /^image\/.*/.test(o) && (c = !0)
 									}
 									return void(c ? (this.fireEvent("dragover", {
 											dataTransfer: a,
@@ -70924,7 +70929,11 @@ exports.default = SquireExt;
 									}), l && this.fireEvent("drop", {
 											dataTransfer: a
 									})) : h && h.getAsString(function(e) {
-											u.insertPlainText(e, !0)
+                                            u.insertPlainText(e, !0)
+                                            if(parentEvent.type == 'paste'){
+                                                let ee = document.createEvent('HTMLEvents');
+                                                ee.initEvent('input', true, true), window.tui.Editor.getInstances()[0].getSquire()._root.dispatchEvent(ee);
+                                            }
 									}))
 							}
 							if (i = a && a.types, !X && i && (de.call(i, "text/html") > -1 || !Q && de.call(i, "text/plain") > -1 && de.call(i, "text/rtf") < 0)) return e.preventDefault(), void(!d && (r = a.getData("text/html")) ? this.insertHTML(r, !0) : ((r = a.getData("text/plain")) || (r = a.getData("text/uri-list"))) && this.insertPlainText(r, !0));
