@@ -2,7 +2,6 @@
     const baseUrl = "http://10.77.34.205:8080";
     const coeditId = 2;//location.href.substr(location.href.lastIndexOf('?') + 1);
     const dmp = new diff_match_patch();
-    const inputType = /Trident/.test( navigator.userAgent ) ? 'textinput' : 'input';
     const editorType = "docs";
     let editor;
     let editorScroll;
@@ -10,7 +9,7 @@
     let clientVersion;
     let stompClient;
     let clientSessionId;
-    let prevText;
+    let prevText = "";
     let pprevText;
     let startCaret =0;
     let endCaret =0;
@@ -18,30 +17,22 @@
     let isPaste = false;
     let cursorInterval;
     let intervalCount = 0;
-    
-    let setEditor = function (tuiEditor){
+
+    function setEditor(tuiEditor){
         CaretVis.init();
         editorScroll = tuiEditor.wwEditor.$editorContainerEl[0];
         editor = tuiEditor.wwEditor.editor._root;
         getDocs();
         if (editor.addEventListener) {
-            // editor.addEventListener("keydown", keydownAction);
             tuiEditor.eventManager.listen("keydown", keydownAction)
-            // editor.addEventListener("mouseup", mouseupAction);
             tuiEditor.eventManager.listen("mouseup", mouseupAction);
-            // editor.addEventListener(inputType, inputAction);
             tuiEditor.eventManager.listen("change", inputAction);
-            // editor.addEventListener("keyup", keyupAction);
             tuiEditor.eventManager.listen("keyup", keyupAction);
-            // editor.addEventListener("paste", function(e){
-            //     isPaste = true;
-            // });
             tuiEditor.eventManager.listen("paste" , function(){
                 isPaste = true;
             });
 
-            // TODO :: toolbar로 변경 필요
-            document.getElementsByClassName("tui-editor-defaultUI-toolbar")[0].addEventListener("mousedown",clickAction);
+            tuiEditor._ui._toolbar.$el[0].addEventListener("mousedown",clickAction);
 
             editorScroll.addEventListener("scroll", function(){
                 CaretVis.getCaretContainer().style.top = `${-editorScroll.scrollTop}px`;
@@ -52,6 +43,7 @@
             document.addEventListener("selectionchange", selectionChangeAction);
         }
     }
+
     function getDocs() {
         $.ajax({
             type: "GET",
@@ -73,6 +65,7 @@
             }
         });
     }
+
     function connect() {
         let socket = new SockJS(`${baseUrl}/docs-websocket`);
         stompClient = Stomp.over(socket);
@@ -119,9 +112,11 @@
         stompClient.send(`/topic/${editorType}/position/${coeditId}`, {}, JSON.stringify({sessionId: clientSessionId, start: startCaret, end: endCaret}));
         clearInterval(cursorInterval);
     }
+
     function mouseupAction(){
         getCaret();
     }
+    
     function getCaret(){
         let tempCaret = Caret.getCaretPosition(editor);
         startCaret = tempCaret[0];
