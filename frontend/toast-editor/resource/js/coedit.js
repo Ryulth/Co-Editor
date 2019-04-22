@@ -18,12 +18,11 @@
     let isPaste = false;
     let cursorInterval;
     let intervalCount = 0;
-    let caretContainer;
+    
     let setEditor = function (tuiEditor){
         CaretVis.init();
-        editorScroll = document.getElementsByClassName("te-editor")[1];
+        editorScroll = tuiEditor.wwEditor.$editorContainerEl[0];
         editor = tuiEditor.wwEditor.editor._root;
-        caretContainer = document.getElementsByClassName("caret-container")[0];
         getDocs();
         if (editor.addEventListener) {
             // editor.addEventListener("keydown", keydownAction);
@@ -45,10 +44,10 @@
             document.getElementsByClassName("tui-editor-defaultUI-toolbar")[0].addEventListener("mousedown",clickAction);
 
             editorScroll.addEventListener("scroll", function(){
-                caretContainer.style.top = `${-editorScroll.scrollTop}px`;
+                CaretVis.getCaretContainer().style.top = `${-editorScroll.scrollTop}px`;
             })
             document.addEventListener("scroll", function(){
-                caretContainer.style.top = `${-document.documentElement.scrollTop}px`;
+                CaretVis.getCaretContainer().style.top = `${-document.documentElement.scrollTop}px`;
             })
             document.addEventListener("selectionchange", selectionChangeAction);
         }

@@ -6,6 +6,10 @@
         return caretWrappers;
     };
 
+    function getCaretContainer(){
+        return caretContainer;
+    }
+
     function getCreatedCursorWrapper(color){
         const cursorWrapper = document.createElement("SPAN");
         const caretCursorElement = document.createElement("SPAN");
@@ -182,6 +186,7 @@
         setUserCaret : setUserCaret,
         calcUserCaret : calcUserCaret,
         getCaretWrappers : getCaretWrappers,
+        getCaretContainer : getCaretContainer
     }
 
     if (typeof define == 'function' && define.amd) {
