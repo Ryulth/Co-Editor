@@ -1,35 +1,38 @@
 (function(){
     let caretContainer;
-    let caretWrappers;
+    const caretWrappers = {};
+
     function getCaretWrappers(){
         return caretWrappers;
-    }
+    };
+
     function getCreatedCursorWrapper(color){
-        let cursorWrapper = document.createElement("SPAN");
-        let caretCursorElement = document.createElement("SPAN");
+        const cursorWrapper = document.createElement("SPAN");
+        const caretCursorElement = document.createElement("SPAN");
         cursorWrapper.classList.add("caret-cursors-wrapper");
         caretCursorElement.classList.add("caret-cursors");
         caretCursorElement.style.backgroundColor = color;
         cursorWrapper.appendChild(caretCursorElement)
         return cursorWrapper;
-    }
+    };
     
     function getCreatedCaretFlag(name, color){
-        let caretFlag = document.createElement("DIV");
-        let caretName = document.createElement("SMALL");
+        const caretFlag = document.createElement("DIV");
+        const caretName = document.createElement("SMALL");
         caretFlag.classList.add("caret-flag");
         caretFlag.style.backgroundColor = color;
         caretFlag.appendChild(caretName);
         caretName.classList.add("caret-name");
         caretName.innerText = name;
         return caretFlag;
-    }
+    };
+
     function init(){
         caretContainer = document.createElement("DIV");
         caretContainer.classList.add("caret-container");
         document.body.appendChild(caretContainer);
-        caretWrappers = {};
     };
+
     function createCaret(key, value, color){
         if(!(key in caretWrappers)){
             let caretFrame = document.createElement("SPAN");
@@ -44,60 +47,62 @@
             caretWrappers[key] = caretWrapper;
         }
     };
+
     function moveCaret(key, rect, editorScroll){
         let scrollHeight = 0;
         if(editorScroll.scrollHeight == editorScroll.clientHeight){
             scrollHeight = caretContainer.offsetTop;
         }
         if(key in caretWrappers){
-            let caretFrame = document.querySelector("#container-"+key);
-            let caretWrapper = caretFrame.querySelector(".caret-wrapper");
-            caretWrapper.style.top = rect.top+editorScroll.scrollTop-scrollHeight+"px";
-            caretWrapper.style.left = rect.left+"px";
-            caretWrapper.style.height = rect.height+"px";
+            const caretWrapper = document.querySelector(`#container-${key}`).querySelector(".caret-wrapper");
+            caretWrapper.style.top = `${rect.top+editorScroll.scrollTop-scrollHeight}px`;
+            caretWrapper.style.left = `${rect.left}px`;
+            caretWrapper.style.height = `${rect.height}px`;
         }
     };
+
     function createDrag(key, rect, editorScroll){
         let scrollHeight = 0;
         if(editorScroll.scrollHeight == editorScroll.clientHeight){
             scrollHeight = caretContainer.offsetTop;
         }
-        let caretFrame = document.querySelector("#container-"+key);
-        let caretDrag = document.createElement("SPAN");
+        const caretFrame = document.querySelector(`#container-${key}`);
+        const caretDrag = document.createElement("SPAN");
         caretDrag.classList.add("caret-drags");
         caretDrag.style.top = rect.top+editorScroll.scrollTop-scrollHeight+"px";
-        caretDrag.style.left = rect.left+"px";
-        caretDrag.style.width = rect.width+"px";
-        caretDrag.style.height = rect.height+"px";
+        caretDrag.style.left = `${rect.left}px`;
+        caretDrag.style.width = `${rect.width}px`;
+        caretDrag.style.height = `${rect.height}px`;
         caretDrag.style.backgroundColor = getComputedStyle(caretFrame.querySelector(".caret-cursors")).backgroundColor;
         caretFrame.appendChild(caretDrag);
     };
+
     function removeDrags(key){
-        let caretFrame = document.querySelector("#container-"+key);
-        Array.prototype.slice.call(caretFrame.querySelectorAll(".caret-drags")).forEach(element => {
+        Array.prototype.slice.call(
+            document.querySelector(`#container-${key}`).querySelectorAll(".caret-drags")).forEach(function(element) {
             element.remove();
         });
     };
+
     function removeCaret(key){
         if(key in caretWrappers){
-            let caretFrame = document.querySelector("#container-"+key);
-            let caretWrapper = caretFrame.querySelector(".caret-wrapper");
+            const caretWrapper = document.querySelector(`#container-${key}`).querySelector(".caret-wrapper");
             caretWrapper.remove();
             delete caretWrappers[key];
         }
     }
     function setUserCaret(editorEl, editorScroll, sessionId, start, end){
-        let R = Math.round(Math.random()*255);
-        let G = Math.round(Math.random()*255);
-        let B = Math.round(Math.random()*255);
-        let rgba = "rgba("+R+", "+G+", "+B+", .6)";
+        const R = Math.round(Math.random()*255);
+        const G = Math.round(Math.random()*255);
+        const B = Math.round(Math.random()*255);
+        const rgba = `rgba(${R}, ${G}, ${B}, .6)`;
         createCaret(sessionId, sessionId, rgba);
         calcUserCaret(editorEl, editorScroll, start, end, sessionId);
     }
 
     function calcUserCaret(element, editorScroll, start, end, key){
         let childTextLength = 0;
-        let textNodeList = Caret.getTextNodeList(element);
+        const textNodeList = Caret.getTextNodeList(element);
         let startOffset = 0, endOffset = 0;
         let startElement, endElement;
         let countOfNewLine = 0;
@@ -142,7 +147,7 @@
             }
             childTextLength += nodeTextLength;
         });
-        let totalLength = childTextLength+countOfNewLine;
+        const totalLength = childTextLength+countOfNewLine;
 
         if(totalLength < start){
             startElement = textNodeList[textNodeList.length - 1];
