@@ -1,5 +1,5 @@
 (function(){
-    const baseUrl = "http://10.77.34.205:8080";
+    const baseUrl = "http://10.77.34.204:8080";
     const coeditId = 2;//location.href.substr(location.href.lastIndexOf('?') + 1);
     const dmp = new diff_match_patch();
     const editorType = "docs";
@@ -58,7 +58,7 @@
                 if (responsePatches.length >= 1) {
                     content = patchDocs(responsePatches, content, clientVersion);
                 } 
-                editor.innerHTML = content;
+                tuiEditor.setHtml(content);
                 prevText = content;
                 synchronized = true;
                 connect();
@@ -126,7 +126,8 @@
     function clickAction(){
         getCaret();
         if(synchronized){
-            prevText = editor.innerHTML;
+            prevText = tuiEditor.getHtml();
+            console.log("prev",prevText)
         }
     }
     
@@ -134,17 +135,21 @@
         keycode = event.code;
         getCaret();
         if (synchronized) {
-            prevText = editor.innerHTML;
+            prevText = tuiEditor.getHtml();
+            console.log("keydownActionprev",prevText)
         }
-        pprevText = editor.innerHTML;
+        pprevText = tuiEditor.getHtml();
     }
 
     function inputAction(event){
+        console.log("inputAction")
         if (synchronized) {
-            sendPatch(prevText,editor.innerHTML, false);
+            
+            sendPatch(prevText,tuiEditor.getHtml(), false);
         } 
         else{
-            let diff = dmp.diff_main(pprevText, editor.innerHTML, true);
+            console.log("범인")
+            let diff = dmp.diff_main(pprevText, tuiEditor.getHtml(), true);
             dmp.diff_cleanupSemantic(diff);
             if ((diff.length > 1) || (diff.length == 1 && diff[0][0] != 0)) { // 1 이상이어야 변경 한 것이 있음
                 let res = makeCustomDiff(diff)[0];    
@@ -220,6 +225,9 @@
     }
 
     function sendPatch(prev,current, isBuffer) {
+        console.log("sendPAtch");
+        console.log(prev)
+        console.log(current)
         let diff = dmp.diff_main(prev, current, true);
         dmp.diff_cleanupSemantic(diff);
         if ((diff.length > 1) || (diff.length == 1 && diff[0][0] != 0)) { // 1 이상이어야 변경 한 것이 있음
@@ -234,7 +242,7 @@
                 let patchList = dmp.patch_make(prev, current, diff);
                 let patchText = dmp.patch_toText(patchList);
                 sendContentPost(patchText);
-                prevText = editor.innerHTML;
+                prevText = tuiEditor.getHtml();
             }
             keycode = "";
             isPaste = false;
@@ -331,7 +339,7 @@
         
         let receiveSessionId = responseBody.socketSessionId;
         let responsePatcheInfos = responseBody.patchInfos;
-        let originHTML = editor.innerHTML;
+        let originHTML = tuiEditor.getHtml();
         let result;
         if (receiveSessionId == clientSessionId) {
             if(responsePatcheInfos.length > 1){ // 꼬여서 다시 부를 떄
@@ -347,7 +355,7 @@
                     }
                     diff = dmp.diff_main(originHTML, result, true);
                     dmp.diff_cleanupSemantic(diff);        
-                    editor.innerHTML = result;
+                    tuiEditor.setHtml(result);
                     console.log("originDiff, ", diff)
                     let convertedDiff = checkValidDiff(diff);
                     console.log("convertedDiff, ", convertedDiff);
@@ -362,8 +370,10 @@
                 clientVersion = responsePatcheInfos[0].patchVersion;
             }
             synchronized = true;
+            console.log("sendpatch onemore")
             sendPatch(prevText,originHTML, true);  
             if(result != null){
+                console.log("ressss",result)
                 prevText = result;
             }
         } 
@@ -380,7 +390,7 @@
             }
             let diff = dmp.diff_main(originHTML, result, true);
             dmp.diff_cleanupSemantic(diff);
-            editor.innerHTML = result;
+            tuiEditor.setHtml(result);
             console.log("originDiff, ", diff)
             let convertedDiff = checkValidDiff(diff);       
             console.log("convertedDiff, ", convertedDiff);
@@ -411,10 +421,9 @@
     }
 
     function removeTags(text){
-        let resText = text.replace(/<\/div>/ig, " "); //엔터에 대한 계산위한용도
-        resText = resText.replace("&nbsp;"," ");
-        resText = resText.replace(/<(\/)?([a-zA-Z]*)(\s[a-zA-Z]*=[^>]*)?(\s)*(\/)?>/ig, "");
-        return resText;
+        return text.replace(/<\/div>/ig, " ") //엔터에 대한 계산위한용도
+        .replace("&nbsp;"," ")
+        .replace(/<(\/)?([a-zA-Z]*)(\s[a-zA-Z]*=[^>]*)?(\s)*(\/)?>/ig, "");
     }
 
     function disconnect() {
