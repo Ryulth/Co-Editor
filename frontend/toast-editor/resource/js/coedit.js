@@ -1,5 +1,5 @@
 (function(){
-    const baseUrl = "http://10.77.34.204:8080";
+    const baseUrl = "http://10.77.34.205:8080";
     const coeditId = 2;//location.href.substr(location.href.lastIndexOf('?') + 1);
     const dmp = new diff_match_patch();
     const editorType = "docs";
@@ -10,7 +10,7 @@
     let stompClient;
     let clientSessionId;
     let prevText = "";
-    let pprevText;
+    let pprevText;  
     let startCaret =0;
     let endCaret =0;
     let keycode = "";
@@ -58,7 +58,7 @@
                 if (responsePatches.length >= 1) {
                     content = patchDocs(responsePatches, content, clientVersion);
                 } 
-                tuiEditor.setHtml(content);
+                editor.innerHTML = content;
                 prevText = content;
                 synchronized = true;
                 connect();
@@ -126,8 +126,8 @@
     function clickAction(){
         getCaret();
         if(synchronized){
-            prevText = tuiEditor.getHtml();
-            console.log("prev",prevText)
+            // prevText = editor.innerHTML;
+            // console.log("prev",prevText)
         }
     }
     
@@ -135,21 +135,20 @@
         keycode = event.code;
         getCaret();
         if (synchronized) {
-            prevText = tuiEditor.getHtml();
-            console.log("keydownActionprev",prevText)
+            // prevText =editor.innerHTML;
+            // console.log("keydownActionprev",prevText)
         }
-        pprevText = tuiEditor.getHtml();
+        pprevText = editor.innerHTML;
     }
 
-    function inputAction(event){
+    function inputAction(){
         console.log("inputAction")
         if (synchronized) {
-            
-            sendPatch(prevText,tuiEditor.getHtml(), false);
+            sendPatch(prevText,editor.innerHTML, false);
         } 
         else{
             console.log("범인")
-            let diff = dmp.diff_main(pprevText, tuiEditor.getHtml(), true);
+            let diff = dmp.diff_main(pprevText, editor.innerHTML, true);
             dmp.diff_cleanupSemantic(diff);
             if ((diff.length > 1) || (diff.length == 1 && diff[0][0] != 0)) { // 1 이상이어야 변경 한 것이 있음
                 let res = makeCustomDiff(diff)[0];    
@@ -163,6 +162,7 @@
     }
 
     function keyupAction(e){
+        console.log("keyupAction : ", e);
         if(e.keycode == 'Backspace'){
             selectionChangeAction();
         }
@@ -226,8 +226,8 @@
 
     function sendPatch(prev,current, isBuffer) {
         console.log("sendPAtch");
-        console.log(prev)
-        console.log(current)
+        // console.log(prev)
+        // console.log(current)
         let diff = dmp.diff_main(prev, current, true);
         dmp.diff_cleanupSemantic(diff);
         if ((diff.length > 1) || (diff.length == 1 && diff[0][0] != 0)) { // 1 이상이어야 변경 한 것이 있음
@@ -242,7 +242,7 @@
                 let patchList = dmp.patch_make(prev, current, diff);
                 let patchText = dmp.patch_toText(patchList);
                 sendContentPost(patchText);
-                prevText = tuiEditor.getHtml();
+                prevText = editor.innerHTML;
             }
             keycode = "";
             isPaste = false;
@@ -339,7 +339,7 @@
         
         let receiveSessionId = responseBody.socketSessionId;
         let responsePatcheInfos = responseBody.patchInfos;
-        let originHTML = tuiEditor.getHtml();
+        let originHTML = editor.innerHTML;
         let result;
         if (receiveSessionId == clientSessionId) {
             if(responsePatcheInfos.length > 1){ // 꼬여서 다시 부를 떄
@@ -354,8 +354,8 @@
                         result = dmp.patch_apply(patches, result)[0];
                     }
                     diff = dmp.diff_main(originHTML, result, true);
-                    dmp.diff_cleanupSemantic(diff);        
-                    tuiEditor.setHtml(result);
+                    dmp.diff_cleanupSemantic(diff);     
+                    editor.innerHTML = result;
                     console.log("originDiff, ", diff)
                     let convertedDiff = checkValidDiff(diff);
                     console.log("convertedDiff, ", convertedDiff);
@@ -390,7 +390,7 @@
             }
             let diff = dmp.diff_main(originHTML, result, true);
             dmp.diff_cleanupSemantic(diff);
-            tuiEditor.setHtml(result);
+            editor.innerHTML = result;
             console.log("originDiff, ", diff)
             let convertedDiff = checkValidDiff(diff);       
             console.log("convertedDiff, ", convertedDiff);

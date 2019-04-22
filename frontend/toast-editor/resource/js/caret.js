@@ -107,11 +107,13 @@
         const totalLength = childTextLength + countOfNewLine;
 
         if (totalLength < start) {
+            console.log("벗어남 1")
             startElement = textNodeList[textNodeList.length - 1];
             startOffset = startElement.length;
             endElement = startElement;
             startOffset = startOffset;
         } else if (totalLength < end) {
+            console.log("벗어남 2")
             endElement = textNodeList[textNodeList.length - 1];
             endOffset = endElement.length;
         }
