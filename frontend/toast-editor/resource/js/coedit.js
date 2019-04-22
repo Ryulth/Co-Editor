@@ -72,8 +72,8 @@
             setConnected(true);
             accountLogin(baseUrl,editorType,coeditId,clientSessionId);
             stompClient.subscribe(`/topic/${editorType}/${coeditId}`, function (content) {
-                let response_body = JSON.parse(content.body);
-                receiveContent(response_body) 
+                let responseBody = JSON.parse(content.body);
+                receiveContent(responseBody) 
             });
             stompClient.subscribe(`/topic/${editorType}/position/${coeditId}`, function(content){
                 let contentBody = JSON.parse(content.body);
@@ -227,9 +227,9 @@
                 }
                 
                 synchronized = false;
-                let patch_list = dmp.patch_make(prev, current, diff);
-                let patch_text = dmp.patch_toText(patch_list);
-                sendContentPost(patch_text);
+                let patchList = dmp.patch_make(prev, current, diff);
+                let patchText = dmp.patch_toText(patchList);
+                sendContentPost(patchText);
                 prevText = editor.innerHTML;
             }
             keycode = "";
@@ -323,17 +323,17 @@
         return convertedDiff;
     }
 
-    function receiveContent(response_body) {
+    function receiveContent(responseBody) {
         
-        let receiveSessionId = response_body.socketSessionId;
-        let response_patcheInfos = response_body.patchInfos;
+        let receiveSessionId = responseBody.socketSessionId;
+        let responsePatcheInfos = responseBody.patchInfos;
         let originHTML = editor.innerHTML;
         let result;
         if (receiveSessionId == clientSessionId) {
-            if(response_patcheInfos.length > 1){ // 꼬여서 다시 부를 떄
-                let snapshotText = response_body.snapshotText;
-                let snapshotVersion = response_body.snapshotVersion;
-                result = patchDocs(response_patcheInfos,snapshotText,snapshotVersion);
+            if(responsePatcheInfos.length > 1){ // 꼬여서 다시 부를 떄
+                let snapshotText = responseBody.snapshotText;
+                let snapshotVersion = responseBody.snapshotVersion;
+                result = patchDocs(responsePatcheInfos,snapshotText,snapshotVersion);
                 if(originHTML != result){
                     getCaret();
                     let diff = dmp.diff_main(prevText,originHTML, true);
@@ -355,7 +355,7 @@
                 }   
             }
             else{
-                clientVersion = response_patcheInfos[0].patchVersion;
+                clientVersion = responsePatcheInfos[0].patchVersion;
             }
             synchronized = true;
             sendPatch(prevText,originHTML, true);  
@@ -366,13 +366,13 @@
         if(receiveSessionId != clientSessionId && synchronized){
             getCaret();
             let result;
-            if(response_patcheInfos.length > 1){ // 꼬여서 다시 부를 떄
-                let snapshotText = response_body.snapshotText;
-                let snapshotVersion = response_body.snapshotVersion;
-                result = patchDocs(response_patcheInfos,snapshotText,snapshotVersion);
+            if(responsePatcheInfos.length > 1){ // 꼬여서 다시 부를 떄
+                let snapshotText = responseBody.snapshotText;
+                let snapshotVersion = responseBody.snapshotVersion;
+                result = patchDocs(responsePatcheInfos,snapshotText,snapshotVersion);
             }
             else{
-                result = patchDocs(response_patcheInfos,originHTML,clientVersion);
+                result = patchDocs(responsePatcheInfos,originHTML,clientVersion);
             }
             let diff = dmp.diff_main(originHTML, result, true);
             dmp.diff_cleanupSemantic(diff);
@@ -389,9 +389,9 @@
         }
     }
 
-    function patchDocs(response_patches,content,startClientVersion) {
+    function patchDocs(responsePatches,content,startClientVersion) {
         let result = content;
-        response_patches.forEach(function (item, index, array) {
+        responsePatches.forEach(function (item, index, array) {
             let patches = dmp.patch_fromText(item["patchText"]);
             if (startClientVersion < item["patchVersion"]) {
                 let results = dmp.patch_apply(patches, result);
