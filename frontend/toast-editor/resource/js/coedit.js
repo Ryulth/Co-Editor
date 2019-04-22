@@ -26,19 +26,29 @@
         caretContainer = document.getElementsByClassName("caret-container")[0];
         getDocs();
         if (editor.addEventListener) {
-            editor.addEventListener("keydown", keydownAction);
-            document.getElementsByClassName("tui-editor-defaultUI-toolbar")[0].addEventListener("mousedown",clickAction);
-            editor.addEventListener("mouseup", mouseupAction);
-            editor.addEventListener(inputType, inputAction);
-            editor.addEventListener("keyup", keyupAction);
-            editor.addEventListener("paste", function(e){
+            // editor.addEventListener("keydown", keydownAction);
+            tuiEditor.eventManager.listen("keydown", keydownAction)
+            // editor.addEventListener("mouseup", mouseupAction);
+            tuiEditor.eventManager.listen("mouseup", mouseupAction);
+            // editor.addEventListener(inputType, inputAction);
+            tuiEditor.eventManager.listen("change", inputAction);
+            // editor.addEventListener("keyup", keyupAction);
+            tuiEditor.eventManager.listen("keyup", keyupAction);
+            // editor.addEventListener("paste", function(e){
+            //     isPaste = true;
+            // });
+            tuiEditor.eventManager.listen("paste" , function(){
                 isPaste = true;
             });
+
+            // TODO :: toolbar로 변경 필요
+            document.getElementsByClassName("tui-editor-defaultUI-toolbar")[0].addEventListener("mousedown",clickAction);
+
             editorScroll.addEventListener("scroll", function(){
-                caretContainer.style.top = -editorScroll.scrollTop+"px";
+                caretContainer.style.top = `${-editorScroll.scrollTop}px`;
             })
             document.addEventListener("scroll", function(){
-                caretContainer.style.top = -document.documentElement.scrollTop+"px";
+                caretContainer.style.top = `${-document.documentElement.scrollTop}px`;
             })
             document.addEventListener("selectionchange", selectionChangeAction);
         }
