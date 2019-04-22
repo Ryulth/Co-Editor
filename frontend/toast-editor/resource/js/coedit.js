@@ -132,7 +132,7 @@
     }
     
     function keydownAction(event){
-        keycode = event.code;
+        keycode = event.data.code;
         getCaret();
         if (synchronized) {
             // prevText =editor.innerHTML;
