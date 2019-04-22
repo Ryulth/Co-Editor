@@ -1,5 +1,5 @@
 (function(){
-    const baseUrl = "http://10.77.34.204:8080";
+    const baseUrl = "http://10.77.34.205:8080";
     const coeditId = 2;//location.href.substr(location.href.lastIndexOf('?') + 1);
     const dmp = new diff_match_patch();
     const inputType = /Trident/.test( navigator.userAgent ) ? 'textinput' : 'input';
@@ -19,15 +19,15 @@
     let cursorInterval;
     let intervalCount = 0;
     let caretContainer;
-    let setEditor = function (editorEl,editorBarEl){
+    let setEditor = function (tuiEditor){
         CaretVis.init();
         editorScroll = document.getElementsByClassName("te-editor")[1];
-        editor = editorEl;
+        editor = tuiEditor.wwEditor.editor._root;
         caretContainer = document.getElementsByClassName("caret-container")[0];
         getDocs();
         if (editor.addEventListener) {
             editor.addEventListener("keydown", keydownAction);
-            editorBarEl.addEventListener("mousedown",clickAction);
+            document.getElementsByClassName("tui-editor-defaultUI-toolbar")[0].addEventListener("mousedown",clickAction);
             editor.addEventListener("mouseup", mouseupAction);
             editor.addEventListener(inputType, inputAction);
             editor.addEventListener("keyup", keyupAction);
