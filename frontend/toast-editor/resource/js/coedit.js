@@ -1,5 +1,5 @@
 (function(){
-    const baseUrl = "http://10.77.34.203:8080";
+    const baseUrl = "http://10.77.34.204:8080";
     const coeditId = 2;//location.href.substr(location.href.lastIndexOf('?') + 1);
     const dmp = new diff_match_patch();
     const editorType = "docs";
@@ -147,14 +147,14 @@
             sendPatch(prevText,editor.innerHTML, false);
         } 
         else{
-            console.log("범인")
             let diff = dmp.diff_main(pprevText, editor.innerHTML, true);
             dmp.diff_cleanupSemantic(diff);
             if ((diff.length > 1) || (diff.length == 1 && diff[0][0] != 0)) { // 1 이상이어야 변경 한 것이 있음
                 let res = makeCustomDiff(diff)[0];    
                 if (!(Hangul.disassemble(res[2]).length == Hangul.disassemble(res[1]).length + 1) || (keycode == "Backspace" || keycode == "Delete")) {
                     if(!isPaste){
-                    setHangulSelection(res)
+                        getCaret()
+                        setHangulSelection(res)
                     }
                 }
             }
@@ -192,10 +192,11 @@
         let startIdx = resDiff[0];
         let inputString = resDiff[1].trim();
         let deleteString = resDiff[2].trim();
+        console.log(startIdx);
         if(isHangul(inputString)){
             let isWriting = (startCaret == endCaret)? false : true;
             if(inputString.length == 2 ){
-                startCaret +=1;
+                startCaret;
                 endCaret+=1;
             }
             else{
@@ -235,6 +236,7 @@
             let isBadChim = (endCaret-startCaret==1) ? !(Hangul.disassemble(res[2]).length == Hangul.disassemble(res[1]).length + 1) : true
             if ( isBadChim || (keycode == "Backspace" || keycode == "Delete")) { 
                 if(!isBuffer && !isPaste){
+                    getCaret();
                     setHangulSelection(res)
                 }
                 
