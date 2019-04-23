@@ -25,14 +25,14 @@
         getDocs();
         if (editor.addEventListener) {
             tuiEditor.eventManager.listen("keydown", keydownAction)
-            tuiEditor.eventManager.listen("mouseup", mouseupAction);
+            tuiEditor.eventManager.listen("mouseup", mouseupAction);            
             tuiEditor.eventManager.listen("change", inputAction);
             tuiEditor.eventManager.listen("keyup", keyupAction);
             tuiEditor.eventManager.listen("paste" , function(){
                 isPaste = true;
             });
 
-            tuiEditor._ui._toolbar.$el[0].addEventListener("mousedown",clickAction);
+            tuiEditor.getUI().getToolbar().$el[0].addEventListener("mousedown",clickAction);
 
             editorScroll.addEventListener("scroll", function(){
                 CaretVis.getCaretContainer().style.top = `${-editorScroll.scrollTop}px`;
