@@ -1,5 +1,5 @@
 (function(){
-    const baseUrl = "http://10.77.34.205:8080";
+    const baseUrl = "http://10.77.34.203:8080";
     const coeditId = 2;//location.href.substr(location.href.lastIndexOf('?') + 1);
     const dmp = new diff_match_patch();
     const editorType = "docs";
@@ -207,7 +207,6 @@
             const isBadChim = (endCaret-startCaret==1) ? !(Hangul.disassemble(res[2]).length == Hangul.disassemble(res[1]).length + 1) : true
             if ( isBadChim || (keycode == "Backspace" || keycode == "Delete")) { 
                 if(!isBuffer && !isPaste){
-                    getCaret();
                     setHangulSelection(res)
                 }
                 
@@ -282,31 +281,6 @@
         return convertedDiff;
     }
 
-    function tempValidDiff(diff) {
-        let convertedDiff = diff;
-        for(var i=0; i<convertedDiff.length - 1; i++){
-            let currValue = convertedDiff[i][1];
-            let nextValue = convertedDiff[i+1][1];
-            let lastChar = currValue.substring(currValue.length - 1, currValue.length);
-            let rangeBr = nextValue.substring(0, 3);
-            let rangeDiv = nextValue.substring(0, 5);
-            let rangeBrDiv = nextValue.substring(0, 9);
-            if(lastChar == "<"){
-                if(rangeBrDiv == "br></div>"){
-                    convertedDiff[i][1] += "br></div>";
-                    convertedDiff[i+1][1] = nextValue.substring(9, nextValue.length);
-                } else if(rangeBr == "br>") {
-                    convertedDiff[i][1] += "br>";
-                    convertedDiff[i+1][1] = nextValue.substring(3, nextValue.length);
-                } else if(rangeDiv == "/div>"){
-                    convertedDiff[i][1] += "/div>";
-                    convertedDiff[i+1][1] = nextValue.substring(5, nextValue.length);
-                }
-            }
-        }
-        return convertedDiff;
-    }
-
     function receiveContent(responseBody) {
         
         const receiveSessionId = responseBody.socketSessionId;
@@ -320,7 +294,6 @@
                 let snapshotVersion = responseBody.snapshotVersion;
                 result = patchDocs(responsePatcheInfos,snapshotText,snapshotVersion);
                 if(originHTML != result){
-                    getCaret();
                     let diff = dmp.diff_main(prevText,originHTML, true);
                     let patches = dmp.patch_make(diff);
                     if(patches.length > 0){
@@ -347,7 +320,6 @@
             }
         } 
         if(receiveSessionId != clientSessionId && synchronized){
-            getCaret();
             let result;
             if(responsePatcheInfos.length > 1){ // 꼬여서 다시 부를 떄
                 result = patchDocs(responsePatcheInfos, responseBody.snapshotText, responseBody.snapshotVersion);
@@ -358,9 +330,7 @@
             const diff = dmp.diff_main(originHTML, result, true);
             dmp.diff_cleanupSemantic(diff);
             editor.innerHTML = result;
-            console.log("originDiff, ", diff)
             const convertedDiff = checkValidDiff(diff);       
-            console.log("convertedDiff, ", convertedDiff);
             const makeCustomDiffs = makeCustomDiff(convertedDiff);
             [startCaret, endCaret] = Caret.calcCaret(makeCustomDiffs,startCaret,endCaret);
             Caret.setCaretPosition(editor,startCaret,endCaret);
