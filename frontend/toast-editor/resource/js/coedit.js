@@ -1,5 +1,5 @@
 (function(){
-    const baseUrl = "http://10.77.34.203:8080";
+    const baseUrl = "http://10.77.34.205:8080";
     const coeditId = 2;//location.href.substr(location.href.lastIndexOf('?') + 1);
     const dmp = new diff_match_patch();
     const editorType = "docs";
@@ -22,15 +22,12 @@
         editor = tuiEditor.wwEditor.editor._root;
         getDocs();
         if (editor.addEventListener) {
-            tuiEditor.eventManager.listen("keydown", keydownAction)
-            tuiEditor.eventManager.listen("mouseup", mouseupAction);            
+            tuiEditor.eventManager.listen("keydown", keydownAction)            
             tuiEditor.eventManager.listen("change", inputAction);
             tuiEditor.eventManager.listen("keyup", keyupAction);
             tuiEditor.eventManager.listen("paste" , function(){
                 isPaste = true;
             });
-
-            tuiEditor.getUI().getToolbar().$el[0].addEventListener("mousedown",clickAction);
 
             editorScroll.addEventListener("scroll", function(){
                 CaretVis.getCaretContainer().style.top = `${-editorScroll.scrollTop}px`;
@@ -110,35 +107,17 @@
         stompClient.send(`/topic/${editorType}/position/${coeditId}`, {}, JSON.stringify({sessionId: clientSessionId, start: startCaret, end: endCaret}));
         clearInterval(cursorInterval);
     }
-
-    function mouseupAction(){
-        getCaret();
-    }
     
     function getCaret(){
         return Caret.getCaretPosition(editor);
     }
-
-    function clickAction(){
-        getCaret();
-        if(synchronized){
-            // prevText = editor.innerHTML;
-            // console.log("prev",prevText)
-        }
-    }
     
     function keydownAction(event){
         keycode = event.data.code;
-        getCaret();
-        if (synchronized) {
-            // prevText =editor.innerHTML;
-            // console.log("keydownActionprev",prevText)
-        }
         pprevText = editor.innerHTML;
     }
 
     function inputAction(){
-        console.log("inputAction")
         if (synchronized) {
             sendPatch(prevText,editor.innerHTML, false);
         } 
@@ -157,12 +136,10 @@
         }
     }
 
-    function keyupAction(e){
-        console.log("keyupAction : ", e);
-        if(e.keycode == 'Backspace'){
+    function keyupAction(event){
+        if(event.data.code == 'Backspace'){
             selectionChangeAction();
         }
-        getCaret();
     }
 
     function sendContentPost(patchText) {
