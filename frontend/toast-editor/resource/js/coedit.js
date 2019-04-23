@@ -275,31 +275,6 @@
         return convertedDiff;
     }
 
-    function tempValidDiff(diff) {
-        let convertedDiff = diff;
-        for(var i=0; i<convertedDiff.length - 1; i++){
-            let currValue = convertedDiff[i][1];
-            let nextValue = convertedDiff[i+1][1];
-            let lastChar = currValue.substring(currValue.length - 1, currValue.length);
-            let rangeBr = nextValue.substring(0, 3);
-            let rangeDiv = nextValue.substring(0, 5);
-            let rangeBrDiv = nextValue.substring(0, 9);
-            if(lastChar == "<"){
-                if(rangeBrDiv == "br></div>"){
-                    convertedDiff[i][1] += "br></div>";
-                    convertedDiff[i+1][1] = nextValue.substring(9, nextValue.length);
-                } else if(rangeBr == "br>") {
-                    convertedDiff[i][1] += "br>";
-                    convertedDiff[i+1][1] = nextValue.substring(3, nextValue.length);
-                } else if(rangeDiv == "/div>"){
-                    convertedDiff[i][1] += "/div>";
-                    convertedDiff[i+1][1] = nextValue.substring(5, nextValue.length);
-                }
-            }
-        }
-        return convertedDiff;
-    }
-
     function receiveContent(responseBody) {
         
         const receiveSessionId = responseBody.socketSessionId;
@@ -349,9 +324,7 @@
             const diff = dmp.diff_main(originHTML, result, true);
             dmp.diff_cleanupSemantic(diff);
             editor.innerHTML = result;
-            console.log("originDiff, ", diff)
             const convertedDiff = checkValidDiff(diff);       
-            console.log("convertedDiff, ", convertedDiff);
             const makeCustomDiffs = makeCustomDiff(convertedDiff);
             [startCaret, endCaret] = Caret.calcCaret(makeCustomDiffs,startCaret,endCaret);
             Caret.setCaretPosition(editor,startCaret,endCaret);

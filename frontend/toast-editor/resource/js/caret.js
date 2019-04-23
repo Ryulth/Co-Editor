@@ -111,7 +111,7 @@
             startElement = textNodeList[textNodeList.length - 1];
             startOffset = startElement.length;
             endElement = startElement;
-            startOffset = startOffset;
+            endOffset = startOffset;
         } else if (totalLength < end) {
             console.log("벗어남 2")
             endElement = textNodeList[textNodeList.length - 1];
@@ -209,9 +209,9 @@
 
     function deleteCalcCaret(startIdx, deleteString, startCaret, endCaret) {
         if (startCaret === endCaret) {
-            return deleteNoDrag(startIdx, deleteString);
+            return deleteNoDrag(startIdx, deleteString, startCaret, endCaret);
         } else {
-            return deleteDrag(startIdx, deleteString);
+            return deleteDrag(startIdx, deleteString, startCaret, endCaret);
         }
     }
 
