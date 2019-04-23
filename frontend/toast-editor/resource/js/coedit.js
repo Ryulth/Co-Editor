@@ -1,5 +1,5 @@
 (function(){
-    const baseUrl = "http://10.77.34.204:8080";
+    const baseUrl = "http://10.77.34.203:8080";
     const coeditId = 2;//location.href.substr(location.href.lastIndexOf('?') + 1);
     const dmp = new diff_match_patch();
     const editorType = "docs";
@@ -11,8 +11,6 @@
     let clientSessionId;
     let prevText = "<div><br></div>";
     let pprevText;  
-    let startCaret =0;
-    let endCaret =0;
     let keycode = "";
     let isPaste = false;
     let cursorInterval;
@@ -108,7 +106,7 @@
 
     function sendCursorPos(){
         intervalCount = 0;
-        getCaret();
+        const [startCaret, endCaret] = getCaret();
         stompClient.send(`/topic/${editorType}/position/${coeditId}`, {}, JSON.stringify({sessionId: clientSessionId, start: startCaret, end: endCaret}));
         clearInterval(cursorInterval);
     }
@@ -118,9 +116,7 @@
     }
     
     function getCaret(){
-        let tempCaret = Caret.getCaretPosition(editor);
-        startCaret = tempCaret[0];
-        endCaret = tempCaret[1];
+        return Caret.getCaretPosition(editor);
     }
 
     function clickAction(){
@@ -192,6 +188,7 @@
         let startIdx = resDiff[0];
         let inputString = resDiff[1].trim();
         let deleteString = resDiff[2].trim();
+        let [startCaret, endCaret] = getCaret();
         console.log(startIdx);
         if(isHangul(inputString)){
             let isWriting = (startCaret == endCaret)? false : true;
@@ -229,6 +226,7 @@
         console.log("sendPAtch");
         // console.log(prev)
         // console.log(current)
+        const [startCaret, endCaret] = getCaret();
         let diff = dmp.diff_main(prev, current, true);
         dmp.diff_cleanupSemantic(diff);
         if ((diff.length > 1) || (diff.length == 1 && diff[0][0] != 0)) { // 1 이상이어야 변경 한 것이 있음
@@ -343,6 +341,7 @@
         let responsePatcheInfos = responseBody.patchInfos;
         let originHTML = editor.innerHTML;
         let result;
+        let [startCaret, endCaret] = getCaret();
         if (receiveSessionId == clientSessionId) {
             if(responsePatcheInfos.length > 1){ // 꼬여서 다시 부를 떄
                 let snapshotText = responseBody.snapshotText;
@@ -358,13 +357,9 @@
                     diff = dmp.diff_main(originHTML, result, true);
                     dmp.diff_cleanupSemantic(diff);     
                     editor.innerHTML = result;
-                    console.log("originDiff, ", diff)
                     let convertedDiff = checkValidDiff(diff);
-                    console.log("convertedDiff, ", convertedDiff);
                     let makeCustomDiffs = makeCustomDiff(convertedDiff);
-                    let tempCaret=Caret.calcCaret(makeCustomDiffs,startCaret,endCaret);
-                    startCaret = tempCaret[0];
-                    endCaret = tempCaret[1];
+                    [startCaret, endCaret] = Caret.calcCaret(makeCustomDiffs,startCaret,endCaret);
                     Caret.setCaretPosition(editor,startCaret,endCaret);
                 }   
             }
@@ -397,9 +392,7 @@
             let convertedDiff = checkValidDiff(diff);       
             console.log("convertedDiff, ", convertedDiff);
             let makeCustomDiffs = makeCustomDiff(convertedDiff);
-            let tempCaret=Caret.calcCaret(makeCustomDiffs,startCaret,endCaret);
-            startCaret = tempCaret[0];
-            endCaret = tempCaret[1];
+            [startCaret, endCaret] = Caret.calcCaret(makeCustomDiffs,startCaret,endCaret);
             Caret.setCaretPosition(editor,startCaret,endCaret);
             prevText = result;
         }
