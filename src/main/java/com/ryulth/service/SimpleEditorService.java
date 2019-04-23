@@ -77,7 +77,7 @@ public class SimpleEditorService implements EditorService {
             }
         }
         //TODO 앞뒤변경
-        if(requestClientVersion.equals(serverVersion)){
+        if(serverVersion.equals(requestClientVersion)){
             tempPatchInfo.removeIf(p -> (p.getPatchVersion() <= requestClientVersion));
         }
         ResponseDocsCommand responseDocsCommand = ResponseDocsCommand.builder().docsId(docsId)
