@@ -419,6 +419,7 @@
             }
         });
     }
+    
     function accountLogin(baseUrl,type,id,clientSessionId){
             let reqBody = {
                 "clientSessionId": clientSessionId,
@@ -435,6 +436,7 @@
                 }
             });
     }
+
     function getAccounts(baseUrl,type,id){
         $.ajax({
             type: "GET",
@@ -446,6 +448,7 @@
             }
         });
     }
+
     function setAccountTable(accounts){
         tableBody = document.getElementById("accounts-table-body");
         totalRow = "";
@@ -464,10 +467,12 @@
         });
         tableBody.innerHTML = totalRow;
     }
+
     const coedit = {
         setEditor : setEditor,
         disconnect : disconnect
     };
+
     if (typeof define == 'function' && define.amd) {
         define(function(){
           return coedit;
