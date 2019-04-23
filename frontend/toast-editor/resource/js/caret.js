@@ -209,9 +209,9 @@
 
     function deleteCalcCaret(startIdx, deleteString, startCaret, endCaret) {
         if (startCaret === endCaret) {
-            return deleteNoDrag(startIdx, deleteString);
+            return deleteNoDrag(startIdx, deleteString, startCaret, endCaret);
         } else {
-            return deleteDrag(startIdx, deleteString);
+            return deleteDrag(startIdx, deleteString, startCaret, endCaret);
         }
     }
 
