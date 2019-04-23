@@ -126,9 +126,9 @@
             dmp.diff_cleanupSemantic(diff);
             if ((diff.length > 1) || (diff.length == 1 && diff[0][0] != 0)) { // 1 이상이어야 변경 한 것이 있음
                 let res = makeCustomDiff(diff)[0];    
+                // TODO :: 조건문 함수로 정의하기!
                 if (!(Hangul.disassemble(res[2]).length == Hangul.disassemble(res[1]).length + 1) || (keycode == "Backspace" || keycode == "Delete")) {
                     if(!isPaste){
-                        getCaret()
                         setHangulSelection(res)
                     }
                 }
@@ -153,7 +153,7 @@
             async: true, // false 일 경우 동기 요청으로 변경
             type: "POST",
             contentType: "application/json",
-            url: baseUrl + "/"+editorType+"/" + coeditId,
+            url: `${baseUrl}/${editorType}/${coeditId}`,
             data: JSON.stringify(reqBody),
             dataType: 'json',
             success: function (response) {
@@ -162,13 +162,12 @@
     }
 
     function setHangulSelection(resDiff){
-        let startIdx = resDiff[0];
-        let inputString = resDiff[1].trim();
-        let deleteString = resDiff[2].trim();
+        const inputString = resDiff[1].trim();
+        const deleteString = resDiff[2].trim();
         let [startCaret, endCaret] = getCaret();
-        console.log(startIdx);
+
         if(isHangul(inputString)){
-            let isWriting = (startCaret == endCaret)? false : true;
+            const isWriting = (startCaret == endCaret)? false : true;
             if(inputString.length == 2 ){
                 startCaret;
                 endCaret+=1;
@@ -192,7 +191,7 @@
     }
 
     function isHangul(inputText){
-        c = inputText.charCodeAt(0);
+        const c = inputText.charCodeAt(0);
         if( 0x1100<=c && c<=0x11FF ) return true;
         if( 0x3130<=c && c<=0x318F ) return true;
         if( 0xAC00<=c && c<=0xD7A3 ) return true;
@@ -200,15 +199,12 @@
     }
 
     function sendPatch(prev,current, isBuffer) {
-        console.log("sendPAtch");
-        // console.log(prev)
-        // console.log(current)
         const [startCaret, endCaret] = getCaret();
-        let diff = dmp.diff_main(prev, current, true);
+        const diff = dmp.diff_main(prev, current, true);
         dmp.diff_cleanupSemantic(diff);
         if ((diff.length > 1) || (diff.length == 1 && diff[0][0] != 0)) { // 1 이상이어야 변경 한 것이 있음
-            let res = makeCustomDiff(diff)[0];
-            let isBadChim = (endCaret-startCaret==1) ? !(Hangul.disassemble(res[2]).length == Hangul.disassemble(res[1]).length + 1) : true
+            const res = makeCustomDiff(diff)[0];
+            const isBadChim = (endCaret-startCaret==1) ? !(Hangul.disassemble(res[2]).length == Hangul.disassemble(res[1]).length + 1) : true
             if ( isBadChim || (keycode == "Backspace" || keycode == "Delete")) { 
                 if(!isBuffer && !isPaste){
                     getCaret();
@@ -216,9 +212,7 @@
                 }
                 
                 synchronized = false;
-                let patchList = dmp.patch_make(prev, current, diff);
-                let patchText = dmp.patch_toText(patchList);
-                sendContentPost(patchText);
+                sendContentPost(dmp.patch_toText(dmp.patch_make(prev, current, diff)));
                 prevText = editor.innerHTML;
             }
             keycode = "";
@@ -227,11 +221,12 @@
     }
 
     function makeCustomDiff(diff) {
+        const res = [];
         let idx = 0;
         let insertString = "";
         let deleteString = "";
         let isCycle = false;
-        let res = [];
+        
         diff.forEach(function (element) {
             switch (element[0]) {
                 case 0: // retain
@@ -263,8 +258,8 @@
     function checkValidDiff(diff) {
         let convertedDiff = diff;
         for(var i = 0; i < convertedDiff.length - 1; i++ ) {
-            let lastOpenTag = convertedDiff[i][1].lastIndexOf("<");
-            let lastCloseTag = convertedDiff[i][1].lastIndexOf(">");
+            const lastOpenTag = convertedDiff[i][1].lastIndexOf("<");
+            const lastCloseTag = convertedDiff[i][1].lastIndexOf(">");
             // 마지막에 < 로 열렸는데 >로 닫히지 않은 경우
             if(lastCloseTag < lastOpenTag) {
                 let nextFirstCloseTag = convertedDiff[i+1][1].indexOf(">") + 1;
@@ -272,10 +267,10 @@
                 convertedDiff[i+1][1] = convertedDiff[i+1][1].substring(nextFirstCloseTag, convertedDiff[i+1][1].length);
             
                 // 현재 마지막이 <br>로 끝나고 다음 줄 시작이 </div> 인 경우
-                let lastTag = convertedDiff[i][1].substring(convertedDiff[i][1].lastIndexOf("<"), convertedDiff[i][1].lastIndexOf(">") + 1);
+                const lastTag = convertedDiff[i][1].substring(convertedDiff[i][1].lastIndexOf("<"), convertedDiff[i][1].lastIndexOf(">") + 1);
                 if(lastTag == "<br>") {
                     nextFirstCloseTag = convertedDiff[i+1][1].indexOf(">") + 1;
-                    let nextFirstTag = convertedDiff[i+1][1].substring(0, nextFirstCloseTag);
+                    const nextFirstTag = convertedDiff[i+1][1].substring(0, nextFirstCloseTag);
                     if(nextFirstTag == "</div>"){
                         convertedDiff[i][1] += "</div>";
                         convertedDiff[i+1][1] = convertedDiff[i+1][1].substring(nextFirstCloseTag, convertedDiff[i+1][1].length);
@@ -314,9 +309,9 @@
 
     function receiveContent(responseBody) {
         
-        let receiveSessionId = responseBody.socketSessionId;
-        let responsePatcheInfos = responseBody.patchInfos;
-        let originHTML = editor.innerHTML;
+        const receiveSessionId = responseBody.socketSessionId;
+        const responsePatcheInfos = responseBody.patchInfos;
+        const originHTML = editor.innerHTML;
         let result;
         let [startCaret, endCaret] = getCaret();
         if (receiveSessionId == clientSessionId) {
@@ -355,20 +350,18 @@
             getCaret();
             let result;
             if(responsePatcheInfos.length > 1){ // 꼬여서 다시 부를 떄
-                let snapshotText = responseBody.snapshotText;
-                let snapshotVersion = responseBody.snapshotVersion;
-                result = patchDocs(responsePatcheInfos,snapshotText,snapshotVersion);
+                result = patchDocs(responsePatcheInfos, responseBody.snapshotText, responseBody.snapshotVersion);
             }
             else{
                 result = patchDocs(responsePatcheInfos,originHTML,clientVersion);
             }
-            let diff = dmp.diff_main(originHTML, result, true);
+            const diff = dmp.diff_main(originHTML, result, true);
             dmp.diff_cleanupSemantic(diff);
             editor.innerHTML = result;
             console.log("originDiff, ", diff)
-            let convertedDiff = checkValidDiff(diff);       
+            const convertedDiff = checkValidDiff(diff);       
             console.log("convertedDiff, ", convertedDiff);
-            let makeCustomDiffs = makeCustomDiff(convertedDiff);
+            const makeCustomDiffs = makeCustomDiff(convertedDiff);
             [startCaret, endCaret] = Caret.calcCaret(makeCustomDiffs,startCaret,endCaret);
             Caret.setCaretPosition(editor,startCaret,endCaret);
             prevText = result;
@@ -378,7 +371,7 @@
     function patchDocs(responsePatches,content,startClientVersion) {
         let result = content;
         responsePatches.forEach(function (item, index, array) {
-            let patches = dmp.patch_fromText(item["patchText"]);
+            const patches = dmp.patch_fromText(item["patchText"]);
             if (startClientVersion < item["patchVersion"]) {
                 let results = dmp.patch_apply(patches, result);
                 result = results[0];
@@ -401,7 +394,6 @@
     function disconnect() {
         if (stompClient !== null) {
             stompClient.disconnect();
-            
         }
         setConnected(false);
         console.log("Disconnected");
@@ -460,9 +452,7 @@
         let currentCaretUser = {};
         Object.assign(currentCaretUser, CaretVis.getCaretWrappers());
         accounts.forEach(function (account){
-            row = "<tr><td>"+account.clientSessionId
-            +"</td><td>"+account.remoteAddress
-            +"</td></tr>";
+            row  = `<tr><td>${account.clientSessionId}</td><td>${account.remoteAddress}</td></tr>`
             totalRow += row;
             if(account.clientSessionId in currentCaretUser){
                 delete currentCaretUser[account.clientSessionId];
