@@ -1,5 +1,5 @@
 (function(){
-    const baseUrl = "http://10.77.34.205:8080";
+    const baseUrl = "http://10.77.34.204:8080";
     const coeditId = 2;//location.href.substr(location.href.lastIndexOf('?') + 1);
     const dmp = new diff_match_patch();
     const editorType = "docs";
@@ -83,7 +83,7 @@
                 setAccountTable(accounts);
             });
         }, function(message) {
-            // check message for disconnect
+            // TODO check message for disconnect
             if(!stompClient.connected){
                 console.log(message);
             }
@@ -103,15 +103,10 @@
 
     function sendCursorPos(){
         intervalCount = 0;
-        const [startCaret, endCaret] = getCaret();
+        const [startCaret, endCaret] = Caret.getCaretPosition(editor);
         stompClient.send(`/topic/${editorType}/position/${coeditId}`, {}, JSON.stringify({sessionId: clientSessionId, start: startCaret, end: endCaret}));
         clearInterval(cursorInterval);
     }
-    
-    function getCaret(){
-        return Caret.getCaretPosition(editor);
-    }
-    
     function keydownAction(event){
         keycode = event.data.code;
         pprevText = editor.innerHTML;
@@ -162,10 +157,9 @@
     }
 
     function setHangulSelection(resDiff){
-        const inputString = resDiff[1].trim();
-        const deleteString = resDiff[2].trim();
-        let [startCaret, endCaret] = getCaret();
-
+        let inputString = resDiff[1].trim();
+        let deleteString = resDiff[2].trim();
+        let [startCaret, endCaret] = Caret.getCaretPosition(editor);
         if(isHangul(inputString)){
             const isWriting = (startCaret == endCaret)? false : true;
             if(inputString.length == 2 ){
@@ -199,7 +193,7 @@
     }
 
     function sendPatch(prev,current, isBuffer) {
-        const [startCaret, endCaret] = getCaret();
+        const [startCaret, endCaret] = Caret.getCaretPosition(editor);
         const diff = dmp.diff_main(prev, current, true);
         dmp.diff_cleanupSemantic(diff);
         if ((diff.length > 1) || (diff.length == 1 && diff[0][0] != 0)) { // 1 이상이어야 변경 한 것이 있음
@@ -207,7 +201,6 @@
             const isBadChim = (endCaret-startCaret==1) ? !(Hangul.disassemble(res[2]).length == Hangul.disassemble(res[1]).length + 1) : true
             if ( isBadChim || (keycode == "Backspace" || keycode == "Delete")) { 
                 if(!isBuffer && !isPaste){
-                    getCaret();
                     setHangulSelection(res)
                 }
                 
@@ -313,14 +306,13 @@
         const responsePatcheInfos = responseBody.patchInfos;
         const originHTML = editor.innerHTML;
         let result;
-        let [startCaret, endCaret] = getCaret();
+        let [startCaret, endCaret] = Caret.getCaretPosition(editor);
         if (receiveSessionId == clientSessionId) {
             if(responsePatcheInfos.length > 1){ // 꼬여서 다시 부를 떄
                 let snapshotText = responseBody.snapshotText;
                 let snapshotVersion = responseBody.snapshotVersion;
                 result = patchDocs(responsePatcheInfos,snapshotText,snapshotVersion);
                 if(originHTML != result){
-                    getCaret();
                     let diff = dmp.diff_main(prevText,originHTML, true);
                     let patches = dmp.patch_make(diff);
                     if(patches.length > 0){
@@ -347,7 +339,6 @@
             }
         } 
         if(receiveSessionId != clientSessionId && synchronized){
-            getCaret();
             let result;
             if(responsePatcheInfos.length > 1){ // 꼬여서 다시 부를 떄
                 result = patchDocs(responsePatcheInfos, responseBody.snapshotText, responseBody.snapshotVersion);
