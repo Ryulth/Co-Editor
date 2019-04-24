@@ -116,9 +116,9 @@
     }
 
     function inputAction(){
-        
+        console.log("change");
         if (synchronized) {
-            console.log("change");
+            
             sendPatch(prevText,editor.innerHTML, false);
         } 
         else{
@@ -165,9 +165,10 @@
     function setHangulSelection(resDiff){
         
         let inputString = resDiff[1].trim();
+        const inputSpace = resDiff[1].length - inputString.length;
         let deleteString = resDiff[2].trim();
         let [tempStartCaret, tempEndCaret] = Caret.getCaretPosition(editor);
-        let startCaret = resDiff[0];
+        let startCaret = resDiff[0]+inputSpace;
         let endCaret = startCaret +(tempEndCaret - tempStartCaret);
         console.log(resDiff);
         if(isHangul(inputString)){
@@ -234,7 +235,7 @@
         let insertString = "";
         let deleteString = "";
         let isCycle = false;
-        
+        console.log(diff)
         diff.forEach(function (element) {
             switch (element[0]) {
                 case 0: // retain
@@ -245,6 +246,7 @@
                         deleteString = "";
                     }
                     idx += removeTags(element[1]).length;
+                    console.log(removeTags(element[1]));
                     break;
                 case -1: // delete
                     isCycle = true;
@@ -260,6 +262,7 @@
             res.push([idx, insertString, deleteString])
             
         }
+        console.log(res)
         return res;
     }
 
@@ -368,9 +371,13 @@
     }
 
     function removeTags(text){
-        return text.replace(/<\/div>/ig, " ") //엔터에 대한 계산위한용도
-        .replace("&nbsp;"," ")
-        .replace(/<(\/)?([a-zA-Z]*)(\s[a-zA-Z]*=[^>]*)?(\s)*(\/)?>/ig, "");
+        let temp =  text.replace(/<\/div>/ig, " ")
+        console.log("1",temp)
+        temp=temp.replace(/&nbsp;/gi," ")
+        console.log("2",temp)
+        temp= temp.replace(/<(\/)?([a-zA-Z]*)(\s[a-zA-Z]*=[^>]*)?(\s)*(\/)?>/ig, "");
+        console.log("3",temp)
+        return temp;
     }
 
     function disconnect() {
