@@ -1,5 +1,5 @@
 (function(){
-    const baseUrl = "http://10.77.34.203:8080";
+    const baseUrl = "http://10.77.34.204:8080";
     const coeditId = 2;//location.href.substr(location.href.lastIndexOf('?') + 1);
     const dmp = new diff_match_patch();
     const editorType = "docs";
@@ -172,6 +172,7 @@
         let startCaret = resDiff[0]+inputSpace;
         let endCaret = startCaret +(tempEndCaret - tempStartCaret);
         console.log(resDiff);
+        //TODO 맨앞자리 할지 맨뒬자리 할지 고민
         if(isHangul(inputString)){
             const isWriting = (startCaret != endCaret)? true : false;
             if(inputString.length == 2 ){
@@ -193,8 +194,11 @@
                         }
                     }
                 }
+                startCaret += inputString.length-1;
+            endCaret += inputString.length-1;
             }
             endCaret = (startCaret == endCaret)? endCaret+1 : endCaret;
+            
             Caret.setCaretPosition(editor,startCaret,endCaret);
             console.log(`sc ${startCaret} ec ${endCaret}`)
         }
