@@ -281,7 +281,8 @@
         const responsePatcheInfos = responseBody.patchInfos;
         const originHTML = editor.innerHTML;
         let result;
-        let [startCaret, endCaret] = Caret.getCaretPosition(editor);
+        const [startCaret, endCaret] = Caret.getCaretPosition(editor);
+        console.log(`first sc : ${startCaret} ec : ${endCaret}`)
         if (receiveSessionId == clientSessionId) {
             if(responsePatcheInfos.length > 1){ // 꼬여서 다시 부를 떄
                 let snapshotText = responseBody.snapshotText;
@@ -298,18 +299,18 @@
                     editor.innerHTML = result;
                     let convertedDiff = checkValidDiff(diff);
                     let makeCustomDiffs = makeCustomDiff(convertedDiff);
-                    [startCaret, endCaret] = Caret.calcCaret(makeCustomDiffs,startCaret,endCaret);
-                    Caret.setCaretPosition(editor,startCaret,endCaret);
+                    console.log(`지꺼1 sc : ${startCaret} ec : ${endCaret}`)
+                    const [clacStartCaret, clacEndCaret] = Caret.calcCaret(makeCustomDiffs,startCaret,endCaret);
+                    console.log(`지꺼2 sc : ${clacStartCaret} ec : ${clacEndCaret}`)
+                    Caret.setCaretPosition(editor,clacStartCaret,clacEndCaret);
                 }   
             }
             else{
                 clientVersion = responsePatcheInfos[0].patchVersion;
             }
             synchronized = true;
-            console.log("sendpatch onemore")
             sendPatch(prevText,originHTML, true);  
             if(result != null){
-                console.log("ressss",result)
                 prevText = result;
             }
         } 
@@ -326,8 +327,10 @@
             editor.innerHTML = result;
             const convertedDiff = checkValidDiff(diff);       
             const makeCustomDiffs = makeCustomDiff(convertedDiff);
-            [startCaret, endCaret] = Caret.calcCaret(makeCustomDiffs,startCaret,endCaret);
-            Caret.setCaretPosition(editor,startCaret,endCaret);
+            console.log(`남1 sc : ${startCaret} ec : ${endCaret}`)
+            const [clacStartCaret, clacEndCaret] = Caret.calcCaret(makeCustomDiffs,startCaret,endCaret);
+            console.log(`남2 sc : ${clacStartCaret} ec : ${clacEndCaret}`)
+            Caret.setCaretPosition(editor,clacStartCaret,clacEndCaret);
             prevText = result;
         }
     }

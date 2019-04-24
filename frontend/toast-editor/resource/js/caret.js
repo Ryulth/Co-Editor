@@ -36,7 +36,7 @@
 
                 position += getCountOfNewLine(element, getLineNode(element, clonedRange.endContainer));
             } catch (e) {
-                console.log(e);
+                // console.log(e);
             }
         } else if (ie) {
             const createdTextRange = document.body.createTextRange();
