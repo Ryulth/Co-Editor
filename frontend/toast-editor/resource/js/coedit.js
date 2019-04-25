@@ -120,6 +120,12 @@
     }
 
     function inputAction(){
+<<<<<<< HEAD
+=======
+        console.log("change");
+        console.log("change",prevText);
+        console.log("change",editor.innerHTML);
+>>>>>>> a5c8d1998808b548d170f4c8b16a0944bfbc67da
         if (synchronized) {
             sendPatch(prevText,editor.innerHTML, false);
         } 
@@ -291,7 +297,9 @@
     }
 
     function receiveContent(responseBody) {
+        console.log("emit");
         tuiEditor.eventManager.emit("change");
+        console.log("emit fin");
         const receiveSessionId = responseBody.socketSessionId;
         const responsePatcheInfos = responseBody.patchInfos;
         const originHTML = editor.innerHTML;
@@ -311,6 +319,11 @@
             sendPatch(prevText, originHTML, true);  
             updatePrevText();
         } else if(synchronized){
+<<<<<<< HEAD
+=======
+
+            let result;
+>>>>>>> a5c8d1998808b548d170f4c8b16a0944bfbc67da
             if(responsePatcheInfos.length > 1){ // 꼬여서 다시 부를 떄
                 result = patchDocs(responsePatcheInfos, responseBody.snapshotText, responseBody.snapshotVersion);
             }
@@ -350,10 +363,9 @@
     }
 
     function removeTags(text){
-        let temp =  text.replace(/<\/div>/ig, " ")
-        temp=temp.replace(/&nbsp;/gi," ")
-        temp= temp.replace(/<(\/)?([a-zA-Z]*)(\s[a-zA-Z]*=[^>]*)?(\s)*(\/)?>/ig, "");
-        return temp;
+        return text.replace(/<\/div>/ig, " ")
+        .replace(/&nbsp;/gi," ")
+        .replace(/<(\/)?([a-zA-Z]*)(\s[a-zA-Z]*=[^>]*)?(\s)*(\/)?>/ig, "");
     }
 
     function disconnect() {
