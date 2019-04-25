@@ -7,7 +7,7 @@ window.onload = function () {
         el: document.querySelector('#editSection'),
         initialEditType: 'wysiwyg',
         previewStyle: 'vertical',
-        height: '300px'
+        height: '800px'
     });
 
     Coedit.setEditor(tuiEditor);

@@ -1,5 +1,5 @@
 (function(){
-    const baseUrl = "http://10.77.34.204:8080";
+    const baseUrl = "http://10.77.34.203:8080";
     const coeditId = 2;//location.href.substr(location.href.lastIndexOf('?') + 1);
     const dmp = new diff_match_patch();
     const editorType = "docs";
@@ -115,17 +115,12 @@
         clearInterval(cursorInterval);
     }
     function keydownAction(event){
-        console.log("keydown");
         keycode = event.data.code;
         pprevText = editor.innerHTML;
     }
 
     function inputAction(){
-        console.log("change");
-        console.log(prevText);
-        console.log(editor.innerHTML);
         if (synchronized) {
-            
             sendPatch(prevText,editor.innerHTML, false);
         } 
         else{
@@ -301,54 +296,41 @@
         const responsePatcheInfos = responseBody.patchInfos;
         const originHTML = editor.innerHTML;
         let result;
-        const [startCaret, endCaret] = Caret.getCaretPosition(editor);
-        // console.log(`first sc : ${startCaret} ec : ${endCaret}`)
+
         if (receiveSessionId == clientSessionId) {
             if(responsePatcheInfos.length > 1){ // 꼬여서 다시 부를 떄
-                let snapshotText = responseBody.snapshotText;
-                let snapshotVersion = responseBody.snapshotVersion;
-                result = patchDocs(responsePatcheInfos,snapshotText,snapshotVersion);
+                result = patchDocs(responsePatcheInfos, responseBody.snapshotText, responseBody.snapshotVersion);
                 if(originHTML != result){
-                    let diff = dmp.diff_main(prevText,originHTML, true);
-                    let patches = dmp.patch_make(diff); 
-                    if(patches.length > 0){
-                        result = dmp.patch_apply(patches, result)[0];
-                    }
-                    diff = dmp.diff_main(originHTML, result, true);
-                    dmp.diff_cleanupSemantic(diff);     
-                    editor.innerHTML = result;
-                    let convertedDiff = checkValidDiff(diff);
-                    let makeCustomDiffs = makeCustomDiff(convertedDiff);
-                    //console.log(`지꺼1 sc : ${startCaret} ec : ${endCaret}`)
-                    const [clacStartCaret, clacEndCaret] = Caret.calcCaret(makeCustomDiffs,startCaret,endCaret);
-                    //console.log(`지꺼2 sc : ${clacStartCaret} ec : ${clacEndCaret}`)
-                    Caret.setCaretPosition(editor,clacStartCaret,clacEndCaret);
+                    result = dmp.patch_apply(dmp.patch_make(dmp.diff_main(prevText, originHTML, true)), result)[0];
+                    setCaretPositionFromDiff(originHTML, result);
                 }   
             } else{
                 clientVersion = responsePatcheInfos[0].patchVersion;
             }
             synchronized = true;
-            sendPatch(prevText,originHTML, true);  
+            sendPatch(prevText, originHTML, true);  
             updatePrevText();
         } else if(synchronized){
-            let result;
             if(responsePatcheInfos.length > 1){ // 꼬여서 다시 부를 떄
                 result = patchDocs(responsePatcheInfos, responseBody.snapshotText, responseBody.snapshotVersion);
             }
             else{
-                result = patchDocs(responsePatcheInfos,originHTML,clientVersion);
+                result = patchDocs(responsePatcheInfos, originHTML, clientVersion);
             }
-            const diff = dmp.diff_main(originHTML, result, true);
-            dmp.diff_cleanupSemantic(diff);
-            editor.innerHTML = result;
-            const convertedDiff = checkValidDiff(diff);       
-            const makeCustomDiffs = makeCustomDiff(convertedDiff);
-            // console.log(`남1 sc : ${startCaret} ec : ${endCaret}`)
-            const [clacStartCaret, clacEndCaret] = Caret.calcCaret(makeCustomDiffs,startCaret,endCaret);
-            // console.log(`남2 sc : ${clacStartCaret} ec : ${clacEndCaret}`)
-            Caret.setCaretPosition(editor,clacStartCaret,clacEndCaret);
+            setCaretPositionFromDiff(originHTML, result);
             updatePrevText();
         }
+    }
+
+    function setCaretPositionFromDiff(source, target) {
+        const [startCaret, endCaret] = Caret.getCaretPosition(editor);
+        const diff = dmp.diff_main(source, target, true);
+        dmp.diff_cleanupSemantic(diff);
+        editor.innerHTML = target;
+        const convertedDiff = checkValidDiff(diff);       
+        const makeCustomDiffs = makeCustomDiff(convertedDiff);
+        const [clacStartCaret, clacEndCaret] = Caret.calcCaret(makeCustomDiffs, startCaret, endCaret);
+        Caret.setCaretPosition(editor, clacStartCaret, clacEndCaret);
     }
 
     function patchDocs(responsePatches,content,startClientVersion) {
