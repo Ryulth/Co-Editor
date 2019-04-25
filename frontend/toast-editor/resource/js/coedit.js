@@ -330,8 +330,7 @@
             synchronized = true;
             sendPatch(prevText,originHTML, true);  
             updatePrevText();
-        } 
-        if(receiveSessionId != clientSessionId && synchronized){
+        } else if(synchronized){
             let result;
             if(responsePatcheInfos.length > 1){ // 꼬여서 다시 부를 떄
                 result = patchDocs(responsePatcheInfos, responseBody.snapshotText, responseBody.snapshotVersion);
