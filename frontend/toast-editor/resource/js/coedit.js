@@ -356,14 +356,13 @@
     function patchDocs(responsePatches,content,startClientVersion) {
         let result = content;
         responsePatches.forEach(function (item, index, array) {
-            const patches = dmp.patch_fromText(item["patchText"]);
-            if (startClientVersion < item["patchVersion"]) {
-                let results = dmp.patch_apply(patches, result);
-                result = results[0];
+            const patches = dmp.patch_fromText(item.patchText);
+            if (startClientVersion < item.patchVersion) {
+                result = dmp.patch_apply(patches, result)[0];
                 startClientVersion += 1;
             }
-            if (index == (array.length -1) && patches.length != 0) {
-                clientVersion = item["patchVersion"];
+            if (index == (array.length - 1) && patches.length != 0) {
+                clientVersion = item.patchVersion;
             }
             
         });
