@@ -39,6 +39,10 @@
         }
     }
 
+    function updatePrevText(){
+        prevText = editor.innerHTML;
+    }
+
     function getDocs() {
         $.ajax({
             type: "GET",
@@ -56,7 +60,7 @@
                 console.log(responsePatches)
                 console.log(content)
                 editor.innerHTML = content;
-                prevText = content;
+                updatePrevText();
                 pprevText = content;
                 synchronized = true;
                 connect();
@@ -223,7 +227,7 @@
                 
                 synchronized = false;
                 sendContentPost(dmp.patch_toText(dmp.patch_make(prev, current, diff)));
-                prevText = editor.innerHTML;
+                updatePrevText()
             }
             keycode = "";
             isPaste = false;
@@ -328,9 +332,7 @@
             console.log(prevText);
             console.log(originHTML);
             sendPatch(prevText,originHTML, true);  
-            if(result != null){
-                prevText = result;
-            }
+            updatePrevText();
         } 
         if(receiveSessionId != clientSessionId && synchronized){
             let result;
@@ -349,7 +351,7 @@
             const [clacStartCaret, clacEndCaret] = Caret.calcCaret(makeCustomDiffs,startCaret,endCaret);
             // console.log(`남2 sc : ${clacStartCaret} ec : ${clacEndCaret}`)
             Caret.setCaretPosition(editor,clacStartCaret,clacEndCaret);
-            prevText = result;
+            updatePrevText();
         }
     }
 
