@@ -11,4 +11,5 @@ window.onload = function () {
     });
 
     Coedit.setEditor(tuiEditor);
+    console.log(window.RyulthTest);
 }

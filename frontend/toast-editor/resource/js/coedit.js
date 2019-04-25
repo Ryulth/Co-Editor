@@ -118,6 +118,8 @@
 
     function inputAction(){
         console.log("change");
+        console.log(prevText);
+        console.log(editor.innerHTML);
         if (synchronized) {
             
             sendPatch(prevText,editor.innerHTML, false);
@@ -130,7 +132,6 @@
                 // TODO :: 조건문 함수로 정의하기!
                 if (!(Hangul.disassemble(res[2]).length == Hangul.disassemble(res[1]).length + 1) || (keycode == "Backspace" || keycode == "Delete")) {
                     if(!isPaste){
-                        console.log("2번쨰놈")
                         setHangulSelection(res)
                     }
                 }
@@ -171,7 +172,6 @@
         let [tempStartCaret, tempEndCaret] = Caret.getCaretPosition(editor);
         let startCaret = resDiff[0]+inputSpace;
         let endCaret = startCaret +(tempEndCaret - tempStartCaret);
-        console.log(resDiff);
         //TODO 맨앞자리 할지 맨뒬자리 할지 고민
         if(isHangul(inputString)){
             const isWriting = (startCaret != endCaret)? true : false;
@@ -183,12 +183,9 @@
                 if(isWriting && !Hangul.isCompleteAll(inputString)){
                     if(Hangul.isCho(inputString)||Hangul.isVowel(inputString)){
                         if(endCaret-startCaret>1){
-                            console.log("여기 ㅜ뭐지")
                             endCaret+=(1-deleteString.length);                
                         }
                         else{
-                            console.log("고치찾")
-                            console.log(`sc ${startCaret} ec ${endCaret}`)
                         startCaret -=deleteString.length;
                         endCaret -=deleteString.length;
                         }
@@ -200,7 +197,7 @@
             endCaret = (startCaret == endCaret)? endCaret+1 : endCaret;
             
             Caret.setCaretPosition(editor,startCaret,endCaret);
-            console.log(`sc ${startCaret} ec ${endCaret}`)
+            // console.log(`sc ${startCaret} ec ${endCaret}`)
         }
     }
 
@@ -221,7 +218,6 @@
             const isBadChim = (endCaret-startCaret==1) ? !(Hangul.disassemble(res[2]).length == Hangul.disassemble(res[1]).length + 1) : true
             if ( isBadChim || (keycode == "Backspace" || keycode == "Delete")) { 
                 if(!isBuffer && !isPaste){
-                    console.log("1번쨰놈")
                     setHangulSelection(res)
                 }
                 
@@ -240,7 +236,6 @@
         let insertString = "";
         let deleteString = "";
         let isCycle = false;
-        console.log(diff)
         diff.forEach(function (element) {
             switch (element[0]) {
                 case 0: // retain
@@ -251,7 +246,6 @@
                         deleteString = "";
                     }
                     idx += removeTags(element[1]).length;
-                    console.log(removeTags(element[1]));
                     break;
                 case -1: // delete
                     isCycle = true;
@@ -267,7 +261,6 @@
             res.push([idx, insertString, deleteString])
             
         }
-        console.log(res)
         return res;
     }
 
@@ -299,7 +292,7 @@
     }
 
     function receiveContent(responseBody) {
-        
+        tuiEditor.eventManager.emit("change");
         const receiveSessionId = responseBody.socketSessionId;
         const responsePatcheInfos = responseBody.patchInfos;
         const originHTML = editor.innerHTML;
@@ -313,7 +306,7 @@
                 result = patchDocs(responsePatcheInfos,snapshotText,snapshotVersion);
                 if(originHTML != result){
                     let diff = dmp.diff_main(prevText,originHTML, true);
-                    let patches = dmp.patch_make(diff);
+                    let patches = dmp.patch_make(diff); 
                     if(patches.length > 0){
                         result = dmp.patch_apply(patches, result)[0];
                     }
@@ -332,6 +325,8 @@
                 clientVersion = responsePatcheInfos[0].patchVersion;
             }
             synchronized = true;
+            console.log(prevText);
+            console.log(originHTML);
             sendPatch(prevText,originHTML, true);  
             if(result != null){
                 prevText = result;
@@ -377,11 +372,8 @@
 
     function removeTags(text){
         let temp =  text.replace(/<\/div>/ig, " ")
-        console.log("1",temp)
         temp=temp.replace(/&nbsp;/gi," ")
-        console.log("2",temp)
         temp= temp.replace(/<(\/)?([a-zA-Z]*)(\s[a-zA-Z]*=[^>]*)?(\s)*(\/)?>/ig, "");
-        console.log("3",temp)
         return temp;
     }
 
