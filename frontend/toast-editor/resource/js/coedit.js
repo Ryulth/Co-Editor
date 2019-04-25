@@ -120,12 +120,6 @@
     }
 
     function inputAction(){
-<<<<<<< HEAD
-=======
-        console.log("change");
-        console.log("change",prevText);
-        console.log("change",editor.innerHTML);
->>>>>>> a5c8d1998808b548d170f4c8b16a0944bfbc67da
         if (synchronized) {
             sendPatch(prevText,editor.innerHTML, false);
         } 
@@ -319,11 +313,7 @@
             sendPatch(prevText, originHTML, true);  
             updatePrevText();
         } else if(synchronized){
-<<<<<<< HEAD
-=======
-
             let result;
->>>>>>> a5c8d1998808b548d170f4c8b16a0944bfbc67da
             if(responsePatcheInfos.length > 1){ // 꼬여서 다시 부를 떄
                 result = patchDocs(responsePatcheInfos, responseBody.snapshotText, responseBody.snapshotVersion);
             }
