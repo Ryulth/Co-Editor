@@ -324,13 +324,10 @@
                     //console.log(`지꺼2 sc : ${clacStartCaret} ec : ${clacEndCaret}`)
                     Caret.setCaretPosition(editor,clacStartCaret,clacEndCaret);
                 }   
-            }
-            else{
+            } else{
                 clientVersion = responsePatcheInfos[0].patchVersion;
             }
             synchronized = true;
-            console.log(prevText);
-            console.log(originHTML);
             sendPatch(prevText,originHTML, true);  
             updatePrevText();
         } 
