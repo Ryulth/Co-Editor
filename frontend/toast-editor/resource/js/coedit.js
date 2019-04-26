@@ -224,32 +224,6 @@
                 Caret.setCaretPosition(editor,startCaret,endCaret);
             }
         }
-        
-    //     if(isHangul(inputString)){
-    //         const isWriting = (startCaret == endCaret - 1)? true : false;
-    //         if(inputString.length == 2 && isWriting){
-    //             startCaret += 1;
-    //             endCaret = startCaret+1;
-    //         } else if(isWriting){
-    //             if(!Hangul.isCompleteAll(inputString)){
-    //                 if(Hangul.isCho(inputString)||Hangul.isVowel(inputString)){
-    //                     if(endCaret-startCaret>1){
-    //                         endCaret+=(1-deleteString.length);                
-    //                     }
-    //                     else{
-    //                         startCaret -=deleteString.length;
-    //                         endCaret -=deleteString.length;
-    //                     }
-    //                 }
-    //             }
-    //             startCaret += inputString.length-1;
-    //             endCaret += inputString.length-1;
-    //         }
-    //         endCaret = (startCaret == endCaret)? endCaret+1 : endCaret;
-            
-    //         Caret.setCaretPosition(editor,startCaret,endCaret);
-    //         // console.log(`sc ${startCaret} ec ${endCaret}`)
-    //     }
     }
 
     function isHangul(inputText){
