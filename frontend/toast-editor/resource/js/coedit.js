@@ -1,5 +1,5 @@
 (function(){
-    const baseUrl = "http://10.77.34.203:8080";
+    const baseUrl = "http://10.77.34.205:8080";
     const coeditId = 2;//location.href.substr(location.href.lastIndexOf('?') + 1);
     const dmp = new diff_match_patch();
     const editorType = "docs";
@@ -119,25 +119,56 @@
     let isKeyDown = false;
     function keydownAction(event){
         keycode = event.data.code;
-        pprevText = editor.innerHTML;
-        isKeyDown = true;
-    }
-
-    function inputAction(){
+        console.log("keycode :", keycode);
         if(isKeyDown){
             let diff = dmp.diff_main(pprevText, editor.innerHTML, true);
             dmp.diff_cleanupSemantic(diff);
             if ((diff.length > 1) || (diff.length == 1 && diff[0][0] != 0)) { // 1 이상이어야 변경 한 것이 있음
                 let res = makeCustomDiff(diff)[0];    
                 // TODO :: 조건문 함수로 정의하기!
-                if (!(Hangul.disassemble(res[2]).length == Hangul.disassemble(res[1]).length + 1) || (keycode == "Backspace" || keycode == "Delete")) {
+                // if (!(Hangul.disassemble(res[2]).length == Hangul.disassemble(res[1]).length + 1) || (keycode == "Backspace" || keycode == "Delete")) {
                     if(!isPaste){
                         setHangulSelection(res);
                     }
-                }
+                // }
             }
+            isKeyDown = false;
         }
-        
+        pprevText = editor.innerHTML;
+        isKeyDown = true;
+    }
+
+    var inputCount = 1;
+    function inputAction(){
+        console.log(`inputAction : ${inputCount++}`)
+        if(isKeyDown){
+            let diff = dmp.diff_main(pprevText, editor.innerHTML, true);
+            dmp.diff_cleanupSemantic(diff);
+            console.log("input Diff : ", diff);
+            if ((diff.length > 1) || (diff.length == 1 && diff[0][0] != 0)) { // 1 이상이어야 변경 한 것이 있음
+                let res = makeCustomDiff(diff)[0];    
+                // TODO :: 조건문 함수로 정의하기!
+                console.log("input res : ", res);
+                // if (!(Hangul.disassemble(res[2]).length == Hangul.disassemble(res[1]).length + 1) || (keycode == "Backspace" || keycode == "Delete")) {
+                    if(!isPaste){
+                        setHangulSelection(res);
+                    }
+                // }
+            }
+            isKeyDown = false;
+        }
+        const [startCaret, endCaret] = Caret.getCaretPosition(editor);
+        if(startCaret == endCaret){
+            console.log("%%%%%%%%%%%%%%%%%같다%%%%%%%%%%%%%%%%%%%%%%%")
+            let diff = dmp.diff_main(prevText, editor.innerHTML, true);
+            dmp.diff_cleanupSemantic(diff);
+            console.log("prevText, innerHTML diff, ", diff)
+            diff = dmp.diff_main(pprevText, editor.innerHTML, true);
+            dmp.diff_cleanupSemantic(diff);
+            console.log("pprevText, innerHTML diff, ", diff)
+            console.log("%%%%%%%%%%%%%%%%%같다%%%%%%%%%%%%%%%%%%%%%%%")
+
+        }
         if (synchronized) {
             sendPatch(prevText,editor.innerHTML, false);
         }
@@ -147,7 +178,6 @@
         if(event.data.code == 'Backspace'){
             selectionChangeAction();
         }
-        isKeyDown = false;
     }
 
     function sendContentPost(patchText) {
@@ -213,17 +243,17 @@
         console.log("setHangulSelection resDiff : ", resDiff);
         //TODO 맨앞자리 할지 맨뒬자리 할지 고민
         // 한글 작성 시
-        if(isHangul(inputString)){
-            if((deleteString === '' || isHangul(deleteString)) && startCaret == endCaret){
+        console.log("=========================================================================================")
+        console.log(`First startCaret : ${startCaret}\tendCaret : ${endCaret}`)
+        if(isHangul(inputString) && (deleteString == '' || isHangul(deleteString))){
+            console.log(startCaret+", "+endCaret)
+            if(startCaret == endCaret){
                 endCaret++;
-                Caret.setCaretPosition(editor,startCaret,endCaret);
-            }
-        } else if(isHangul(deleteString)){
-            if((inputString === '' || isHangul(inputString)) && startCaret == endCaret - 1){
-                endCaret--;
-                Caret.setCaretPosition(editor,startCaret,endCaret);
+                Caret.setCaretPosition(editor, startCaret, endCaret);
             }
         }
+        console.log(`Second startCaret : ${startCaret}\tendCaret : ${endCaret}`)
+        console.log("=========================================================================================")
     }
 
     function isHangul(inputText){
@@ -240,16 +270,13 @@
         dmp.diff_cleanupSemantic(diff);
         if ((diff.length > 1) || (diff.length == 1 && diff[0][0] != 0)) { // 1 이상이어야 변경 한 것이 있음
             const res = makeCustomDiff(diff)[0];
-            const isBadChim = (endCaret-startCaret==1) ? !(Hangul.disassemble(res[2]).length == Hangul.disassemble(res[1]).length + 1) : true
-            if ( isBadChim || (keycode == "Backspace" || keycode == "Delete")) { 
                 // if(!isBuffer && !isPaste){
                 //     setHangulSelection(res)
                 // }
                 
-                synchronized = false;
-                sendContentPost(dmp.patch_toText(dmp.patch_make(prev, current, diff)));
-                updatePrevText()
-            }
+            synchronized = false;
+            sendContentPost(dmp.patch_toText(dmp.patch_make(prev, current, diff)));
+            updatePrevText()
             keycode = "";
             isPaste = false;
         }
@@ -318,25 +345,25 @@
 
     function receiveContent(responseBody) {
         console.log("emit");
+        const tempIsKeyDown = isKeyDown;
         tuiEditor.eventManager.emit("change");
         console.log("emit fin");
         const receiveSessionId = responseBody.socketSessionId;
         const responsePatcheInfos = responseBody.patchInfos;
         const originHTML = editor.innerHTML;
         let result;
-
         if (receiveSessionId == clientSessionId) {
             if(responsePatcheInfos.length > 1){ // 꼬여서 다시 부를 떄
                 result = patchDocs(responsePatcheInfos, responseBody.snapshotText, responseBody.snapshotVersion);
                 if(originHTML != result){
                     result = dmp.patch_apply(dmp.patch_make(dmp.diff_main(prevText, originHTML, true)), result)[0];
-                    setCaretPositionFromDiff(originHTML, result);
-                }   
+                }
+                setCaretPositionFromDiff(originHTML, result); 
             } else{
                 clientVersion = responsePatcheInfos[0].patchVersion;
             }
             synchronized = true;
-            sendPatch(prevText, originHTML, true);  
+            sendPatch(prevText, originHTML, true);
             updatePrevText();
         } else if(synchronized){
             if(responsePatcheInfos.length > 1){ // 꼬여서 다시 부를 떄
@@ -347,6 +374,10 @@
             }
             setCaretPositionFromDiff(originHTML, result);
             updatePrevText();
+        }
+        isKeyDown = tempIsKeyDown;
+        if(isKeyDown){
+            pprevText = editor.innerHTML;
         }
     }
 
