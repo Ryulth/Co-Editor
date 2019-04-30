@@ -125,12 +125,9 @@
             dmp.diff_cleanupSemantic(diff);
             if ((diff.length > 1) || (diff.length == 1 && diff[0][0] != 0)) { // 1 이상이어야 변경 한 것이 있음
                 let res = makeCustomDiff(diff)[0];    
-                // TODO :: 조건문 함수로 정의하기!
-                // if (!(Hangul.disassemble(res[2]).length == Hangul.disassemble(res[1]).length + 1) || (keycode == "Backspace" || keycode == "Delete")) {
-                    if(!isPaste){
-                        setHangulSelection(res);
-                    }
-                // }
+                if(!isPaste){
+                    setHangulSelection(res);
+                }
             }
             isKeyDown = false;
         }
@@ -147,27 +144,11 @@
             console.log("input Diff : ", diff);
             if ((diff.length > 1) || (diff.length == 1 && diff[0][0] != 0)) { // 1 이상이어야 변경 한 것이 있음
                 let res = makeCustomDiff(diff)[0];    
-                // TODO :: 조건문 함수로 정의하기!
-                console.log("input res : ", res);
-                // if (!(Hangul.disassemble(res[2]).length == Hangul.disassemble(res[1]).length + 1) || (keycode == "Backspace" || keycode == "Delete")) {
-                    if(!isPaste){
-                        setHangulSelection(res);
-                    }
-                // }
+                if(!isPaste){
+                    setHangulSelection(res);
+                }
             }
             isKeyDown = false;
-        }
-        const [startCaret, endCaret] = Caret.getCaretPosition(editor);
-        if(startCaret == endCaret){
-            console.log("%%%%%%%%%%%%%%%%%같다%%%%%%%%%%%%%%%%%%%%%%%")
-            let diff = dmp.diff_main(prevText, editor.innerHTML, true);
-            dmp.diff_cleanupSemantic(diff);
-            console.log("prevText, innerHTML diff, ", diff)
-            diff = dmp.diff_main(pprevText, editor.innerHTML, true);
-            dmp.diff_cleanupSemantic(diff);
-            console.log("pprevText, innerHTML diff, ", diff)
-            console.log("%%%%%%%%%%%%%%%%%같다%%%%%%%%%%%%%%%%%%%%%%%")
-
         }
         if (synchronized) {
             sendPatch(prevText,editor.innerHTML, false);
@@ -199,43 +180,6 @@
         });
     }
 
-    // function setHangulSelection(resDiff){
-        
-    //     let inputString = resDiff[1].trim();
-    //     const inputSpace = resDiff[1].length - inputString.length;
-    //     let deleteString = resDiff[2].trim();
-    //     let [tempStartCaret, tempEndCaret] = Caret.getCaretPosition(editor);
-    //     let startCaret = resDiff[0]+inputSpace;
-    //     let endCaret = startCaret +(tempEndCaret - tempStartCaret);
-    //     //TODO 맨앞자리 할지 맨뒬자리 할지 고민
-    //     if(isHangul(inputString)){
-    //         const isWriting = (startCaret != endCaret)? true : false;
-    //         if(inputString.length == 2 ){
-    //             startCaret +=1;
-    //             endCaret = startCaret+1;
-    //         }
-    //         else{
-    //             if(isWriting && !Hangul.isCompleteAll(inputString)){
-    //                 if(Hangul.isCho(inputString)||Hangul.isVowel(inputString)){
-    //                     if(endCaret-startCaret>1){
-    //                         endCaret+=(1-deleteString.length);                
-    //                     }
-    //                     else{
-    //                     startCaret -=deleteString.length;
-    //                     endCaret -=deleteString.length;
-    //                     }
-    //                 }
-    //             }
-    //             startCaret += inputString.length-1;
-    //         endCaret += inputString.length-1;
-    //         }
-    //         endCaret = (startCaret == endCaret)? endCaret+1 : endCaret;
-            
-    //         Caret.setCaretPosition(editor,startCaret,endCaret);
-    //         // console.log(`sc ${startCaret} ec ${endCaret}`)
-    //     }
-    // }
-
     function setHangulSelection(resDiff){
         const inputString = resDiff[1].trim();
         const deleteString = resDiff[2].trim();
@@ -265,15 +209,9 @@
     }
 
     function sendPatch(prev,current, isBuffer) {
-        const [startCaret, endCaret] = Caret.getCaretPosition(editor);
         const diff = dmp.diff_main(prev, current, true);
         dmp.diff_cleanupSemantic(diff);
         if ((diff.length > 1) || (diff.length == 1 && diff[0][0] != 0)) { // 1 이상이어야 변경 한 것이 있음
-            const res = makeCustomDiff(diff)[0];
-                // if(!isBuffer && !isPaste){
-                //     setHangulSelection(res)
-                // }
-                
             synchronized = false;
             sendContentPost(dmp.patch_toText(dmp.patch_make(prev, current, diff)));
             updatePrevText()
