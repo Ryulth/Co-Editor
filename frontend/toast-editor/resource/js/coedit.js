@@ -28,6 +28,58 @@
             tuiEditor.eventManager.listen("paste" , function(){
                 isPaste = true;
             });
+            editor.addEventListener("input", function(e){
+                console.log(e);
+                console.log(Caret.getCaretPosition(editor));
+                const range = window.getSelection().getRangeAt(0);
+                const clonedRange = range.cloneRange();
+                console.log("aaaaaaaa")
+                clonedRange.selectNodeContents(editor);
+            
+                clonedRange.setStart(range.startContainer, range.startOffset);
+                clonedRange.setEnd(range.endContainer, range.endOffset);
+                console.log("clonedRange.toString() : ", clonedRange.toString())
+                if(e.inputType === 'insertCompositionText'){
+                    // if(e.data === clonedRange.toString().charAt(0)){
+
+                    // }
+                    console.log("aaaaaaaaaa")
+                    if(isHangul(e.data)){
+                        console.log("bbbbbbbbb")
+                        const [startCaret, endCaret] = Caret.getCaretPosition(editor);
+                        console.log(startCaret+", "+endCaret);
+                        if(startCaret == endCaret){
+                            console.log("ccccccccccc")
+                            Caret.setCaretPosition(editor, startCaret, endCaret+1);
+                        }
+                    }
+                }
+                // let diff = dmp.diff_main(pprevText, editor.innerHTML, true);
+                // dmp.diff_cleanupSemantic(diff);
+                // console.log("input Event Listener diff : ", diff);
+                // if ((diff.length > 1) || (diff.length == 1 && diff[0][0] != 0)) { // 1 이상이어야 변경 한 것이 있음
+                //     let res = makeCustomDiff(diff)[0];    
+                //     console.log("input Event Listener res : ", res);
+                //     // TODO :: 조건문 함수로 정의하기!
+                //     if (!(Hangul.disassemble(res[2]).length == Hangul.disassemble(res[1]).length + 1) || (keycode == "Backspace" || keycode == "Delete")) {
+                //         if(!isPaste){
+                //             setHangulSelection(res)
+                //         }
+                //     }
+                // }
+                // if(isHangul(e.data)){
+                //     console.log("t1")
+                //     let diff = dmp.diff_main(pprevText, editor.innerHTML, true);
+                //     dmp.diff_cleanupSemantic(diff);
+                //     let res = makeCustomDiff(diff)[0];
+                //     if (!(Hangul.disassemble(res[2]).length == Hangul.disassemble(res[1]).length + 1) || (keycode == "Backspace" || keycode == "Delete")) {
+                //         console.log("t2")
+                //         if(!isPaste){
+                //             setHangulSelection(res)
+                //         }
+                //     }
+                // }
+            })
 
             editorScroll.addEventListener("scroll", function(){
                 CaretVis.getCaretContainer().style.top = `${-editorScroll.scrollTop}px`;
@@ -78,7 +130,6 @@
             stompClient.subscribe(`/topic/${editorType}/${coeditId}`, function (content) {
                 let responseBody = JSON.parse(content.body);
                 receiveContent(responseBody);
-                pprevText = editor.innerHTML;
             });
             stompClient.subscribe(`/topic/${editorType}/position/${coeditId}`, function(content){
                 let contentBody = JSON.parse(content.body);
@@ -118,38 +169,39 @@
 
     let isKeyDown = false;
     function keydownAction(event){
+        console.log(event.data);
         keycode = event.data.code;
         console.log("keycode :", keycode);
-        if(isKeyDown){
-            let diff = dmp.diff_main(pprevText, editor.innerHTML, true);
-            dmp.diff_cleanupSemantic(diff);
-            if ((diff.length > 1) || (diff.length == 1 && diff[0][0] != 0)) { // 1 이상이어야 변경 한 것이 있음
-                let res = makeCustomDiff(diff)[0];    
-                if(!isPaste){
-                    setHangulSelection(res);
-                }
-            }
-            isKeyDown = false;
-        }
+        // if(isKeyDown){
+        //     let diff = dmp.diff_main(pprevText, editor.innerHTML, true);
+        //     dmp.diff_cleanupSemantic(diff);
+        //     if ((diff.length > 1) || (diff.length == 1 && diff[0][0] != 0)) { // 1 이상이어야 변경 한 것이 있음
+        //         let res = makeCustomDiff(diff)[0];    
+        //         if(!isPaste){
+        //             setHangulSelection(res);
+        //         }
+        //     }
+        //     isKeyDown = false;
+        // }
         pprevText = editor.innerHTML;
         isKeyDown = true;
     }
 
-    var inputCount = 1;
+    // var inputCount = 1;
     function inputAction(){
-        console.log(`inputAction : ${inputCount++}`)
-        if(isKeyDown){
-            let diff = dmp.diff_main(pprevText, editor.innerHTML, true);
-            dmp.diff_cleanupSemantic(diff);
-            console.log("input Diff : ", diff);
-            if ((diff.length > 1) || (diff.length == 1 && diff[0][0] != 0)) { // 1 이상이어야 변경 한 것이 있음
-                let res = makeCustomDiff(diff)[0];    
-                if(!isPaste){
-                    setHangulSelection(res);
-                }
-            }
-            isKeyDown = false;
-        }
+        // console.log(`inputAction : ${inputCount++}`)
+        // if(isKeyDown){
+        //     let diff = dmp.diff_main(pprevText, editor.innerHTML, true);
+        //     dmp.diff_cleanupSemantic(diff);
+        //     console.log("input Diff : ", diff);
+        //     if ((diff.length > 1) || (diff.length == 1 && diff[0][0] != 0)) { // 1 이상이어야 변경 한 것이 있음
+        //         let res = makeCustomDiff(diff)[0];    
+        //         if(!isPaste){
+        //             setHangulSelection(res);
+        //         }
+        //     }
+        //     isKeyDown = false;
+        // }
         if (synchronized) {
             sendPatch(prevText,editor.innerHTML, false);
         }
