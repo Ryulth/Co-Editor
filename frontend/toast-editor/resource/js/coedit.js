@@ -10,7 +10,7 @@
     let stompClient;
     let clientSessionId;
     let prevText = "";
-    let pprevText = "";  
+    let pprevText;
     let keycode = "";
     let isPaste = false;
     let cursorInterval;
@@ -22,7 +22,7 @@
         editor = tuiEditor.wwEditor.editor._root;
         getDocs();
         if (editor.addEventListener) {
-            tuiEditor.eventManager.listen("keydown", keydownAction)            
+            tuiEditor.eventManager.listen("keydown", keydownAction)
             tuiEditor.eventManager.listen("change", inputAction);
             tuiEditor.eventManager.listen("keyup", keyupAction);
             tuiEditor.eventManager.listen("paste" , function(){
@@ -56,7 +56,7 @@
                 const responsePatches = responseBody.patchInfos;
                 if (responsePatches.length >= 1) {
                     content = patchDocs(responsePatches, content, clientVersion);
-                } 
+                }
                 console.log(responsePatches)
                 console.log(content)
                 editor.innerHTML = content;
@@ -102,7 +102,7 @@
         if(cursorInterval != null){
             clearInterval(cursorInterval);
         }
-        if(intervalCount === 50){
+        if(intervalCount == 50){
             sendCursorPos();
         }
         cursorInterval = setInterval(sendCursorPos, 200);
@@ -118,65 +118,36 @@
 
     let isKeyDown = false;
     function keydownAction(event){
-        console.log("************************************************")
-        console.log("keydownAction", event.data.code)
         keycode = event.data.code;
         pprevText = editor.innerHTML;
         isKeyDown = true;
     }
 
-    var inputCount = 1;
     function inputAction(){
-        console.log(`inputAction : ${inputCount++}`)
-        
         if(isKeyDown){
             let diff = dmp.diff_main(pprevText, editor.innerHTML, true);
             dmp.diff_cleanupSemantic(diff);
-            console.log("input Diff111 : ", diff);
-            if ((diff.length > 1) || (diff.length === 1 && diff[0][0] != 0)) { // 1 이상이어야 변경 한 것이 있음
-                let res = makeCustomDiff(diff)[0];    
+            if ((diff.length > 1) || (diff.length == 1 && diff[0][0] != 0)) { // 1 이상이어야 변경 한 것이 있음
+                let res = makeCustomDiff(diff)[0];
                 // TODO :: 조건문 함수로 정의하기!
-                console.log("input res111 : ", res);
-                if(!isPaste){
-                    setHangulSelection(res);
-                }
-            }
-            isKeyDown = false;
-        } 
-        if(prevText !== editor.innerHTML){
-            let diff = dmp.diff_main(prevText, editor.innerHTML, true);
-            dmp.diff_cleanupSemantic(diff);
-            console.log("input Diff222 : ", diff);
-            if ((diff.length > 1) || (diff.length === 1 && diff[0][0] != 0)) { // 1 이상이어야 변경 한 것이 있음
-                let res = makeCustomDiff(diff)[0];    
-                // TODO :: 조건문 함수로 정의하기!
-                console.log("input res222 : ", res);
-                if(!isPaste){
-                    setHangulSelection(res);
+                if (!(Hangul.disassemble(res[2]).length == Hangul.disassemble(res[1]).length + 1) || (keycode == "Backspace" || keycode == "Delete")) {
+                    if(!isPaste){
+                        setHangulSelection(res);
+                    }
                 }
             }
         }
-        const [startCaret, endCaret] = Caret.getCaretPosition(editor);
-        if(startCaret === endCaret){
-            console.log("%%%%%%%%%%%%%%%%%같다%%%%%%%%%%%%%%%%%%%%%%%")
-            let diff = dmp.diff_main(prevText, editor.innerHTML, true);
-            dmp.diff_cleanupSemantic(diff);
-            console.log("prevText, innerHTML diff, ", diff)
-            diff = dmp.diff_main(pprevText, editor.innerHTML, true);
-            dmp.diff_cleanupSemantic(diff);
-            console.log("pprevText, innerHTML diff, ", diff)
-            console.log("%%%%%%%%%%%%%%%%%같다%%%%%%%%%%%%%%%%%%%%%%%")
 
-        }
         if (synchronized) {
-            sendPatch(prevText, editor.innerHTML);
+            sendPatch(prevText,editor.innerHTML, false);
         }
     }
 
     function keyupAction(event){
-        if(event.data.code === 'Backspace'){
+        if(event.data.code == 'Backspace'){
             selectionChangeAction();
         }
+        isKeyDown = false;
     }
 
     function sendContentPost(patchText) {
@@ -184,7 +155,7 @@
             "socketSessionId": clientSessionId,
             "docsId": coeditId,
             "clientVersion": clientVersion,
-            "patchText": patchText 
+            "patchText": patchText
         }
         $.ajax({
             async: true, // false 일 경우 동기 요청으로 변경
@@ -199,7 +170,7 @@
     }
 
     // function setHangulSelection(resDiff){
-        
+
     //     let inputString = resDiff[1].trim();
     //     const inputSpace = resDiff[1].length - inputString.length;
     //     let deleteString = resDiff[2].trim();
@@ -217,7 +188,7 @@
     //             if(isWriting && !Hangul.isCompleteAll(inputString)){
     //                 if(Hangul.isCho(inputString)||Hangul.isVowel(inputString)){
     //                     if(endCaret-startCaret>1){
-    //                         endCaret+=(1-deleteString.length);                
+    //                         endCaret+=(1-deleteString.length);
     //                     }
     //                     else{
     //                     startCaret -=deleteString.length;
@@ -229,7 +200,7 @@
     //         endCaret += inputString.length-1;
     //         }
     //         endCaret = (startCaret == endCaret)? endCaret+1 : endCaret;
-            
+
     //         Caret.setCaretPosition(editor,startCaret,endCaret);
     //         // console.log(`sc ${startCaret} ec ${endCaret}`)
     //     }
@@ -239,19 +210,20 @@
         const inputString = resDiff[1].trim();
         const deleteString = resDiff[2].trim();
         let [startCaret, endCaret] = Caret.getCaretPosition(editor);
-        // console.log("setHangulSelection resDiff : ", resDiff);
+        console.log("setHangulSelection resDiff : ", resDiff);
         //TODO 맨앞자리 할지 맨뒬자리 할지 고민
         // 한글 작성 시
-        console.log("=========================================================================================")
-        console.log(`First startCaret : ${startCaret}\tendCaret : ${endCaret}`)
-        if(isHangul(inputString) && (deleteString === '' || isHangul(deleteString))){
-            if(startCaret === endCaret){
+        if(isHangul(inputString)){
+            if((deleteString === '' || isHangul(deleteString)) && startCaret == endCaret){
                 endCaret++;
-                Caret.setCaretPosition(editor, startCaret, endCaret);
+                Caret.setCaretPosition(editor,startCaret,endCaret);
+            }
+        } else if(isHangul(deleteString)){
+            if((inputString === '' || isHangul(inputString)) && startCaret == endCaret - 1){
+                endCaret--;
+                Caret.setCaretPosition(editor,startCaret,endCaret);
             }
         }
-        console.log(`Second startCaret : ${startCaret}\tendCaret : ${endCaret}`)
-        console.log("=========================================================================================")
     }
 
     function isHangul(inputText){
@@ -262,14 +234,22 @@
         return false;
     }
 
-    function sendPatch(prev,current) {
+    function sendPatch(prev,current, isBuffer) {
+        const [startCaret, endCaret] = Caret.getCaretPosition(editor);
         const diff = dmp.diff_main(prev, current, true);
         dmp.diff_cleanupSemantic(diff);
-        if ((diff.length > 1) || (diff.length == 1 && diff[0][0] !== 0)) { // 1 이상이어야 변경 한 것이 있음
-            console.log(`sendPatch`)
-            synchronized = false;
-            sendContentPost(dmp.patch_toText(dmp.patch_make(prev, current, diff)));
-            updatePrevText()
+        if ((diff.length > 1) || (diff.length == 1 && diff[0][0] != 0)) { // 1 이상이어야 변경 한 것이 있음
+            const res = makeCustomDiff(diff)[0];
+            const isBadChim = (endCaret-startCaret==1) ? !(Hangul.disassemble(res[2]).length == Hangul.disassemble(res[1]).length + 1) : true
+            if ( isBadChim || (keycode == "Backspace" || keycode == "Delete")) {
+                // if(!isBuffer && !isPaste){
+                //     setHangulSelection(res)
+                // }
+
+                synchronized = false;
+                sendContentPost(dmp.patch_toText(dmp.patch_make(prev, current, diff)));
+                updatePrevText()
+            }
             keycode = "";
             isPaste = false;
         }
@@ -304,7 +284,7 @@
         });
         if (isCycle) {
             res.push([idx, insertString, deleteString])
-            
+
         }
         return res;
     }
@@ -319,22 +299,23 @@
                 let nextFirstCloseTag = convertedDiff[i+1][1].indexOf(">") + 1;
                 convertedDiff[i][1] += convertedDiff[i+1][1].substring(0, nextFirstCloseTag);
                 convertedDiff[i+1][1] = convertedDiff[i+1][1].substring(nextFirstCloseTag, convertedDiff[i+1][1].length);
-            
+
                 // 현재 마지막이 <br>로 끝나고 다음 줄 시작이 </div> 인 경우
                 const lastTag = convertedDiff[i][1].substring(convertedDiff[i][1].lastIndexOf("<"), convertedDiff[i][1].lastIndexOf(">") + 1);
-                if(lastTag === "<br>") {
+                if(lastTag == "<br>") {
                     nextFirstCloseTag = convertedDiff[i+1][1].indexOf(">") + 1;
                     const nextFirstTag = convertedDiff[i+1][1].substring(0, nextFirstCloseTag);
-                    if(nextFirstTag === "</div>"){
+                    if(nextFirstTag == "</div>"){
                         convertedDiff[i][1] += "</div>";
                         convertedDiff[i+1][1] = convertedDiff[i+1][1].substring(nextFirstCloseTag, convertedDiff[i+1][1].length);
                     }
-                } 
+                }
             }
 
         }
         return convertedDiff;
     }
+
     function receiveContent(responseBody) {
         console.log("emit");
         tuiEditor.eventManager.emit("change");
@@ -342,21 +323,20 @@
         const receiveSessionId = responseBody.socketSessionId;
         const responsePatcheInfos = responseBody.patchInfos;
         const originHTML = editor.innerHTML;
-        const [startCaret, endCaret] = Caret.getCaretPosition(editor);
         let result;
 
-        if (receiveSessionId === clientSessionId) {
+        if (receiveSessionId == clientSessionId) {
             if(responsePatcheInfos.length > 1){ // 꼬여서 다시 부를 떄
                 result = patchDocs(responsePatcheInfos, responseBody.snapshotText, responseBody.snapshotVersion);
-                if(originHTML !== result){
+                if(originHTML != result){
                     result = dmp.patch_apply(dmp.patch_make(dmp.diff_main(prevText, originHTML, true)), result)[0];
-                    setCaretPositionFromDiff(originHTML, result, startCaret, endCaret);
-                }   
+                    setCaretPositionFromDiff(originHTML, result);
+                }
             } else{
                 clientVersion = responsePatcheInfos[0].patchVersion;
             }
             synchronized = true;
-            sendPatch(prevText, originHTML);  
+            sendPatch(prevText, originHTML, true);
             updatePrevText();
         } else if(synchronized){
             if(responsePatcheInfos.length > 1){ // 꼬여서 다시 부를 떄
@@ -365,16 +345,17 @@
             else{
                 result = patchDocs(responsePatcheInfos, originHTML, clientVersion);
             }
-            setCaretPositionFromDiff(originHTML, result, startCaret, endCaret);
+            setCaretPositionFromDiff(originHTML, result);
             updatePrevText();
         }
     }
 
-    function setCaretPositionFromDiff(source, target, startCaret, endCaret) {
+    function setCaretPositionFromDiff(source, target) {
+        const [startCaret, endCaret] = Caret.getCaretPosition(editor);
         const diff = dmp.diff_main(source, target, true);
         dmp.diff_cleanupSemantic(diff);
         editor.innerHTML = target;
-        const convertedDiff = checkValidDiff(diff);       
+        const convertedDiff = checkValidDiff(diff);
         const makeCustomDiffs = makeCustomDiff(convertedDiff);
         const [clacStartCaret, clacEndCaret] = Caret.calcCaret(makeCustomDiffs, startCaret, endCaret);
         Caret.setCaretPosition(editor, clacStartCaret, clacEndCaret);
@@ -388,10 +369,10 @@
                 result = dmp.patch_apply(patches, result)[0];
                 startClientVersion += 1;
             }
-            if (index === (array.length - 1) && patches.length !== 0) {
+            if (index == (array.length - 1) && patches.length != 0) {
                 clientVersion = item.patchVersion;
             }
-            
+
         });
         return result;
     }
@@ -430,7 +411,7 @@
             }
         });
     }
-    
+
     function accountLogin(baseUrl,type,id,clientSessionId){
             let reqBody = {
                 "clientSessionId": clientSessionId,
@@ -484,7 +465,7 @@
         disconnect : disconnect
     };
 
-    if (typeof define === 'function' && define.amd) {
+    if (typeof define == 'function' && define.amd) {
         define(function(){
           return coedit;
         });
