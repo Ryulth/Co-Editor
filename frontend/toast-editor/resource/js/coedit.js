@@ -10,7 +10,7 @@
     let stompClient;
     let clientSessionId;
     let prevText = "";
-    let pprevText;  
+    let pprevText;
     let keycode = "";
     let isPaste = false;
     let cursorInterval;
@@ -22,7 +22,7 @@
         editor = tuiEditor.wwEditor.editor._root;
         getDocs();
         if (editor.addEventListener) {
-            tuiEditor.eventManager.listen("keydown", keydownAction)            
+            tuiEditor.eventManager.listen("keydown", keydownAction)
             tuiEditor.eventManager.listen("change", inputAction);
             tuiEditor.eventManager.listen("keyup", keyupAction);
             tuiEditor.eventManager.listen("paste" , function(){
@@ -37,7 +37,7 @@
                 clonedRange.selectNodeContents(editor);
             
                 clonedRange.setStart(range.startContainer, range.startOffset);
-                clonedRange.setEnd(range.endContainer, range.endOffset);
+                // clonedRange.setEnd(range.endContainer, range.endOffset);
                 console.log("clonedRange.toString() : ", clonedRange.toString())
                 if(e.inputType === 'insertCompositionText'){
                     // if(e.data === clonedRange.toString().charAt(0)){
@@ -108,7 +108,7 @@
                 const responsePatches = responseBody.patchInfos;
                 if (responsePatches.length >= 1) {
                     content = patchDocs(responsePatches, content, clientVersion);
-                } 
+                }
                 console.log(responsePatches)
                 console.log(content)
                 editor.innerHTML = content;
@@ -201,7 +201,7 @@
         //         }
         //     }
         //     isKeyDown = false;
-        // }
+        // }a425906aa5e
         if (synchronized) {
             sendPatch(prevText,editor.innerHTML, false);
         }
@@ -218,7 +218,7 @@
             "socketSessionId": clientSessionId,
             "docsId": coeditId,
             "clientVersion": clientVersion,
-            "patchText": patchText 
+            "patchText": patchText
         }
         $.ajax({
             async: true, // false 일 경우 동기 요청으로 변경
@@ -301,7 +301,7 @@
         });
         if (isCycle) {
             res.push([idx, insertString, deleteString])
-            
+
         }
         return res;
     }
@@ -316,7 +316,7 @@
                 let nextFirstCloseTag = convertedDiff[i+1][1].indexOf(">") + 1;
                 convertedDiff[i][1] += convertedDiff[i+1][1].substring(0, nextFirstCloseTag);
                 convertedDiff[i+1][1] = convertedDiff[i+1][1].substring(nextFirstCloseTag, convertedDiff[i+1][1].length);
-            
+
                 // 현재 마지막이 <br>로 끝나고 다음 줄 시작이 </div> 인 경우
                 const lastTag = convertedDiff[i][1].substring(convertedDiff[i][1].lastIndexOf("<"), convertedDiff[i][1].lastIndexOf(">") + 1);
                 if(lastTag == "<br>") {
@@ -326,7 +326,7 @@
                         convertedDiff[i][1] += "</div>";
                         convertedDiff[i+1][1] = convertedDiff[i+1][1].substring(nextFirstCloseTag, convertedDiff[i+1][1].length);
                     }
-                } 
+                }
             }
 
         }
@@ -376,7 +376,7 @@
         const diff = dmp.diff_main(source, target, true);
         dmp.diff_cleanupSemantic(diff);
         editor.innerHTML = target;
-        const convertedDiff = checkValidDiff(diff);       
+        const convertedDiff = checkValidDiff(diff);
         const makeCustomDiffs = makeCustomDiff(convertedDiff);
         const [clacStartCaret, clacEndCaret] = Caret.calcCaret(makeCustomDiffs, startCaret, endCaret);
         Caret.setCaretPosition(editor, clacStartCaret, clacEndCaret);
@@ -393,7 +393,7 @@
             if (index == (array.length - 1) && patches.length != 0) {
                 clientVersion = item.patchVersion;
             }
-            
+
         });
         return result;
     }
@@ -432,7 +432,7 @@
             }
         });
     }
-    
+
     function accountLogin(baseUrl,type,id,clientSessionId){
             let reqBody = {
                 "clientSessionId": clientSessionId,
