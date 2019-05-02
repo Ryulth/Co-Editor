@@ -1,5 +1,5 @@
 (function(){
-    const baseUrl = "http://10.77.34.205:8080";
+    const baseUrl = "http://10.77.34.204:8080";
     const coeditId = 2;//location.href.substr(location.href.lastIndexOf('?') + 1);
     const dmp = new diff_match_patch();
     const editorType = "docs";
@@ -28,28 +28,40 @@
             tuiEditor.eventManager.listen("paste" , function(){
                 isPaste = true;
             });
+            editor.addEventListener("compositionstart",function(e){
+                // console.log("compositionstart",e)
+            });
+            editor.addEventListener("compositionupdate",function(e){
+                // console.log("compositionupdate",e)
+            });
+            editor.addEventListener("compositionend",function(e){
+                console.log("compositionend ",e)
+                const [startCaret, endCaret] = Caret.getCaretPosition(editor);
+                Caret.setCaretPosition(editor,startCaret,startCaret);
+            });
             editor.addEventListener("input", function(e){
-                console.log(e);
-                console.log(Caret.getCaretPosition(editor));
-                const range = window.getSelection().getRangeAt(0);
-                const clonedRange = range.cloneRange();
-                console.log("aaaaaaaa")
-                clonedRange.selectNodeContents(editor);
+                console.log("input");
+                // console.log(e);
+                // console.log(Caret.getCaretPosition(editor));
+                // const range = window.getSelection().getRangeAt(0);
+                // const clonedRange = range.cloneRange();
+                // console.log("aaaaaaaa")
+                // clonedRange.selectNodeContents(editor);
             
-                clonedRange.setStart(range.startContainer, range.startOffset);
+                // clonedRange.setStart(range.startContainer, range.startOffset);
                 // clonedRange.setEnd(range.endContainer, range.endOffset);
-                console.log("clonedRange.toString() : ", clonedRange.toString())
+                // console.log("clonedRange.toString() : ", clonedRange.toString())
                 if(e.inputType === 'insertCompositionText'){
                     // if(e.data === clonedRange.toString().charAt(0)){
 
                     // }
-                    console.log("aaaaaaaaaa")
+                    // console.log("aaaaaaaaaa")
                     if(isHangul(e.data)){
-                        console.log("bbbbbbbbb")
+                        // console.log("bbbbbbbbb")
                         const [startCaret, endCaret] = Caret.getCaretPosition(editor);
-                        console.log(startCaret+", "+endCaret);
+                        // console.log(startCaret+", "+endCaret);
                         if(startCaret == endCaret){
-                            console.log("ccccccccccc")
+                            // console.log("ccccccccccc")
                             Caret.setCaretPosition(editor, startCaret, endCaret+1);
                         }
                     }
@@ -129,6 +141,7 @@
             accountLogin(baseUrl,editorType,coeditId,clientSessionId);
             stompClient.subscribe(`/topic/${editorType}/${coeditId}`, function (content) {
                 let responseBody = JSON.parse(content.body);
+                console.log("receive");
                 receiveContent(responseBody);
             });
             stompClient.subscribe(`/topic/${editorType}/position/${coeditId}`, function(content){
@@ -169,7 +182,7 @@
 
     let isKeyDown = false;
     function keydownAction(event){
-        console.log(event.data);
+        // console.log(event.data);
         keycode = event.data.code;
         console.log("keycode :", keycode);
         // if(isKeyDown){
@@ -236,20 +249,20 @@
         const inputString = resDiff[1].trim();
         const deleteString = resDiff[2].trim();
         let [startCaret, endCaret] = Caret.getCaretPosition(editor);
-        console.log("setHangulSelection resDiff : ", resDiff);
+        // console.log("setHangulSelection resDiff : ", resDiff);
         //TODO 맨앞자리 할지 맨뒬자리 할지 고민
         // 한글 작성 시
-        console.log("=========================================================================================")
-        console.log(`First startCaret : ${startCaret}\tendCaret : ${endCaret}`)
+        // console.log("=========================================================================================")
+        // console.log(`First startCaret : ${startCaret}\tendCaret : ${endCaret}`)
         if(isHangul(inputString) && (deleteString == '' || isHangul(deleteString))){
-            console.log(startCaret+", "+endCaret)
+            // console.log(startCaret+", "+endCaret)
             if(startCaret == endCaret){
                 endCaret++;
                 Caret.setCaretPosition(editor, startCaret, endCaret);
             }
         }
-        console.log(`Second startCaret : ${startCaret}\tendCaret : ${endCaret}`)
-        console.log("=========================================================================================")
+        // console.log(`Second startCaret : ${startCaret}\tendCaret : ${endCaret}`)
+        // console.log("=========================================================================================")
     }
 
     function isHangul(inputText){
@@ -334,10 +347,10 @@
     }
 
     function receiveContent(responseBody) {
-        console.log("emit");
+        // console.log("emit");
         const tempIsKeyDown = isKeyDown;
         tuiEditor.eventManager.emit("change");
-        console.log("emit fin");
+        // console.log("emit fin");
         const receiveSessionId = responseBody.socketSessionId;
         const responsePatcheInfos = responseBody.patchInfos;
         const originHTML = editor.innerHTML;
