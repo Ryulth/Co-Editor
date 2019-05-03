@@ -1,8 +1,7 @@
-
 const ie = (typeof document.selection !== "undefined" && document.selection.type !== "Control") && true;
 const w3 = (typeof window.getSelection !== "undefined") && true;
 let tuiEditor;
-window.onload = function () {
+window.onload = function() {
     tuiEditor = new tui.Editor({
         el: document.querySelector('#editSection'),
         initialEditType: 'wysiwyg',

@@ -1,11 +1,11 @@
-(function(){
-    const baseUrl = "http://10.77.34.205:8080";
-    const coeditId = 2;//location.href.substr(location.href.lastIndexOf('?') + 1);
+(function() {
+    const baseUrl = "http://10.77.34.203:8080";
+    const coeditId = 2; //location.href.substr(location.href.lastIndexOf('?') + 1);
     const dmp = new diff_match_patch();
     const editorType = "docs";
     let editor;
     let editorScroll;
-    let synchronized = false; 
+    let synchronized = false;
     let clientVersion;
     let stompClient;
     let clientSessionId;
@@ -15,7 +15,7 @@
     let intervalCount = 0;
     var isComposing = false;
 
-    function setEditor(tuiEditor){
+    function setEditor(tuiEditor) {
         CaretVis.init();
         editorScroll = tuiEditor.wwEditor.$editorContainerEl[0];
         editor = tuiEditor.wwEditor.editor._root;
@@ -25,43 +25,43 @@
             tuiEditor.eventManager.listen("change", inputAction);
             tuiEditor.eventManager.listen("keyup", keyupAction);
 
-            editor.addEventListener("input", function(e){
+            editor.addEventListener("input", function(e) {
                 isComposing = e.isComposing;
-                if(isComposing){
+                if (isComposing) {
                     setComposingCaret();
                 }
             })
-            editor.addEventListener("compositionstart", function(e){
+            editor.addEventListener("compositionstart", function(e) {
                 isComposing = true;
             })
-            editor.addEventListener("compositionupdate", function(e){
+            editor.addEventListener("compositionupdate", function(e) {
                 isComposing = true;
             })
-            editor.addEventListener("compositionend", function(e){
+            editor.addEventListener("compositionend", function(e) {
                 isComposing = false;
                 const [startCaret, endCaret] = Caret.getCaretPosition(editor);
-                if(startCaret !== endCaret){
+                if (startCaret !== endCaret) {
                     Caret.setCaretPosition(editor, startCaret, startCaret);
                 }
             })
-            editorScroll.addEventListener("scroll", function(){
+            editorScroll.addEventListener("scroll", function() {
                 CaretVis.getCaretContainer().style.top = `${-editorScroll.scrollTop}px`;
             })
-            document.addEventListener("scroll", function(){
+            document.addEventListener("scroll", function() {
                 CaretVis.getCaretContainer().style.top = `${-document.documentElement.scrollTop}px`;
             })
             document.addEventListener("selectionchange", selectionChangeAction);
         }
     }
 
-    function setComposingCaret(){
+    function setComposingCaret() {
         const [startCaret, endCaret] = Caret.getCaretPosition(editor);
-        if(startCaret === endCaret){
-            Caret.setCaretPosition(editor, startCaret, endCaret+1);
+        if (startCaret === endCaret) {
+            Caret.setCaretPosition(editor, startCaret, endCaret + 1);
         }
     }
 
-    function updatePrevText(){
+    function updatePrevText() {
         prevText = editor.innerHTML;
     }
 
@@ -70,7 +70,7 @@
             type: "GET",
             url: `${baseUrl}/${editorType}/${coeditId}`,
             cache: false,
-            success: function (response) {
+            success: function(response) {
                 const responseBody = JSON.parse(response);
                 const responseDoc = responseBody[editorType];
                 let content = responseDoc.content;
@@ -91,67 +91,71 @@
     function connect() {
         let socket = new SockJS(`${baseUrl}/docs-websocket`);
         stompClient = Stomp.over(socket);
-        stompClient.connect({}, function (frame) {
+        stompClient.connect({}, function(frame) {
             clientSessionId = /\/([^\/]+)\/websocket/.exec(socket._transport.url)[1];
             setConnected(true);
-            accountLogin(baseUrl,editorType,coeditId,clientSessionId);
-            stompClient.subscribe(`/topic/${editorType}/${coeditId}`, function (content) {
+            accountLogin(baseUrl, editorType, coeditId, clientSessionId);
+            stompClient.subscribe(`/topic/${editorType}/${coeditId}`, function(content) {
                 let responseBody = JSON.parse(content.body);
                 console.log("receive");
                 receiveContent(responseBody);
             });
-            stompClient.subscribe(`/topic/${editorType}/position/${coeditId}`, function(content){
+            stompClient.subscribe(`/topic/${editorType}/position/${coeditId}`, function(content) {
                 let contentBody = JSON.parse(content.body);
-                if(contentBody.sessionId !== clientSessionId){
+                if (contentBody.sessionId !== clientSessionId) {
                     CaretVis.setUserCaret(editor, editorScroll, contentBody.sessionId, contentBody.start, contentBody.end);
                 }
             });
-            stompClient.subscribe(`/topic/${editorType}/${coeditId}/accounts`, function(content){
+            stompClient.subscribe(`/topic/${editorType}/${coeditId}/accounts`, function(content) {
                 let accounts = JSON.parse(content.body);
                 setAccountTable(accounts);
             });
         }, function(message) {
             // TODO check message for disconnect
-            if(!stompClient.connected){
+            if (!stompClient.connected) {
                 console.log(message);
             }
         });
     }
 
-    function selectionChangeAction(){
-        if(cursorInterval !== null && cursorInterval !== undefined){
+    function selectionChangeAction() {
+        if (cursorInterval !== null && cursorInterval !== undefined) {
             clearInterval(cursorInterval);
         }
-        if(intervalCount === 50){
+        if (intervalCount === 50) {
             sendCursorPos();
         }
         cursorInterval = setInterval(sendCursorPos, 200);
         intervalCount++;
     }
 
-    function sendCursorPos(){
+    function sendCursorPos() {
         intervalCount = 0;
         const [startCaret, endCaret] = Caret.getCaretPosition(editor);
-        stompClient.send(`/topic/${editorType}/position/${coeditId}`, {}, JSON.stringify({sessionId: clientSessionId, start: startCaret, end: endCaret}));
+        stompClient.send(`/topic/${editorType}/position/${coeditId}`, {}, JSON.stringify({
+            sessionId: clientSessionId,
+            start: startCaret,
+            end: endCaret
+        }));
         clearInterval(cursorInterval);
     }
 
-    function keydownAction(event){
+    function keydownAction(event) {
         isComposing = event.isComposing;
-        if(isComposing){
+        if (isComposing) {
             setComposingCaret();
         }
         pprevText = editor.innerHTML;
     }
 
-    function inputAction(){
+    function inputAction() {
         if (synchronized) {
-            sendPatch(prevText,editor.innerHTML, false);
+            sendPatch(prevText, editor.innerHTML, false);
         }
     }
 
-    function keyupAction(event){
-        if(event.data.code === 'Backspace'){
+    function keyupAction(event) {
+        if (event.data.code === 'Backspace') {
             selectionChangeAction();
         }
     }
@@ -170,12 +174,11 @@
             url: `${baseUrl}/${editorType}/${coeditId}`,
             data: JSON.stringify(reqBody),
             dataType: 'json',
-            success: function (response) {
-            }
+            success: function(response) {}
         });
     }
 
-    function sendPatch(prev,current, isBuffer) {
+    function sendPatch(prev, current, isBuffer) {
         const diff = dmp.diff_main(prev, current, true);
         dmp.diff_cleanupSemantic(diff);
         if ((diff.length > 1) || (diff.length === 1 && diff[0][0] !== 0)) { // 1 이상이어야 변경 한 것이 있음
@@ -191,7 +194,7 @@
         let insertString = "";
         let deleteString = "";
         let isCycle = false;
-        diff.forEach(function (element) {
+        diff.forEach(function(element) {
             switch (element[0]) {
                 case 0: // retain
                     if (isCycle) {
@@ -221,23 +224,23 @@
 
     function checkValidDiff(diff) {
         let convertedDiff = diff;
-        for(var i = 0; i < convertedDiff.length - 1; i++ ) {
+        for (var i = 0; i < convertedDiff.length - 1; i++) {
             const lastOpenTag = convertedDiff[i][1].lastIndexOf("<");
             const lastCloseTag = convertedDiff[i][1].lastIndexOf(">");
             // 마지막에 < 로 열렸는데 >로 닫히지 않은 경우
-            if(lastCloseTag < lastOpenTag) {
-                let nextFirstCloseTag = convertedDiff[i+1][1].indexOf(">") + 1;
-                convertedDiff[i][1] += convertedDiff[i+1][1].substring(0, nextFirstCloseTag);
-                convertedDiff[i+1][1] = convertedDiff[i+1][1].substring(nextFirstCloseTag, convertedDiff[i+1][1].length);
+            if (lastCloseTag < lastOpenTag) {
+                let nextFirstCloseTag = convertedDiff[i + 1][1].indexOf(">") + 1;
+                convertedDiff[i][1] += convertedDiff[i + 1][1].substring(0, nextFirstCloseTag);
+                convertedDiff[i + 1][1] = convertedDiff[i + 1][1].substring(nextFirstCloseTag, convertedDiff[i + 1][1].length);
 
                 // 현재 마지막이 <br>로 끝나고 다음 줄 시작이 </div> 인 경우
                 const lastTag = convertedDiff[i][1].substring(convertedDiff[i][1].lastIndexOf("<"), convertedDiff[i][1].lastIndexOf(">") + 1);
-                if(lastTag === "<br>") {
-                    nextFirstCloseTag = convertedDiff[i+1][1].indexOf(">") + 1;
-                    const nextFirstTag = convertedDiff[i+1][1].substring(0, nextFirstCloseTag);
-                    if(nextFirstTag === "</div>"){
+                if (lastTag === "<br>") {
+                    nextFirstCloseTag = convertedDiff[i + 1][1].indexOf(">") + 1;
+                    const nextFirstTag = convertedDiff[i + 1][1].substring(0, nextFirstCloseTag);
+                    if (nextFirstTag === "</div>") {
                         convertedDiff[i][1] += "</div>";
-                        convertedDiff[i+1][1] = convertedDiff[i+1][1].substring(nextFirstCloseTag, convertedDiff[i+1][1].length);
+                        convertedDiff[i + 1][1] = convertedDiff[i + 1][1].substring(nextFirstCloseTag, convertedDiff[i + 1][1].length);
                     }
                 }
             }
@@ -247,7 +250,7 @@
     }
 
     function receiveContent(responseBody) {
-        if(isComposing && pprevText !== editor.innerHTML){
+        if (isComposing && pprevText !== editor.innerHTML) {
             setComposingCaret();
         }
         tuiEditor.eventManager.emit("change");
@@ -256,23 +259,22 @@
         const originHTML = editor.innerHTML;
         let result;
         if (receiveSessionId === clientSessionId) {
-            if(responsePatcheInfos.length > 1){ // 꼬여서 다시 부를 떄
+            if (responsePatcheInfos.length > 1) { // 꼬여서 다시 부를 떄
                 result = patchDocs(responsePatcheInfos, responseBody.snapshotText, responseBody.snapshotVersion);
-                if(originHTML !== result){
+                if (originHTML !== result) {
                     result = dmp.patch_apply(dmp.patch_make(dmp.diff_main(prevText, originHTML, true)), result)[0];
                 }
-                setCaretPositionFromDiff(originHTML, result); 
-            } else{
+                setCaretPositionFromDiff(originHTML, result);
+            } else {
                 clientVersion = responsePatcheInfos[0].patchVersion;
             }
             synchronized = true;
             sendPatch(prevText, originHTML, true);
             updatePrevText();
-        } else if(synchronized){
-            if(responsePatcheInfos.length > 1){ // 꼬여서 다시 부를 떄
+        } else if (synchronized) {
+            if (responsePatcheInfos.length > 1) { // 꼬여서 다시 부를 떄
                 result = patchDocs(responsePatcheInfos, responseBody.snapshotText, responseBody.snapshotVersion);
-            }
-            else{
+            } else {
                 result = patchDocs(responsePatcheInfos, originHTML, clientVersion);
             }
             setCaretPositionFromDiff(originHTML, result);
@@ -291,9 +293,9 @@
         Caret.setCaretPosition(editor, clacStartCaret, clacEndCaret);
     }
 
-    function patchDocs(responsePatches,content,startClientVersion) {
+    function patchDocs(responsePatches, content, startClientVersion) {
         let result = content;
-        responsePatches.forEach(function (item, index, array) {
+        responsePatches.forEach(function(item, index, array) {
             const patches = dmp.patch_fromText(item.patchText);
             if (startClientVersion < item.patchVersion) {
                 result = dmp.patch_apply(patches, result)[0];
@@ -307,10 +309,10 @@
         return result;
     }
 
-    function removeTags(text){
+    function removeTags(text) {
         return text.replace(/<\/div>/ig, " ")
-        .replace(/&nbsp;/gi," ")
-        .replace(/<(\/)?([a-zA-Z]*)(\s[a-zA-Z]*=[^>]*)?(\s)*(\/)?>/ig, "");
+            .replace(/&nbsp;/gi, " ")
+            .replace(/<(\/)?([a-zA-Z]*)(\s[a-zA-Z]*=[^>]*)?(\s)*(\/)?>/ig, "");
     }
 
     function disconnect() {
@@ -331,55 +333,53 @@
     /*
     TODO : account 파일로 추출;
     */
-    function accountLogout(baseUrl,type,id,clientSessionId){
+    function accountLogout(baseUrl, type, id, clientSessionId) {
         $.ajax({
             async: true, // false 일 경우 동기 요청으로 변경
             type: "DELETE",
             contentType: "application/json",
             url: `${baseUrl}/${type}/${id}/accounts/${clientSessionId}`,
-            success: function (response) {
-            }
+            success: function(response) {}
         });
     }
 
-    function accountLogin(baseUrl,type,id,clientSessionId){
-            let reqBody = {
-                "clientSessionId": clientSessionId,
-                "remoteAddress": ""
-            }
-            $.ajax({
-                async: true, // false 일 경우 동기 요청으로 변경
-                type: "POST",
-                contentType: "application/json",
-                url: `${baseUrl}/${type}/${id}/accounts`,
-                data: JSON.stringify(reqBody),
-                dataType: 'json',
-                success: function (response) {
-                }
-            });
+    function accountLogin(baseUrl, type, id, clientSessionId) {
+        let reqBody = {
+            "clientSessionId": clientSessionId,
+            "remoteAddress": ""
+        }
+        $.ajax({
+            async: true, // false 일 경우 동기 요청으로 변경
+            type: "POST",
+            contentType: "application/json",
+            url: `${baseUrl}/${type}/${id}/accounts`,
+            data: JSON.stringify(reqBody),
+            dataType: 'json',
+            success: function(response) {}
+        });
     }
 
-    function getAccounts(baseUrl,type,id){
+    function getAccounts(baseUrl, type, id) {
         $.ajax({
             type: "GET",
             cache: false,
             url: `${baseUrl}/${type}/${id}/accounts`,
-            success: function (response) {
+            success: function(response) {
                 console.log(JSON.parse(response))
                 setAccountTable(JSON.parse(response));
             }
         });
     }
 
-    function setAccountTable(accounts){
+    function setAccountTable(accounts) {
         tableBody = document.getElementById("accounts-table-body");
         totalRow = "";
         let currentCaretUser = {};
         Object.assign(currentCaretUser, CaretVis.getCaretWrappers());
-        accounts.forEach(function (account){
-            row  = `<tr><td>${account.clientSessionId}</td><td>${account.remoteAddress}</td></tr>`
+        accounts.forEach(function(account) {
+            row = `<tr><td>${account.clientSessionId}</td><td>${account.remoteAddress}</td></tr>`
             totalRow += row;
-            if(account.clientSessionId in currentCaretUser){
+            if (account.clientSessionId in currentCaretUser) {
                 delete currentCaretUser[account.clientSessionId];
             }
         });
@@ -391,17 +391,17 @@
     }
 
     const coedit = {
-        setEditor : setEditor,
-        disconnect : disconnect
+        setEditor: setEditor,
+        disconnect: disconnect
     };
 
     if (typeof define === 'function' && define.amd) {
-        define(function(){
-          return coedit;
+        define(function() {
+            return coedit;
         });
-      } else if (typeof module !== 'undefined') {
+    } else if (typeof module !== 'undefined') {
         module.exports = coedit;
-      } else {
+    } else {
         window.Coedit = coedit;
-      }
+    }
 })();

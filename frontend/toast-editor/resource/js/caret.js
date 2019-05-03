@@ -1,4 +1,4 @@
-(function () {
+(function() {
     const LOCATION = {
         START: 'start',
         END: 'end'
@@ -57,7 +57,7 @@
         }
 
         while ((lineNode.parentNode.id !== element.id) || (lineNode.parentNode.classList !== element.classList)) {
-            if(lineNode.nodeName === 'LI' || lineNode === undefined) {
+            if (lineNode.nodeName === 'LI' || lineNode === undefined) {
                 listNode = lineNode;
             }
             lineNode = lineNode.parentNode;
@@ -68,7 +68,7 @@
 
     function getCountOfNewLine(element, nodeList, countOfNewLine) {
         const [lineNode, listNode] = nodeList;
-        
+
         while (lineNode !== element[countOfNewLine] && listNode !== element[countOfNewLine]) {
             countOfNewLine++;
         }
@@ -77,14 +77,14 @@
     }
 
     function getFlattenElement(element) {
-        if(element.querySelector("LI") === null) {
+        if (element.querySelector("LI") === null) {
             return element.childNodes;
-        } else{
+        } else {
             let flattenList = [];
-            element.childNodes.forEach(function(node){
-                if(node.tagName === "DIV") {
+            element.childNodes.forEach(function(node) {
+                if (node.tagName === "DIV") {
                     flattenList.push(node);
-                } else if(node.tagName === "OL" || node.tagName === "UL") {
+                } else if (node.tagName === "OL" || node.tagName === "UL") {
                     flattenList = getFlattenList(node, flattenList);
                 }
             });
@@ -93,10 +93,10 @@
     }
 
     function getFlattenList(nodeList, flattenList) {
-        nodeList.childNodes.forEach(function(node){
-            if(node.tagName === "LI") {
+        nodeList.childNodes.forEach(function(node) {
+            if (node.tagName === "LI") {
                 flattenList.push(node);
-            } else if(node.tagName === "OL" || node.tagName === "UL") {
+            } else if (node.tagName === "OL" || node.tagName === "UL") {
                 flattenList = getFlattenList(node, flattenList);
             }
         });
@@ -104,19 +104,19 @@
     }
 
     function setCaretPosition(element, start, end) {
-        let childTextLength = 0, 
-            startOffset = 0, 
+        let childTextLength = 0,
+            startOffset = 0,
             endOffset = 0,
             countOfNewLine = 0,
             startElement = null,
             endElement = null;
 
-        const textNodeList = getTextNodeList(element), 
+        const textNodeList = getTextNodeList(element),
             range = document.createRange(),
             sel = window.getSelection();
 
         const flattenElement = getFlattenElement(element);
-        textNodeList.forEach(function (textNode) {
+        textNodeList.forEach(function(textNode) {
             const nodeTextLength = textNode.textContent.length;
             countOfNewLine = getCountOfNewLine(flattenElement, getLineNode(element, textNode), countOfNewLine);
 
@@ -160,7 +160,7 @@
     function getTextNodeList(element) {
         let textNodeList = [];
 
-        Array.prototype.slice.call(element.childNodes).forEach(function (childElement) {
+        Array.prototype.slice.call(element.childNodes).forEach(function(childElement) {
             if (childElement.nodeType === Node.TEXT_NODE) {
                 textNodeList.push(childElement);
             } else if (childElement.nodeName === "BR") {
@@ -174,7 +174,7 @@
     }
 
     function calcCaret(diff, startCaret, endCaret) {
-        diff.forEach(function (tempDiff, _, _) {
+        diff.forEach(function(tempDiff, _, _) {
             const startIdx = tempDiff[0];
             const inputString = tempDiff[1];
             const deleteString = tempDiff[2];
@@ -182,7 +182,7 @@
                 // delete and insert case
                 // delete 먼저하자
                 // 드래그 안 된 경우
-                
+
                 if (startCaret === endCaret) {
                     [startCaret, endCaret] = deleteNoDrag(startIdx, deleteString, startCaret, endCaret);
                     // insert 된 크기 만큼 뒤로 간다.
@@ -274,8 +274,7 @@
                 startCaret = startIdx;
                 let end_offset = endCaret - (startIdx + deleteString.length)
                 endCaret = startIdx + end_offset;
-            }
-            else if (endCaret < startIdx + deleteString.length) {
+            } else if (endCaret < startIdx + deleteString.length) {
                 // 내가 드래그 한거 다 지우는 경우
                 startCaret = startIdx;
                 endCaret = startIdx;
@@ -303,7 +302,7 @@
     };
 
     if (typeof define === 'function' && define.amd) {
-        define(function () {
+        define(function() {
             return caret;
         });
     } else if (typeof module !== 'undefined') {
