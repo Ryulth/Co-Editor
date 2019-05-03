@@ -54,7 +54,7 @@
 
     function moveCaret(key, rect, editorScroll){
         let scrollHeight = 0;
-        if(editorScroll.scrollHeight == editorScroll.clientHeight){
+        if(editorScroll.scrollHeight === editorScroll.clientHeight){
             scrollHeight = caretContainer.offsetTop;
         }
         if(key in caretWrappers){
@@ -67,7 +67,7 @@
 
     function createDrag(key, rect, editorScroll){
         let scrollHeight = 0;
-        if(editorScroll.scrollHeight == editorScroll.clientHeight){
+        if(editorScroll.scrollHeight === editorScroll.clientHeight){
             scrollHeight = caretContainer.offsetTop;
         }
         const caretFrame = document.querySelector(`#container-${key}`);
@@ -122,7 +122,7 @@
             endElement = null
             if(start <= childTextLength + countOfNewLine + nodeTextLength){
                 startOffset = start - (childTextLength + countOfNewLine);
-                if(startElement != null){
+                if(startElement !== null){
                     startOffset = 0;
                 } 
                 startElement = textNode;
@@ -133,8 +133,8 @@
                 isLast = true;
             }
             
-            if(startElement != null){
-                if(endElement == null){
+            if(startElement !== null){
+                if(endElement === null){
                     endElement = startElement;
                     endOffset = startElement.length;
                 }
@@ -189,7 +189,7 @@
         getCaretContainer : getCaretContainer
     }
 
-    if (typeof define == 'function' && define.amd) {
+    if (typeof define === 'function' && define.amd) {
         define(function(){
           return caretVis;
         });
