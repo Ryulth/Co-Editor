@@ -11,10 +11,9 @@
     let clientSessionId;
     let prevText = "";
     let pprevText;
-    let keycode = "";
-    let isPaste = false;
     let cursorInterval;
     let intervalCount = 0;
+    var isComposing = false;
 
     function setEditor(tuiEditor){
         CaretVis.init();
@@ -25,62 +24,26 @@
             tuiEditor.eventManager.listen("keydown", keydownAction)
             tuiEditor.eventManager.listen("change", inputAction);
             tuiEditor.eventManager.listen("keyup", keyupAction);
-            tuiEditor.eventManager.listen("paste" , function(){
-                isPaste = true;
-            });
+
             editor.addEventListener("input", function(e){
-                console.log(e);
-                console.log(Caret.getCaretPosition(editor));
-                const range = window.getSelection().getRangeAt(0);
-                const clonedRange = range.cloneRange();
-                console.log("aaaaaaaa")
-                clonedRange.selectNodeContents(editor);
-            
-                clonedRange.setStart(range.startContainer, range.startOffset);
-                // clonedRange.setEnd(range.endContainer, range.endOffset);
-                console.log("clonedRange.toString() : ", clonedRange.toString())
-                if(e.inputType === 'insertCompositionText'){
-                    // if(e.data === clonedRange.toString().charAt(0)){
-
-                    // }
-                    console.log("aaaaaaaaaa")
-                    if(isHangul(e.data)){
-                        console.log("bbbbbbbbb")
-                        const [startCaret, endCaret] = Caret.getCaretPosition(editor);
-                        console.log(startCaret+", "+endCaret);
-                        if(startCaret == endCaret){
-                            console.log("ccccccccccc")
-                            Caret.setCaretPosition(editor, startCaret, endCaret+1);
-                        }
-                    }
+                isComposing = e.isComposing;
+                if(isComposing){
+                    setComposingCaret();
                 }
-                // let diff = dmp.diff_main(pprevText, editor.innerHTML, true);
-                // dmp.diff_cleanupSemantic(diff);
-                // console.log("input Event Listener diff : ", diff);
-                // if ((diff.length > 1) || (diff.length == 1 && diff[0][0] != 0)) { // 1 이상이어야 변경 한 것이 있음
-                //     let res = makeCustomDiff(diff)[0];    
-                //     console.log("input Event Listener res : ", res);
-                //     // TODO :: 조건문 함수로 정의하기!
-                //     if (!(Hangul.disassemble(res[2]).length == Hangul.disassemble(res[1]).length + 1) || (keycode == "Backspace" || keycode == "Delete")) {
-                //         if(!isPaste){
-                //             setHangulSelection(res)
-                //         }
-                //     }
-                // }
-                // if(isHangul(e.data)){
-                //     console.log("t1")
-                //     let diff = dmp.diff_main(pprevText, editor.innerHTML, true);
-                //     dmp.diff_cleanupSemantic(diff);
-                //     let res = makeCustomDiff(diff)[0];
-                //     if (!(Hangul.disassemble(res[2]).length == Hangul.disassemble(res[1]).length + 1) || (keycode == "Backspace" || keycode == "Delete")) {
-                //         console.log("t2")
-                //         if(!isPaste){
-                //             setHangulSelection(res)
-                //         }
-                //     }
-                // }
             })
-
+            editor.addEventListener("compositionstart", function(e){
+                isComposing = true;
+            })
+            editor.addEventListener("compositionupdate", function(e){
+                isComposing = true;
+            })
+            editor.addEventListener("compositionend", function(e){
+                isComposing = false;
+                const [startCaret, endCaret] = Caret.getCaretPosition(editor);
+                if(startCaret !== endCaret){
+                    Caret.setCaretPosition(editor, startCaret, startCaret);
+                }
+            })
             editorScroll.addEventListener("scroll", function(){
                 CaretVis.getCaretContainer().style.top = `${-editorScroll.scrollTop}px`;
             })
@@ -88,6 +51,13 @@
                 CaretVis.getCaretContainer().style.top = `${-document.documentElement.scrollTop}px`;
             })
             document.addEventListener("selectionchange", selectionChangeAction);
+        }
+    }
+
+    function setComposingCaret(){
+        const [startCaret, endCaret] = Caret.getCaretPosition(editor);
+        if(startCaret === endCaret){
+            Caret.setCaretPosition(editor, startCaret, endCaret+1);
         }
     }
 
@@ -109,8 +79,6 @@
                 if (responsePatches.length >= 1) {
                     content = patchDocs(responsePatches, content, clientVersion);
                 }
-                console.log(responsePatches)
-                console.log(content)
                 editor.innerHTML = content;
                 updatePrevText();
                 pprevText = content;
@@ -133,7 +101,7 @@
             });
             stompClient.subscribe(`/topic/${editorType}/position/${coeditId}`, function(content){
                 let contentBody = JSON.parse(content.body);
-                if(contentBody.sessionId != clientSessionId){
+                if(contentBody.sessionId !== clientSessionId){
                     CaretVis.setUserCaret(editor, editorScroll, contentBody.sessionId, contentBody.start, contentBody.end);
                 }
             });
@@ -150,10 +118,10 @@
     }
 
     function selectionChangeAction(){
-        if(cursorInterval != null){
+        if(cursorInterval !== null){
             clearInterval(cursorInterval);
         }
-        if(intervalCount == 50){
+        if(intervalCount === 50){
             sendCursorPos();
         }
         cursorInterval = setInterval(sendCursorPos, 200);
@@ -167,48 +135,22 @@
         clearInterval(cursorInterval);
     }
 
-    let isKeyDown = false;
     function keydownAction(event){
-        console.log(event.data);
-        keycode = event.data.code;
-        console.log("keycode :", keycode);
-        // if(isKeyDown){
-        //     let diff = dmp.diff_main(pprevText, editor.innerHTML, true);
-        //     dmp.diff_cleanupSemantic(diff);
-        //     if ((diff.length > 1) || (diff.length == 1 && diff[0][0] != 0)) { // 1 이상이어야 변경 한 것이 있음
-        //         let res = makeCustomDiff(diff)[0];    
-        //         if(!isPaste){
-        //             setHangulSelection(res);
-        //         }
-        //     }
-        //     isKeyDown = false;
-        // }
+        isComposing = event.isComposing;
+        if(isComposing){
+            setComposingCaret();
+        }
         pprevText = editor.innerHTML;
-        isKeyDown = true;
     }
 
-    // var inputCount = 1;
     function inputAction(){
-        // console.log(`inputAction : ${inputCount++}`)
-        // if(isKeyDown){
-        //     let diff = dmp.diff_main(pprevText, editor.innerHTML, true);
-        //     dmp.diff_cleanupSemantic(diff);
-        //     console.log("input Diff : ", diff);
-        //     if ((diff.length > 1) || (diff.length == 1 && diff[0][0] != 0)) { // 1 이상이어야 변경 한 것이 있음
-        //         let res = makeCustomDiff(diff)[0];    
-        //         if(!isPaste){
-        //             setHangulSelection(res);
-        //         }
-        //     }
-        //     isKeyDown = false;
-        // }a425906aa5e
         if (synchronized) {
             sendPatch(prevText,editor.innerHTML, false);
         }
     }
 
     function keyupAction(event){
-        if(event.data.code == 'Backspace'){
+        if(event.data.code === 'Backspace'){
             selectionChangeAction();
         }
     }
@@ -232,26 +174,6 @@
         });
     }
 
-    function setHangulSelection(resDiff){
-        const inputString = resDiff[1].trim();
-        const deleteString = resDiff[2].trim();
-        let [startCaret, endCaret] = Caret.getCaretPosition(editor);
-        console.log("setHangulSelection resDiff : ", resDiff);
-        //TODO 맨앞자리 할지 맨뒬자리 할지 고민
-        // 한글 작성 시
-        console.log("=========================================================================================")
-        console.log(`First startCaret : ${startCaret}\tendCaret : ${endCaret}`)
-        if(isHangul(inputString) && (deleteString == '' || isHangul(deleteString))){
-            console.log(startCaret+", "+endCaret)
-            if(startCaret == endCaret){
-                endCaret++;
-                Caret.setCaretPosition(editor, startCaret, endCaret);
-            }
-        }
-        console.log(`Second startCaret : ${startCaret}\tendCaret : ${endCaret}`)
-        console.log("=========================================================================================")
-    }
-
     function isHangul(inputText){
         const c = inputText.charCodeAt(0);
         if( 0x1100<=c && c<=0x11FF ) return true;
@@ -263,12 +185,10 @@
     function sendPatch(prev,current, isBuffer) {
         const diff = dmp.diff_main(prev, current, true);
         dmp.diff_cleanupSemantic(diff);
-        if ((diff.length > 1) || (diff.length == 1 && diff[0][0] != 0)) { // 1 이상이어야 변경 한 것이 있음
+        if ((diff.length > 1) || (diff.length === 1 && diff[0][0] !== 0)) { // 1 이상이어야 변경 한 것이 있음
             synchronized = false;
             sendContentPost(dmp.patch_toText(dmp.patch_make(prev, current, diff)));
             updatePrevText()
-            keycode = "";
-            isPaste = false;
         }
     }
 
@@ -319,10 +239,10 @@
 
                 // 현재 마지막이 <br>로 끝나고 다음 줄 시작이 </div> 인 경우
                 const lastTag = convertedDiff[i][1].substring(convertedDiff[i][1].lastIndexOf("<"), convertedDiff[i][1].lastIndexOf(">") + 1);
-                if(lastTag == "<br>") {
+                if(lastTag === "<br>") {
                     nextFirstCloseTag = convertedDiff[i+1][1].indexOf(">") + 1;
                     const nextFirstTag = convertedDiff[i+1][1].substring(0, nextFirstCloseTag);
-                    if(nextFirstTag == "</div>"){
+                    if(nextFirstTag === "</div>"){
                         convertedDiff[i][1] += "</div>";
                         convertedDiff[i+1][1] = convertedDiff[i+1][1].substring(nextFirstCloseTag, convertedDiff[i+1][1].length);
                     }
@@ -334,18 +254,18 @@
     }
 
     function receiveContent(responseBody) {
-        console.log("emit");
-        const tempIsKeyDown = isKeyDown;
+        if(isComposing && pprevText !== editor.innerHTML){
+            setComposingCaret();
+        }
         tuiEditor.eventManager.emit("change");
-        console.log("emit fin");
         const receiveSessionId = responseBody.socketSessionId;
         const responsePatcheInfos = responseBody.patchInfos;
         const originHTML = editor.innerHTML;
         let result;
-        if (receiveSessionId == clientSessionId) {
+        if (receiveSessionId === clientSessionId) {
             if(responsePatcheInfos.length > 1){ // 꼬여서 다시 부를 떄
                 result = patchDocs(responsePatcheInfos, responseBody.snapshotText, responseBody.snapshotVersion);
-                if(originHTML != result){
+                if(originHTML !== result){
                     result = dmp.patch_apply(dmp.patch_make(dmp.diff_main(prevText, originHTML, true)), result)[0];
                 }
                 setCaretPositionFromDiff(originHTML, result); 
@@ -364,10 +284,6 @@
             }
             setCaretPositionFromDiff(originHTML, result);
             updatePrevText();
-        }
-        isKeyDown = tempIsKeyDown;
-        if(isKeyDown){
-            pprevText = editor.innerHTML;
         }
     }
 
@@ -390,7 +306,7 @@
                 result = dmp.patch_apply(patches, result)[0];
                 startClientVersion += 1;
             }
-            if (index == (array.length - 1) && patches.length != 0) {
+            if (index === (array.length - 1) && patches.length !== 0) {
                 clientVersion = item.patchVersion;
             }
 
@@ -486,7 +402,7 @@
         disconnect : disconnect
     };
 
-    if (typeof define == 'function' && define.amd) {
+    if (typeof define === 'function' && define.amd) {
         define(function(){
           return coedit;
         });
