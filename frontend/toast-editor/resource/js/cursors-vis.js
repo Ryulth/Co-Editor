@@ -118,7 +118,7 @@
             }
             let nodeTextLength = textNode.textContent.length;
             let lineNode = Caret.getLineNode(element, textNode);
-            countOfNewLine = Caret.getCountOfNewLineOver(element, lineNode, countOfNewLine);
+            countOfNewLine = Caret.getCountOfNewLine(Caret.getFlattenElement(element), lineNode, countOfNewLine);
             endElement = null
             if(start <= childTextLength + countOfNewLine + nodeTextLength){
                 startOffset = start - (childTextLength + countOfNewLine);

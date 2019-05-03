@@ -296,6 +296,7 @@
         getCaretPosition: getStartAndEndCaretPosition,
         setCaretPosition: setCaretPosition,
         getTextNodeList: getTextNodeList,
+        getFlattenElement: getFlattenElement,
         getCountOfNewLine: getCountOfNewLine,
         getLineNode: getLineNode,
         calcCaret: calcCaret
