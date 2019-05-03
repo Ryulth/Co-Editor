@@ -122,7 +122,7 @@
             endElement = null
             if(start <= childTextLength + countOfNewLine + nodeTextLength){
                 startOffset = start - (childTextLength + countOfNewLine);
-                if(startElement !== null){
+                if(startElement !== undefined && startElement !== null){
                     startOffset = 0;
                 } 
                 startElement = textNode;
@@ -133,8 +133,8 @@
                 isLast = true;
             }
             
-            if(startElement !== null){
-                if(endElement === null){
+            if(startElement !== undefined && startElement !== null){
+                if(endElement === undefined || endElement === null){
                     endElement = startElement;
                     endOffset = startElement.length;
                 }

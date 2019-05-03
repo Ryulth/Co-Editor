@@ -92,11 +92,11 @@
             const nodeTextLength = textNode.textContent.length;
             countOfNewLine = getCountOfNewLineOver(element, getLineNode(element, textNode), countOfNewLine);
 
-            if (start <= childTextLength + countOfNewLine + nodeTextLength && startElement === null) {
+            if (start <= childTextLength + countOfNewLine + nodeTextLength && (startElement === null || startElement === undefined)) {
                 startOffset = start - (childTextLength + countOfNewLine);
                 startElement = textNode;
             }
-            if (end <= childTextLength + countOfNewLine + nodeTextLength && endElement === null) {
+            if (end <= childTextLength + countOfNewLine + nodeTextLength && (endElement === null || endElement === undefined)) {
                 endOffset = end - (childTextLength + countOfNewLine);
                 endElement = textNode;
             }

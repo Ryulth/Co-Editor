@@ -1,5 +1,5 @@
 (function(){
-    const baseUrl = "http://10.77.34.204:8080";
+    const baseUrl = "http://10.77.34.205:8080";
     const coeditId = 2;//location.href.substr(location.href.lastIndexOf('?') + 1);
     const dmp = new diff_match_patch();
     const editorType = "docs";
@@ -119,7 +119,7 @@
     }
 
     function selectionChangeAction(){
-        if(cursorInterval !== null){
+        if(cursorInterval !== null && cursorInterval !== undefined){
             clearInterval(cursorInterval);
         }
         if(intervalCount === 50){
@@ -314,7 +314,7 @@
     }
 
     function disconnect() {
-        if (stompClient !== null) {
+        if (stompClient !== null && stompClient !== undefined) {
             stompClient.disconnect();
         }
         setConnected(false);
