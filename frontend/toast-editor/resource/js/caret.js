@@ -34,7 +34,7 @@
 
                 position = clonedRange.toString().length;
 
-                position += getCountOfNewLine(element, getLineNode(element, clonedRange.endContainer));
+                position += getCountOfNewLine(getFlattenElement(element), getLineNode(element, clonedRange.endContainer), 0);
             } catch (e) {
                 // console.log(e);
             }
@@ -48,32 +48,59 @@
         return (position < 0) ? 0 : position;
     }
 
+
     function getLineNode(element, node) {
         let lineNode = node;
-
+        let listNode;
         if (element === lineNode) {
-            return lineNode;
+            return [lineNode, listNode];
         }
 
         while ((lineNode.parentNode.id !== element.id) || (lineNode.parentNode.classList !== element.classList)) {
+            if(lineNode.nodeName === 'LI' || lineNode === undefined) {
+                listNode = lineNode;
+            }
             lineNode = lineNode.parentNode;
         }
 
-        return lineNode;
+        return [lineNode, listNode];
     }
 
-    function getCountOfNewLine(element, lineNode) {
-        return Array.prototype.slice.call(element.childNodes).indexOf(lineNode);
-    }
-
-    function getCountOfNewLineOver(element, lineNode, countOfNewLine) {
-        const list = element.childNodes;
-
-        while (lineNode !== list[countOfNewLine]) {
+    function getCountOfNewLine(element, nodeList, countOfNewLine) {
+        const [lineNode, listNode] = nodeList;
+        
+        while (lineNode !== element[countOfNewLine] && listNode !== element[countOfNewLine]) {
             countOfNewLine++;
         }
 
         return countOfNewLine;
+    }
+
+    function getFlattenElement(element) {
+        if(element.querySelector("LI") === null) {
+            return element.childNodes;
+        } else{
+            let flattenList = [];
+            element.childNodes.forEach(function(node){
+                if(node.tagName === "DIV") {
+                    flattenList.push(node);
+                } else if(node.tagName === "OL" || node.tagName === "UL") {
+                    flattenList = getFlattenList(node, flattenList);
+                }
+            });
+            return flattenList;
+        }
+    }
+
+    function getFlattenList(nodeList, flattenList) {
+        nodeList.childNodes.forEach(function(node){
+            if(node.tagName === "LI") {
+                flattenList.push(node);
+            } else if(node.tagName === "OL" || node.tagName === "UL") {
+                flattenList = getFlattenList(node, flattenList);
+            }
+        });
+        return flattenList;
     }
 
     function setCaretPosition(element, start, end) {
@@ -88,9 +115,10 @@
             range = document.createRange(),
             sel = window.getSelection();
 
+        const flattenElement = getFlattenElement(element);
         textNodeList.forEach(function (textNode) {
             const nodeTextLength = textNode.textContent.length;
-            countOfNewLine = getCountOfNewLineOver(element, getLineNode(element, textNode), countOfNewLine);
+            countOfNewLine = getCountOfNewLine(flattenElement, getLineNode(element, textNode), countOfNewLine);
 
             if (start <= childTextLength + countOfNewLine + nodeTextLength && (startElement === null || startElement === undefined)) {
                 startOffset = start - (childTextLength + countOfNewLine);
@@ -268,7 +296,7 @@
         getCaretPosition: getStartAndEndCaretPosition,
         setCaretPosition: setCaretPosition,
         getTextNodeList: getTextNodeList,
-        getCountOfNewLineOver: getCountOfNewLineOver,
+        getCountOfNewLine: getCountOfNewLine,
         getLineNode: getLineNode,
         calcCaret: calcCaret
     };
