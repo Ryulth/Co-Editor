@@ -90,11 +90,11 @@ public class SimpleEditorService implements EditorService {
             responseDocsCommand.setSnapshotVersion(docs.getVersion());
             logger.info("버젼 충돌", requestClientVersion);
         }
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        // try {
+        //     Thread.sleep(1000);
+        // } catch (InterruptedException e) {
+        //     e.printStackTrace();
+        // }
         return objectMapper.writeValueAsString(responseDocsCommand);
     }
 
