@@ -1,5 +1,5 @@
 (function(){
-    const baseUrl = "http://10.77.34.205:8080";
+    const baseUrl = "http://10.77.34.204:8080";
     const coeditId = 2;//location.href.substr(location.href.lastIndexOf('?') + 1);
     const dmp = new diff_match_patch();
     const editorType = "docs";
@@ -97,6 +97,7 @@
             accountLogin(baseUrl,editorType,coeditId,clientSessionId);
             stompClient.subscribe(`/topic/${editorType}/${coeditId}`, function (content) {
                 let responseBody = JSON.parse(content.body);
+                console.log("receive");
                 receiveContent(responseBody);
             });
             stompClient.subscribe(`/topic/${editorType}/position/${coeditId}`, function(content){
@@ -172,14 +173,6 @@
             success: function (response) {
             }
         });
-    }
-
-    function isHangul(inputText){
-        const c = inputText.charCodeAt(0);
-        if( 0x1100<=c && c<=0x11FF ) return true;
-        if( 0x3130<=c && c<=0x318F ) return true;
-        if( 0xAC00<=c && c<=0xD7A3 ) return true;
-        return false;
     }
 
     function sendPatch(prev,current, isBuffer) {
