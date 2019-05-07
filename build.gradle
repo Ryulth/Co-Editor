@@ -42,5 +42,6 @@ dependencies {
     compile("org.webjars:bootstrap:3.3.7") // 클라용 js
     compile("org.webjars:jquery:3.1.0") // 클라용 js
     compile group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: '2.9.6' //jackson
-
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter-data-redis', version: '2.1.4.RELEASE' // redis
+    compile group: 'redis.clients', name: 'jedis', version: '2.9.0'
 }

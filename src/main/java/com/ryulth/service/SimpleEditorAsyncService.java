@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayDeque;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.Future;
 
 @Component
@@ -20,9 +21,10 @@ public class SimpleEditorAsyncService implements EditorAsyncService {
 
     private final static diff_match_patch dmp = new diff_match_patch();
 
+    //TODO 데이터 업데이트 요망
     @Override
     @Async
-    public Future<Boolean> updateDocsSnapshot(ArrayDeque<PatchInfo> patchInfos, Docs docs) {
+    public Future<Boolean> updateDocsSnapshot(List<PatchInfo> patchInfos, Docs docs) {
         logger.info("스냅샷 시작");
         String result = docs.getContent();
         Long lastVersion = docs.getVersion();
