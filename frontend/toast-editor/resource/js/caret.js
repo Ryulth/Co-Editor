@@ -82,10 +82,10 @@
         } else {
             let flattenList = [];
             element.childNodes.forEach(function(node) {
-                if (node.tagName === "DIV") {
-                    flattenList.push(node);
-                } else if (node.tagName === "OL" || node.tagName === "UL") {
+                if (node.tagName === "OL" || node.tagName === "UL") {
                     flattenList = getFlattenList(node, flattenList);
+                } else{
+                    flattenList.push(node);
                 }
             });
             return flattenList;
