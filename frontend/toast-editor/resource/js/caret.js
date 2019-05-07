@@ -77,30 +77,7 @@
     }
 
     function getFlattenElement(element) {
-        if (element.querySelector("LI") === null) {
-            return element.childNodes;
-        } else {
-            let flattenList = [];
-            element.childNodes.forEach(function(node) {
-                if (node.tagName === "DIV") {
-                    flattenList.push(node);
-                } else if (node.tagName === "OL" || node.tagName === "UL") {
-                    flattenList = getFlattenList(node, flattenList);
-                }
-            });
-            return flattenList;
-        }
-    }
-
-    function getFlattenList(nodeList, flattenList) {
-        nodeList.childNodes.forEach(function(node) {
-            if (node.tagName === "LI") {
-                flattenList.push(node);
-            } else if (node.tagName === "OL" || node.tagName === "UL") {
-                flattenList = getFlattenList(node, flattenList);
-            }
-        });
-        return flattenList;
+        return element.querySelectorAll("DIV, P, LI");
     }
 
     function setCaretPosition(element, start, end) {
