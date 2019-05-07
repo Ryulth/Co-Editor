@@ -1,5 +1,5 @@
 (function() {
-    const baseUrl = "http://10.77.34.203:8080";
+    const baseUrl = "http://10.77.34.204:8080";
     const coeditId = 2; //location.href.substr(location.href.lastIndexOf('?') + 1);
     const dmp = new diff_match_patch();
     const editorType = "docs";
