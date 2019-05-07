@@ -77,7 +77,30 @@
     }
 
     function getFlattenElement(element) {
-        return element.querySelectorAll("DIV, P, LI");
+        if (element.querySelector("LI") === null) {
+            return element.childNodes;
+        } else {
+            let flattenList = [];
+            element.childNodes.forEach(function(node) {
+                if (node.tagName === "OL" || node.tagName === "UL") {
+                    flattenList = getFlattenList(node, flattenList);
+                } else{
+                    flattenList.push(node);
+                }
+            });
+            return flattenList;
+        }
+    }
+
+    function getFlattenList(nodeList, flattenList) {
+        nodeList.childNodes.forEach(function(node) {
+            if (node.tagName === "LI") {
+                flattenList.push(node);
+            } else if (node.tagName === "OL" || node.tagName === "UL") {
+                flattenList = getFlattenList(node, flattenList);
+            }
+        });
+        return flattenList;
     }
 
     function setCaretPosition(element, start, end) {
