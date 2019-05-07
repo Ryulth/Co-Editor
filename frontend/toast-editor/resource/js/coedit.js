@@ -227,26 +227,40 @@
         for (var i = 0; i < convertedDiff.length - 1; i++) {
             const lastOpenTag = convertedDiff[i][1].lastIndexOf("<");
             const lastCloseTag = convertedDiff[i][1].lastIndexOf(">");
-            // 마지막에 < 로 열렸는데 >로 닫히지 않은 경우
-            if (lastCloseTag < lastOpenTag) {
-                let nextFirstCloseTag = convertedDiff[i + 1][1].indexOf(">") + 1;
-                convertedDiff[i][1] += convertedDiff[i + 1][1].substring(0, nextFirstCloseTag);
-                convertedDiff[i + 1][1] = convertedDiff[i + 1][1].substring(nextFirstCloseTag, convertedDiff[i + 1][1].length);
-
-                // 현재 마지막이 <br>로 끝나고 다음 줄 시작이 </div> 인 경우
-                const lastTag = convertedDiff[i][1].substring(convertedDiff[i][1].lastIndexOf("<"), convertedDiff[i][1].lastIndexOf(">") + 1);
-                if (lastTag === "<br>") {
-                    nextFirstCloseTag = convertedDiff[i + 1][1].indexOf(">") + 1;
-                    const nextFirstTag = convertedDiff[i + 1][1].substring(0, nextFirstCloseTag);
-                    if (nextFirstTag === "</div>") {
-                        convertedDiff[i][1] += "</div>";
-                        convertedDiff[i + 1][1] = convertedDiff[i + 1][1].substring(nextFirstCloseTag, convertedDiff[i + 1][1].length);
+            if(convertedDiff[i][0] !== -1) {
+                // 마지막에 < 로 열렸는데 >로 닫히지 않은 경우
+                if (lastCloseTag < lastOpenTag) {
+                    const nextIndex = getNextIndex(i + 1, convertedDiff);
+                    let nextFirstCloseTag = convertedDiff[nextIndex][1].indexOf(">") + 1;
+                    convertedDiff[i][1] += convertedDiff[nextIndex][1].substring(0, nextFirstCloseTag);
+                    convertedDiff[nextIndex][1] = convertedDiff[nextIndex][1].substring(nextFirstCloseTag, convertedDiff[nextIndex][1].length);
+    
+                    // 현재 마지막이 <br>로 끝나고 다음 줄 시작이 </div> 인 경우
+                    const lastTag = convertedDiff[i][1].substring(convertedDiff[i][1].lastIndexOf("<"), convertedDiff[i][1].lastIndexOf(">") + 1);
+                    if (lastTag === "<br>") {
+                        nextFirstCloseTag = convertedDiff[nextIndex][1].indexOf(">") + 1;
+                        const nextFirstTag = convertedDiff[nextIndex][1].substring(0, nextFirstCloseTag);
+                        if (nextFirstTag === "</div>" || nextFirstTag === "</li>") {
+                            convertedDiff[i][1] += nextFirstTag;
+                            convertedDiff[nextIndex][1] = convertedDiff[nextIndex][1].substring(nextFirstCloseTag, convertedDiff[nextIndex][1].length);
+                        }
                     }
+                }
+            } else {
+                if (lastCloseTag < lastOpenTag) {
+                    convertedDiff[i][1] = "<" + convertedDiff[i][1] + ">";
                 }
             }
 
         }
         return convertedDiff;
+    }
+
+    function getNextIndex(index, convertedDiff) {
+        while (convertedDiff[index][0] === -1) {
+            index++;
+        }
+        return index;
     }
 
     function receiveContent(responseBody) {
@@ -289,6 +303,9 @@
         editor.innerHTML = target;
         const convertedDiff = checkValidDiff(diff);
         const makeCustomDiffs = makeCustomDiff(convertedDiff);
+        console.log("Diff, ", diff);
+        console.log("convertedDiff, ", convertedDiff);
+        console.log("customDiff, ", makeCustomDiffs);
         const [clacStartCaret, clacEndCaret] = Caret.calcCaret(makeCustomDiffs, startCaret, endCaret);
         Caret.setCaretPosition(editor, clacStartCaret, clacEndCaret);
     }
@@ -311,6 +328,7 @@
 
     function removeTags(text) {
         return text.replace(/<\/div>/ig, " ")
+            .replace(/<\/li>/ig, " ")
             .replace(/&nbsp;/gi, " ")
             .replace(/<(\/)?([a-zA-Z]*)(\s[a-zA-Z]*=[^>]*)?(\s)*(\/)?>/ig, "");
     }
