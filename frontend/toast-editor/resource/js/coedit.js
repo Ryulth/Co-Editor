@@ -271,7 +271,10 @@
         const receiveSessionId = responseBody.socketSessionId;
         const responsePatcheInfos = responseBody.patchInfos;
         const originHTML = editor.innerHTML;
-        let result;
+        let result
+        if(responseBody.serverVersion <= clientVersion){
+            return;
+        }
         if (receiveSessionId === clientSessionId) {
             if (responsePatcheInfos.length > 1) { // 꼬여서 다시 부를 떄
                 result = patchDocs(responsePatcheInfos, responseBody.snapshotText, responseBody.snapshotVersion);
@@ -303,9 +306,6 @@
         editor.innerHTML = target;
         const convertedDiff = checkValidDiff(diff);
         const makeCustomDiffs = makeCustomDiff(convertedDiff);
-        console.log("Diff, ", diff);
-        console.log("convertedDiff, ", convertedDiff);
-        console.log("customDiff, ", makeCustomDiffs);
         const [clacStartCaret, clacEndCaret] = Caret.calcCaret(makeCustomDiffs, startCaret, endCaret);
         Caret.setCaretPosition(editor, clacStartCaret, clacEndCaret);
     }
