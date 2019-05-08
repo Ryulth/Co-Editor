@@ -59,10 +59,11 @@
         while ((lineNode.parentNode.id !== element.id) || (lineNode.parentNode.classList !== element.classList)) {
             if (lineNode.nodeName === 'LI' || lineNode === undefined) {
                 listNode = lineNode;
+            } else if((lineNode.nodeName === 'TH' || lineNode.nodeName === 'TD') || lineNode === undefined){
+                listNode = lineNode;
             }
             lineNode = lineNode.parentNode;
         }
-
         return [lineNode, listNode];
     }
 
@@ -83,24 +84,15 @@
             let flattenList = [];
             element.childNodes.forEach(function(node) {
                 if (node.tagName === "OL" || node.tagName === "UL") {
-                    flattenList = getFlattenList(node, flattenList);
+                    flattenList = flattenList.concat(Array.prototype.slice.call(node.querySelectorAll("LI")));
+                } else if(node.tagName === "TABLE"){
+                    flattenList = flattenList.concat(Array.prototype.slice.call(node.querySelectorAll("TH, TD")));
                 } else{
                     flattenList.push(node);
                 }
             });
             return flattenList;
         }
-    }
-
-    function getFlattenList(nodeList, flattenList) {
-        nodeList.childNodes.forEach(function(node) {
-            if (node.tagName === "LI") {
-                flattenList.push(node);
-            } else if (node.tagName === "OL" || node.tagName === "UL") {
-                flattenList = getFlattenList(node, flattenList);
-            }
-        });
-        return flattenList;
     }
 
     function setCaretPosition(element, start, end) {
