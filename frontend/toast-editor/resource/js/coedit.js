@@ -271,7 +271,10 @@
         const receiveSessionId = responseBody.socketSessionId;
         const responsePatcheInfos = responseBody.patchInfos;
         const originHTML = editor.innerHTML;
-        let result;
+        let result
+        if(responseBody.serverVersion <= clientVersion){
+            return;
+        }
         if (receiveSessionId === clientSessionId) {
             if (responsePatcheInfos.length > 1) { // 꼬여서 다시 부를 떄
                 result = patchDocs(responsePatcheInfos, responseBody.snapshotText, responseBody.snapshotVersion);
