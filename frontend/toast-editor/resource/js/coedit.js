@@ -150,7 +150,7 @@
 
     function inputAction() {
         if (synchronized) {
-            sendPatch(prevText, editor.innerHTML, false);
+            sendPatch(prevText, editor.innerHTML);
         }
     }
 
@@ -178,7 +178,7 @@
         });
     }
 
-    function sendPatch(prev, current, isBuffer) {
+    function sendPatch(prev, current) {
         const diff = dmp.diff_main(prev, current, true);
         dmp.diff_cleanupSemantic(diff);
         if ((diff.length > 1) || (diff.length === 1 && diff[0][0] !== 0)) { // 1 이상이어야 변경 한 것이 있음
@@ -286,7 +286,7 @@
                 clientVersion = responsePatcheInfos[0].patchVersion;
             }
             synchronized = true;
-            sendPatch(prevText, originHTML, true);
+            sendPatch(prevText, originHTML);
             updatePrevText();
         } else if (synchronized) {
             if (responsePatcheInfos.length > 1) { // 꼬여서 다시 부를 떄
