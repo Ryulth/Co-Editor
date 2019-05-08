@@ -46,17 +46,22 @@ public class SimpleEditorService implements EditorService {
         Long docsId = requestDocsCommand.getDocsId();
         Long requestClientVersion = requestDocsCommand.getClientVersion();
         String patchText = requestDocsCommand.getPatchText();
+        System.out.println("1");
         List<PatchInfo> patchInfoList = lop.range(PATCHES_MAP + docsId, 0, -1);
+        System.out.println(patchInfoList.get(0));
         Long serverVersion = ((PatchInfo) lop.index(PATCHES_MAP + docsId, -1)).getPatchVersion();
+        System.out.println("3");
         PatchInfo newPatchInfo2 = PatchInfo.builder()
                 .patchText(patchText).clientSessionId(requestDocsCommand.getSocketSessionId())
                 .remoteAddress(remoteAddr)
                 .patchVersion(serverVersion + 1)
                 .build();
+        System.out.println("4");
         lop.rightPush(PATCHES_MAP + docsId, newPatchInfo2);
         patchInfoList.add(newPatchInfo2);
         patchInfoList.remove(0);
         boolean isUpdating = (boolean) vop.get(IS_UPDATING + docsId);
+        System.out.println("5");
         if (patchInfoList.size() > SNAPSHOT_CYCLE && !isUpdating) {
             vop.set(IS_UPDATING + docsId, true);
             Docs docs = (Docs) vop.get(DOCS_MAP + docsId);
@@ -90,14 +95,12 @@ public class SimpleEditorService implements EditorService {
     @Override
     public String getDocsOne(Long docsId) throws JsonProcessingException {
         ValueOperations vop = redisTemplate.opsForValue();
-        ListOperations lop = redisTemplate.opsForList();
         ResponseDocsInit responseDocsInit;
         Docs docs = (Docs) vop.get(DOCS_MAP + docsId);
         if (docs == null) {
             docs = docsRepository.findById(docsId).orElse(null);
             vop.set(DOCS_MAP + docsId, docs);
         }
-        checkSyncMap(docsId);
         responseDocsInit = ResponseDocsInit.builder()
                 .docs(docs)
                 .patchInfos(getPatches(docs, docsId)).build();
@@ -108,30 +111,24 @@ public class SimpleEditorService implements EditorService {
     public void patchesAll(Long docsId) {
         ValueOperations vop = redisTemplate.opsForValue();
         ListOperations lop = redisTemplate.opsForList();
-
-        Docs docs = (Docs) vop.get(DOCS_MAP + docsId);
-        List<PatchInfo> patchInfoList = lop.range(PATCHES_MAP + docsId, 0, -1);
-        Future<Boolean> future = editorAsyncService.updateDocsSnapshot(patchInfoList, docs);
-        while (true) {
-            if (future.isDone()) {
-                docsRepository.save(docs);
-                break;
-            }
+        checkSyncMap(docsId);
+        synchronized (syncDocs.get(docsId)) {
+//            Docs docs = (Docs) vop.get(DOCS_MAP + docsId);
+//            List<PatchInfo> patchInfoList = lop.range(PATCHES_MAP + docsId, 0, -1);
+//            Future<Boolean> future = editorAsyncService.updateDocsSnapshot(patchInfoList, docs);
+//            while (true) {
+//                if (future.isDone()) {
+//                    docsRepository.save(docs);
+//                    break;
+//                }
+//            }
         }
-
     }
 
     private List<PatchInfo> getPatches(Docs finalDocs, Long docsId) {
         ValueOperations vop = redisTemplate.opsForValue();
-        ListOperations lop = redisTemplate.opsForList();
-        List<PatchInfo> patchInfoList = lop.range(PATCHES_MAP + docsId, 0, -1);
         long startNanos = System.nanoTime();
-        if(0 == patchInfoList.size()) {
-            synchronized (syncDocs.get(docsId)) {
-                initList(finalDocs, docsId);
-            }
-            patchInfoList = lop.range(PATCHES_MAP + docsId, 0, -1);
-        }
+        List<PatchInfo> patchInfoList = getPachestList(finalDocs, docsId);
         System.out.println(docsId + "TIME     " + TimeUnit.MILLISECONDS.convert(System.nanoTime() - startNanos, TimeUnit.NANOSECONDS));
         if (finalDocs.getVersion() < patchInfoList.get(patchInfoList.size() - 1).getPatchVersion()) {
             patchInfoList.removeIf(p -> (p.getPatchVersion() < finalDocs.getVersion()));
@@ -139,21 +136,26 @@ public class SimpleEditorService implements EditorService {
         if (vop.get(IS_UPDATING + docsId) == null) {
             vop.set(IS_UPDATING + docsId, false);
         }
-
         return patchInfoList;
     }
 
-    private void initList(Docs finalDocs, Long docsId) {
+    private List<PatchInfo> getPachestList(Docs finalDocs, Long docsId) {
         ListOperations lop = redisTemplate.opsForList();
-        if (lop.range(PATCHES_MAP + docsId, 0, -1).size() == 0) {
-            List<PatchInfo> patchInfoList = new ArrayList<>();
-            PatchInfo initPatchInfo = PatchInfo.builder().patchText("").patchVersion(finalDocs.getVersion()).remoteAddress("").build();
-            patchInfoList.add(initPatchInfo);
-            lop.rightPush(PATCHES_MAP + docsId, initPatchInfo);
+        checkSyncMap(docsId);
+        System.out.println("comon");
+        synchronized (syncDocs.get(docsId)) {
+            System.out.println("test");
+            if (lop.range(PATCHES_MAP + docsId, 0, -1).size() == 0) {
+                PatchInfo initPatchInfo = PatchInfo.builder().patchText("").patchVersion(finalDocs.getVersion()).remoteAddress("").build();
+                lop.rightPush(PATCHES_MAP + docsId, initPatchInfo);
+            }
+            System.out.println("test2");
+            return lop.range(PATCHES_MAP + docsId, 0, -1);
         }
     }
-    private void checkSyncMap(Long docsId){
-        if(syncDocs.get(docsId) == null){
+
+    private void checkSyncMap(Long docsId) {
+        if (syncDocs.get(docsId) == null) {
             syncDocs.putIfAbsent(docsId, true);
         }
     }
