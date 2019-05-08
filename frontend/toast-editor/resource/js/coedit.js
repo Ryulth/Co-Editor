@@ -303,9 +303,6 @@
         editor.innerHTML = target;
         const convertedDiff = checkValidDiff(diff);
         const makeCustomDiffs = makeCustomDiff(convertedDiff);
-        console.log("Diff, ", diff);
-        console.log("convertedDiff, ", convertedDiff);
-        console.log("customDiff, ", makeCustomDiffs);
         const [clacStartCaret, clacEndCaret] = Caret.calcCaret(makeCustomDiffs, startCaret, endCaret);
         Caret.setCaretPosition(editor, clacStartCaret, clacEndCaret);
     }
@@ -328,9 +325,10 @@
 
     function removeTags(text) {
         return text.replace(/<\/div>/ig, " ")
-            .replace(/<\/li>/ig, " ")
-            .replace(/&nbsp;/gi, " ")
-            .replace(/<(\/)?([a-zA-Z]*)(\s[a-zA-Z]*=[^>]*)?(\s)*(\/)?>/ig, "");
+        .replace(/<\/li>/ig, " ")
+        .replace(/&nbsp;/gi, " ")
+        .replace(/<(\/)?([a-zA-Z]*)(\s[a-zA-Z]*=[^>]*)?(\s)*(\/)?>/ig, "")
+        .replace(/(<([^>]+)>)/ig,"");
     }
 
     function disconnect() {
