@@ -78,7 +78,7 @@
     }
 
     function getFlattenElement(element) {
-        if (element.querySelector("LI") === null) {
+        if (element.querySelector("LI, TH, TD") === null) {
             return element.childNodes;
         } else {
             let flattenList = [];

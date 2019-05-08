@@ -328,6 +328,8 @@
 
     function removeTags(text) {
         return text.replace(/<\/div>/ig, " ")
+        .replace(/<\/th>/ig, " ")
+        .replace(/<\/td>/ig, " ")
         .replace(/<\/li>/ig, " ")
         .replace(/&nbsp;/gi, " ")
         .replace(/<(\/)?([a-zA-Z]*)(\s[a-zA-Z]*=[^>]*)?(\s)*(\/)?>/ig, "")
