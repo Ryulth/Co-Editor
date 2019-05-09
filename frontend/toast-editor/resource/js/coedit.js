@@ -1,5 +1,5 @@
 (function() {
-    const baseUrl = "http://10.77.34.203:8080";
+    const baseUrl = "http://10.77.34.205:8080";
     const coeditId = 2; //location.href.substr(location.href.lastIndexOf('?') + 1);
     const dmp = new diff_match_patch();
     const editorType = "docs";
@@ -24,19 +24,13 @@
             tuiEditor.eventManager.listen("keydown", keydownAction)
             tuiEditor.eventManager.listen("change", inputAction);
             tuiEditor.eventManager.listen("keyup", keyupAction);
-
-            editor.addEventListener("input", function(e) {
-                isComposing = e.isComposing;
-                if (isComposing) {
-                    setComposingCaret();
-                }
-            })
             editor.addEventListener("compositionstart", function(e) {
                 isComposing = true;
             })
             editor.addEventListener("compositionupdate", function(e) {
                 isComposing = true;
             })
+            tuiEditor.eventManager.listen("wysiwygRangeChangeAfter", inputAction);
             editor.addEventListener("compositionend", function(e) {
                 isComposing = false;
                 const [startCaret, endCaret] = Caret.getCaretPosition(editor);
