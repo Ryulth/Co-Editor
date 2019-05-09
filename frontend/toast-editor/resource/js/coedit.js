@@ -24,6 +24,14 @@
             tuiEditor.eventManager.listen("keydown", keydownAction)
             tuiEditor.eventManager.listen("change", inputAction);
             tuiEditor.eventManager.listen("keyup", keyupAction);
+
+            editor.addEventListener("input", function(e) {
+                isComposing = e.isComposing;
+                if (isComposing) {
+                    setComposingCaret();
+                }
+            })
+            
             editor.addEventListener("compositionstart", function(e) {
                 isComposing = true;
             })
