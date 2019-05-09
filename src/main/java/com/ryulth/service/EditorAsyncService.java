@@ -10,5 +10,5 @@ import java.util.concurrent.Future;
 
 @Service
 public interface EditorAsyncService {
-    Future<Boolean> updateDocsSnapshot(List<PatchInfo> patchInfos, Docs docs);
+    Future<Boolean> updateDocsSnapshot(ArrayDeque<PatchInfo> patchInfos, Docs docs);
 }

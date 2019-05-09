@@ -112,6 +112,7 @@
                 let content = responseDoc.content;
                 clientVersion = responseDoc.version;
                 const responsePatches = responseBody.patchInfos;
+                console.log(responsePatches)
                 if (responsePatches.length >= 1) {
                     content = patchDocs(responsePatches, content, clientVersion);
                 }
