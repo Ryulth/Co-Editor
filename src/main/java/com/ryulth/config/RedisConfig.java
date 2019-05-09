@@ -33,16 +33,16 @@ public class RedisConfig {
     @SuppressWarnings("deprecation")
     @Bean
     public JedisConnectionFactory jedisConnectionFactory(JedisPoolConfig jedisPoolConfig) {
-//        RedisStandaloneConfiguration redisStandaloneConfiguration = new RedisStandaloneConfiguration(redisHost,redisPort);
-//        redisStandaloneConfiguration.setPassword(RedisPassword.of(password));
-//
-//        JedisClientConfiguration.JedisClientConfigurationBuilder jedisClientConfigurationBuilder = JedisClientConfiguration.builder();
-//        jedisClientConfigurationBuilder.connectTimeout(Duration.ofSeconds(1));
-//        JedisConnectionFactory jedisConnectionFactory = new JedisConnectionFactory(redisStandaloneConfiguration, jedisClientConfigurationBuilder.build());
-        JedisConnectionFactory jedisConnectionFactory = new JedisConnectionFactory(jedisPoolConfig);
-        jedisConnectionFactory.setHostName(redisHost);
-        jedisConnectionFactory.setPort(redisPort);
-        jedisConnectionFactory.setPassword(password);
+        RedisStandaloneConfiguration redisStandaloneConfiguration = new RedisStandaloneConfiguration(redisHost,redisPort);
+        redisStandaloneConfiguration.setPassword(RedisPassword.of(password));
+
+        JedisClientConfiguration.JedisClientConfigurationBuilder jedisClientConfigurationBuilder = JedisClientConfiguration.builder();
+        jedisClientConfigurationBuilder.connectTimeout(Duration.ofSeconds(1));
+        JedisConnectionFactory jedisConnectionFactory = new JedisConnectionFactory(redisStandaloneConfiguration, jedisClientConfigurationBuilder.build());
+//        JedisConnectionFactory jedisConnectionFactory = new JedisConnectionFactory(jedisPoolConfig);
+//        jedisConnectionFactory.setHostName(redisHost);
+//        jedisConnectionFactory.setPort(redisPort);
+//        jedisConnectionFactory.setPassword(password);
 
         return jedisConnectionFactory;
     }

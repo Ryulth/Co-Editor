@@ -16,5 +16,5 @@ import java.util.List;
 @AllArgsConstructor(onConstructor = @__(@JsonIgnore)) // Lombok builder use this
 public class ResponseDocsInit {
     Docs docs;
-    List<PatchInfo> patchInfos;
+    ArrayDeque<PatchInfo> patchInfos;
 }
