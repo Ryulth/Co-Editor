@@ -21,5 +21,5 @@ public class ResponseDocsCommand {
     Long snapshotVersion;
     String patchText;
     String snapshotText;
-    List<PatchInfo> patchInfos;
+    ArrayDeque<PatchInfo> patchInfos;
 }
