@@ -333,11 +333,8 @@
         const diff = dmp.diff_main(source, target, true);
         dmp.diff_cleanupSemantic(diff);
         editor.innerHTML = target;
-        console.log("Diff, ", diff)
         const convertedDiff = checkValidDiff(diff);
         const makeCustomDiffs = makeCustomDiff(convertedDiff);
-        console.log("convertedDiff, ", convertedDiff)
-        console.log("customDiff, ", makeCustomDiffs)
         const [clacStartCaret, clacEndCaret] = Caret.calcCaret(makeCustomDiffs, startCaret, endCaret);
         Caret.setCaretPosition(editor, clacStartCaret, clacEndCaret);
     }
@@ -359,13 +356,13 @@
     }
 
     function removeTags(text) {
-        return text.replace(/<\/div>/ig, " ")
-        .replace(/<\/th>/ig, " ")
-        .replace(/<\/td>/ig, " ")
-        .replace(/<\/li>/ig, " ")
-        .replace(/&nbsp;/gi, " ")
-        .replace(/<(\/)?([a-zA-Z]*)(\s[a-zA-Z]*=[^>]*)?(\s)*(\/)?>/ig, "")
-        .replace(/(<([^>]+)>)/ig,"");
+        return $('<textarea/>').html(text.replace(/<\/div>/ig, " ")
+            .replace(/<\/th>/ig, " ")
+            .replace(/<\/td>/ig, " ")
+            .replace(/<\/li>/ig, " ")
+            .replace(/&nbsp;/gi, " ")
+            .replace(/<(\/)?([a-zA-Z]*)(\s[a-zA-Z]*=[^>]*)?(\s)*(\/)?>/ig, "")
+            .replace(/(<([^>]+)>)/ig,"")).text();
     }
 
     function disconnect() {
