@@ -1,5 +1,5 @@
 (function() {
-    const baseUrl = "http://10.77.34.205:8080";
+    const baseUrl = "http://10.77.34.203:8080";
     const coeditId = 2; //location.href.substr(location.href.lastIndexOf('?') + 1);
     const dmp = new diff_match_patch();
     const editorType = "docs";
@@ -224,41 +224,6 @@
         return res;
     }
 
-    // function checkValidDiff(diff) {
-    //     let convertedDiff = diff;
-    //     for (var i = 0; i < convertedDiff.length - 1; i++) {
-    //         const lastOpenTag = convertedDiff[i][1].lastIndexOf("<");
-    //         const lastCloseTag = convertedDiff[i][1].lastIndexOf(">");
-    //         if(convertedDiff[i][0] !== -1) {
-    //             // 마지막에 < 로 열렸는데 >로 닫히지 않은 경우
-    //             if (lastCloseTag < lastOpenTag) {
-    //                 const nextIndex = getNextIndex(i + 1, convertedDiff);
-    //                 let nextFirstCloseTag = convertedDiff[nextIndex][1].indexOf(">") + 1;
-    //                 convertedDiff[i][1] += convertedDiff[nextIndex][1].substring(0, nextFirstCloseTag);
-    //                 convertedDiff[nextIndex][1] = convertedDiff[nextIndex][1].substring(nextFirstCloseTag, convertedDiff[nextIndex][1].length);
-    
-    //                 // 현재 마지막이 <br>로 끝나고 다음 줄 시작이 </div> 인 경우
-    //                 const lastTag = convertedDiff[i][1].substring(convertedDiff[i][1].lastIndexOf("<"), convertedDiff[i][1].lastIndexOf(">") + 1);
-    //                 if (lastTag === "<br>") {
-    //                     nextFirstCloseTag = convertedDiff[nextIndex][1].indexOf(">") + 1;
-    //                     const nextFirstTag = convertedDiff[nextIndex][1].substring(0, nextFirstCloseTag);
-    //                     if (nextFirstTag === "</div>" || nextFirstTag === "</li>") {
-    //                         convertedDiff[i][1] += nextFirstTag;
-    //                         convertedDiff[nextIndex][1] = convertedDiff[nextIndex][1].substring(nextFirstCloseTag, convertedDiff[nextIndex][1].length);
-    //                     }
-    //                 }
-    //             }
-    //         } else {
-    //             if (lastCloseTag < lastOpenTag) {
-    //                 convertedDiff[i][1] = "<" + convertedDiff[i][1] + ">";
-    //             }
-    //         }
-
-    //     }
-    //     return convertedDiff;
-    // }
-    
-    // TODO: UL 태그 일떄 검증하기
     function checkValidDiff(diff) {
         let convertedDiff = diff;
         for (var i = 0; i < convertedDiff.length - 1; i++) {
@@ -267,7 +232,7 @@
                 // 마지막에 < 로 열렸는데 >로 닫히지 않은 경우
                 if (lastCloseTag < lastOpenTag) {
                     // < 일때는 내리고, </ 일때는 올린다.
-                    const nextIndex = getNextIndex(i + 1, convertedDiff);
+                    const nextIndex = i + 1;
                     if (lastOpenTag + 1 < convertedDiff[i][1].length && convertedDiff[i][1].substring(lastOpenTag, lastOpenTag + 1) === "</") {
                         // </ 일때 ==> 올린다.
                         let nextFirstCloseTag = convertedDiff[nextIndex][1].indexOf(">") + 1;
@@ -285,12 +250,6 @@
         return convertedDiff;
     }
 
-    function getNextIndex(index, convertedDiff) {
-        // while (convertedDiff[index][0] === -1) {
-        //     index++;
-        // }
-        return index;
-    }
 
     function receiveContent(responseBody) {
         if (isComposing && pprevText !== editor.innerHTML) {
