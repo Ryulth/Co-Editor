@@ -292,6 +292,7 @@
         const diff = dmp.diff_main(source, target, true);
         dmp.diff_cleanupSemantic(diff);
         editor.innerHTML = target;
+        Caret.setCaretPosition(editor, startCaret, endCaret);
         const convertedDiff = checkValidDiff(diff);
         const makeCustomDiffs = makeCustomDiff(convertedDiff);
         const [clacStartCaret, clacEndCaret] = Caret.calcCaret(makeCustomDiffs, startCaret, endCaret);
