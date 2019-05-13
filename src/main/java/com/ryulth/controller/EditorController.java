@@ -3,6 +3,7 @@ package com.ryulth.controller;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.ryulth.pojo.request.RequestDocsCommand;
 import com.ryulth.service.EditorService;
+import io.swagger.annotations.ApiOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +29,7 @@ public class EditorController {
 
     @CrossOrigin("*")
     @PostMapping("/docs/{docsId}")
+    @ApiOperation(value="editDocs API", notes="문서 작업이 진행되는 API")
     public void editDocs(@PathVariable Long docsId, @RequestBody RequestDocsCommand requestDocsCommnad,
                          HttpServletRequest request) throws JsonProcessingException, InterruptedException {
         this.simpMessagingTemplate.convertAndSend("/topic/docs/" + docsId,
