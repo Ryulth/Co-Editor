@@ -205,15 +205,15 @@
                         insertString = "";
                         deleteString = "";
                     }
-                    idx += removeTags(element[1]).length;
+                    idx += element[1].length;
                     break;
                 case -1: // delete
                     isCycle = true;
-                    deleteString = removeTags(element[1]);
+                    deleteString = element[1];
                     break;
                 case 1: // insert
                     isCycle = true;
-                    insertString = removeTags(element[1]);
+                    insertString = element[1];
                     break;
             }
         });
@@ -222,50 +222,6 @@
 
         }
         return res;
-    }
-
-    function checkValidDiff(diff) {
-        let convertedDiff = diff;
-        for (var i = 0; i < convertedDiff.length - 1; i++) {
-            const lastOpenTag = convertedDiff[i][1].lastIndexOf("<");
-            const lastCloseTag = convertedDiff[i][1].lastIndexOf(">");
-                // 마지막에 < 로 열렸는데 >로 닫히지 않은 경우
-                if (lastCloseTag < lastOpenTag) {
-                    // < 일때는 내리고, </ 일때는 올린다.
-                    const [isDiffEqual, nextIndex] = getNextIndex(i, convertedDiff);
-                    if (lastOpenTag + 1 < convertedDiff[i][1].length && convertedDiff[i][1].substring(lastOpenTag, lastOpenTag + 2) === "</") {
-                        // </ 일때 ==> 올린다.
-                        let nextFirstCloseTag = convertedDiff[nextIndex][1].indexOf(">") + 1;
-                        convertedDiff[i][1] += convertedDiff[nextIndex][1].substring(0, nextFirstCloseTag);
-                        if(isDiffEqual || i + 1 === nextIndex) {
-                            convertedDiff[nextIndex][1] = convertedDiff[nextIndex][1].substring(nextFirstCloseTag, convertedDiff[nextIndex][1].length);
-                        }
-                    } else {
-                        // < 일때 ==> 내린다.
-                        if(isDiffEqual || i + 1 === nextIndex) {
-                            convertedDiff[nextIndex][1] = convertedDiff[i][1].substring(lastOpenTag, convertedDiff[i][1].length) + convertedDiff[nextIndex][1];
-                            if (nextIndex + 1 < convertedDiff.length && convertedDiff[nextIndex + 1][0] !== 0) {
-                                convertedDiff[nextIndex + 1][1] = convertedDiff[i][1].substring(lastOpenTag, convertedDiff[i][1].length) + convertedDiff[nextIndex + 1][1];
-                            }
-                        }
-                        convertedDiff[i][1] = convertedDiff[i][1].substring(0, lastOpenTag);
-                    }
-                }
-            }
-        
-        return convertedDiff;
-    }
-
-    function getNextIndex(index, convertedDiff) {
-        if(convertedDiff[index][0] === 0) {
-            return [true, index + 1];
-        } else{
-            index++;
-            while(convertedDiff[index][0] !== 0 && index < convertedDiff.length) {
-            index++;
-        }
-            return [false, index];
-        }
     }
 
     function receiveContent(responseBody) {
@@ -306,12 +262,11 @@
 
     function setCaretPositionFromDiff(source, target) {
         const [startCaret, endCaret] = Caret.getCaretPosition(editor);
-        const diff = dmp.diff_main(source, target, true);
+        const diff = dmp.diff_main(removeTags(source), removeTags(target), true);
         dmp.diff_cleanupSemantic(diff);
         editor.innerHTML = target;
         Caret.setCaretPosition(editor, startCaret, endCaret);
-        const convertedDiff = checkValidDiff(diff);
-        const makeCustomDiffs = makeCustomDiff(convertedDiff);
+        const makeCustomDiffs = makeCustomDiff(diff);
         const [clacStartCaret, clacEndCaret] = Caret.calcCaret(makeCustomDiffs, startCaret, endCaret);
         Caret.setCaretPosition(editor, clacStartCaret, clacEndCaret);
     }
@@ -420,7 +375,6 @@
     const coedit = {
         setEditor: setEditor,
         disconnect: disconnect,
-        checkValidDiff: checkValidDiff
     };
 
     if (typeof define === 'function' && define.amd) {
