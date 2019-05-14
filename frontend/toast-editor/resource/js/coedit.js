@@ -31,6 +31,16 @@
                     setComposingCaret();
                 }
             })
+            tuiEditor.eventManager.listen('command', function(e, argument){
+                // 테이블과 헤딩태그 추가 팝업창의 경우 기능 완료 후 안닫히는 문제가 있었음
+                console.log(e);
+                console.log(argument);
+                if(e === 'Table'){
+                    tuiEditor._ui._popups[2].hide();
+                } else if(e === 'Heading'){
+                    tuiEditor._ui._popups[3].hide();
+                }
+            })
             
             editor.addEventListener("compositionstart", function(e) {
                 isComposing = true;
@@ -261,6 +271,26 @@
     }
 
     function setCaretPositionFromDiff(source, target) {
+        // innerHTML을 업데이트하면 열려있던 팝업창이 닫혀 기존에 열려있는 팝업창을 저장해야함
+        let popupModal = {};
+        for(tempPopupModal of tuiEditor._ui._popups){
+            if(tempPopupModal.isShow()){
+                popupModal.$el = tempPopupModal;
+                if(tempPopupModal._id === 25){
+                    // URL 링크
+                    popupModal.$data.$linkText = tempPopupModal._inputText.value;
+                    popupModal.$data.$linkUrl = tempPopupModal._inputURL.value;
+                } else if(tempPopupModal.id === 26){
+                    // 이미지
+                    popupModal.$data.$imageUrl = tempPopupModal._$imageUrlInput.val();
+                    popupModal.$data.$description = tempPopupModal._$altTextInput.val();
+                }
+                const sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(tuiEditor.wwEditor.getEditor().getSelection());
+            }
+        }
+
         const [startCaret, endCaret] = Caret.getCaretPosition(editor);
         const diff = dmp.diff_main(removeTags(source), removeTags(target), true);
         dmp.diff_cleanupSemantic(diff);
@@ -269,6 +299,20 @@
         const makeCustomDiffs = makeCustomDiff(diff);
         const [clacStartCaret, clacEndCaret] = Caret.calcCaret(makeCustomDiffs, startCaret, endCaret);
         Caret.setCaretPosition(editor, clacStartCaret, clacEndCaret);
+
+        // 저장 된 팝업창을 다시 열어줘야함.
+        if(popupModal.$el !== undefined){
+            popupModal.$el.show();
+            if(popupModal.$el._id === 25){
+                // URL 링크
+                popupModal.$el._inputText.value = popupModal.$data.$linkText;
+                popupModal.$el._inputURL.value = popupModal.$data.$linkUrl;
+            } else if(popupModal.$el.id === 26){
+                // 이미지
+                popupModal.$el._$imageUrlInput.val(popupModal.$data.$imageUrl);
+                popupModal.$el._$altTextInput.val(popupModal.$data.$description);
+            }
+        }
     }
 
     function patchDocs(responsePatches, content, startClientVersion) {
