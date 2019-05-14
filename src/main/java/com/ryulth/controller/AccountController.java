@@ -2,13 +2,18 @@ package com.ryulth.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.ryulth.pojo.model.Account;
+import com.ryulth.pojo.model.PatchInfo;
 import com.ryulth.service.AccountService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
+import org.springframework.data.redis.connection.stream.ObjectRecord;
+import org.springframework.data.redis.connection.stream.ReadOffset;
+import org.springframework.data.redis.connection.stream.StreamOffset;
 import org.springframework.data.redis.core.ListOperations;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StreamOperations;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
@@ -58,24 +63,9 @@ public class AccountController {
 
     @GetMapping("/redisTest")
     public void redisTest() {
-        ValueOperations vop = redisTemplate.opsForValue();
-        ListOperations lop = redisTemplate.opsForList();
-        List a = lop.range("test", 1, 200);
-        System.out.println(a);
-        vop.set("jdkSerial", "jdk");
-        temp += 1;
-        lop.rightPush("test", temp);
-        String result = (String) vop.get("jdkSerial");
-        int result2 = (int) lop.index("test", -1);
-        System.out.println(result);//jdk
-        System.out.println(result2);//jdk
-        System.out.println(lop.size("test"));
-        Account account = Account.builder().clientSessionId("sessionid").remoteAddress(String.valueOf(temp)).build();
-        lop.rightPush("account", account);
-        Account account2 = (Account) lop.index("account", -1);
-        List<Account> accounts = lop.range("account", 1, 200);
-        System.out.println(account2);
-        System.out.println(accounts);
-        System.out.println(accounts.get(0).getClientSessionId());
+        StreamOperations sop = redisTemplate.opsForStream();
+        List<ObjectRecord<String, PatchInfo>> objectRecords = sop
+                .read(PatchInfo.class, StreamOffset.create("editor:patches:2", ReadOffset.from("2-53755")));
+        System.out.println(objectRecords);
     }
 }

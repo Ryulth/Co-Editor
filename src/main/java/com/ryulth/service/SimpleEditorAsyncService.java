@@ -9,8 +9,8 @@ import org.springframework.scheduling.annotation.AsyncResult;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayDeque;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.Future;
 
 @Component
@@ -23,7 +23,7 @@ public class SimpleEditorAsyncService implements EditorAsyncService {
     //TODO 데이터 업데이트 요망
     @Override
     @Async
-    public Future<Boolean> updateDocsSnapshot(ArrayDeque<PatchInfo> patchInfoList, Docs docs) {
+    public Future<Boolean> updateDocsSnapshot(List<PatchInfo> patchInfoList, Docs docs) {
         logger.info("스냅샷 시작");
         String result = docs.getContent();
         Long lastVersion = docs.getVersion();
@@ -35,12 +35,10 @@ public class SimpleEditorAsyncService implements EditorAsyncService {
                 lastVersion = patchInfo.getPatchVersion();
             }
         }
-        synchronized (docs) {
-            docs.setVersion(lastVersion);
-            docs.setContent(result);
-        }
-        Long finalLastVersion = lastVersion;
-        patchInfoList.removeIf(p -> (p.getPatchVersion() < finalLastVersion));
+        docs.setVersion(lastVersion);
+        docs.setContent(result);
+  //      Long finalLastVersion = lastVersion;
+//        patchInfoList.removeIf(p -> (p.getPatchVersion() < finalLastVersion));
         logger.info("스냅샷 끝");
         return new AsyncResult<Boolean>(true);
     }
