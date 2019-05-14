@@ -285,9 +285,11 @@
                     popupModal.$data.$imageUrl = tempPopupModal._$imageUrlInput.val();
                     popupModal.$data.$description = tempPopupModal._$altTextInput.val();
                 }
-                const sel = window.getSelection();
-                sel.removeAllRanges();
-                sel.addRange(tuiEditor.wwEditor.getEditor().getSelection());
+                if(tempPopupModal._id !== 28){
+                    const sel = window.getSelection();
+                    sel.removeAllRanges();
+                    sel.addRange(tuiEditor.wwEditor.getEditor().getSelection());
+                }
             }
         }
 
