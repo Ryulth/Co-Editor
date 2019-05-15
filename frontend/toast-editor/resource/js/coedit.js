@@ -135,7 +135,6 @@
             accountLogin(baseUrl, editorType, coeditId, clientSessionId);
             stompClient.subscribe(`/topic/${editorType}/${coeditId}`, function(content) {
                 let responseBody = JSON.parse(content.body);
-                console.log("receive");
                 receiveContent(responseBody);
             });
             stompClient.subscribe(`/topic/${editorType}/position/${coeditId}`, function(content) {

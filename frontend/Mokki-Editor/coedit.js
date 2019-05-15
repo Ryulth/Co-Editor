@@ -54,8 +54,8 @@
                 clientVersion = response_doc["version"];
                 let response_patches = response_body["patchInfos"];
                 if (response_patches.length >= 1) {
-                    console.log(response_patches);
-                    console.log(response_doc);
+                    //console.log(response_patches);
+                    //console.log(response_doc);
                     content = patchDocs(response_patches,content,clientVersion);
                 } 
                 editor.innerHTML = content;

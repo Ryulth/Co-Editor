@@ -21,10 +21,7 @@ import org.springframework.data.redis.core.StreamOperations;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -32,7 +29,7 @@ import java.util.stream.Collectors;
 @Component
 public class SimpleEditorService implements EditorService {
     private static Logger logger = LoggerFactory.getLogger(SimpleEditorService.class);
-    private final static int SNAPSHOT_CYCLE = 10;
+    private final static int SNAPSHOT_CYCLE = 500;
     @Autowired
     DocsRepository docsRepository;
     @Autowired
@@ -44,8 +41,6 @@ public class SimpleEditorService implements EditorService {
     private final static String DOCS_MAP = "editor:docs:";
     private final static String PATCHES_REDIS = "editor:patches:";
     private final static String IS_UPDATING = "editor:isUpdating:";
-    private final Map<Long, Boolean> syncDocs = new ConcurrentHashMap<>();
-    private final Map<Long, ArrayList<PatchInfo>> cachePatches = new ConcurrentHashMap<>();
 
     @Override
     public String editDocs(RequestDocsCommand requestDocsCommand, String remoteAddr) throws JsonProcessingException {
