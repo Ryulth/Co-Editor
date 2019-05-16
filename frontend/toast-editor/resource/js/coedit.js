@@ -289,7 +289,23 @@
 
     function setCaretPositionFromDiff(source, target) {
         // innerHTML을 업데이트하면 열려있던 팝업창이 닫혀 기존에 열려있는 팝업창을 저장해야함
-        let popupModal = {};
+        const popupModal = getShownPopupModalInfo();  
+
+        const [startCaret, endCaret] = Caret.getCaretPosition(editor);
+        const diff = dmp.diff_main(removeTags(source), removeTags(target), true);
+        dmp.diff_cleanupSemantic(diff);
+        editor.innerHTML = target;
+        Caret.setCaretPosition(editor, startCaret, endCaret);
+        const makeCustomDiffs = makeCustomDiff(diff);
+        const [clacStartCaret, clacEndCaret] = Caret.calcCaret(makeCustomDiffs, startCaret, endCaret);
+        Caret.setCaretPosition(editor, clacStartCaret, clacEndCaret);
+
+        // 저장 된 팝업창을 다시 열어줘야함.
+        resetShownPopupModalInfo(popupModal);
+    }
+
+    function getShownPopupModalInfo(){
+        const popupModal = {};
         for(tempPopupModal of tuiEditor._ui._popups){
             if(tempPopupModal.isShow()){
                 popupModal.$el = tempPopupModal;
@@ -309,17 +325,10 @@
                 }
             }
         }
+        return popupModal;
+    }
 
-        const [startCaret, endCaret] = Caret.getCaretPosition(editor);
-        const diff = dmp.diff_main(removeTags(source), removeTags(target), true);
-        dmp.diff_cleanupSemantic(diff);
-        editor.innerHTML = target;
-        Caret.setCaretPosition(editor, startCaret, endCaret);
-        const makeCustomDiffs = makeCustomDiff(diff);
-        const [clacStartCaret, clacEndCaret] = Caret.calcCaret(makeCustomDiffs, startCaret, endCaret);
-        Caret.setCaretPosition(editor, clacStartCaret, clacEndCaret);
-
-        // 저장 된 팝업창을 다시 열어줘야함.
+    function resetShownPopupModalInfo(popupModal){
         if(popupModal.$el !== undefined){
             popupModal.$el.show();
             if(popupModal.$el._id === 25){
