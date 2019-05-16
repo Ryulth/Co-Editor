@@ -53,7 +53,12 @@
                 isComposing = false;
                 const [startCaret, endCaret] = Caret.getCaretPosition(editor);
                 if (startCaret !== endCaret) {
-                    Caret.setCaretPosition(editor, startCaret, startCaret);
+                    if(isWindows()){
+                        Caret.setCaretPosition(editor, startCaret, startCaret);
+                    } else if(isMacintosh()){
+                        Caret.setCaretPosition(editor, endCaret, endCaret);
+                    }
+                    
                 }
             })
             editorScroll.addEventListener("scroll", function() {
