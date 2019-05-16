@@ -1,5 +1,5 @@
 (function() {
-    const baseUrl = "http://10.77.34.203:8080";
+    const baseUrl = "http://10.77.34.205:8080";
     const coeditId = 2; //location.href.substr(location.href.lastIndexOf('?') + 1);
     const dmp = new diff_match_patch();
     const editorType = "docs";
@@ -69,8 +69,20 @@
     function setComposingCaret() {
         const [startCaret, endCaret] = Caret.getCaretPosition(editor);
         if (startCaret === endCaret) {
-            Caret.setCaretPosition(editor, startCaret, endCaret + 1);
+            if(isWindows()){
+                Caret.setCaretPosition(editor, startCaret, endCaret + 1);
+            } else if(isMacintosh()){
+                Caret.setCaretPosition(editor, startCaret - 1, endCaret);
+            }
         }
+    }
+
+    function isMacintosh() {
+        return navigator.platform.indexOf('Mac') > -1
+    }
+      
+    function isWindows() {
+        return navigator.platform.indexOf('Win') > -1
     }
 
     function updatePrevText() {
