@@ -31,25 +31,25 @@
                     setComposingCaret();
                 }
             })
-            tuiEditor.eventManager.listen('command', function(e, argument){
+            tuiEditor.eventManager.listen('command', function(type, argument){
                 // 테이블과 헤딩태그 추가 팝업창의 경우 기능 완료 후 안닫히는 문제가 있었음
-                console.log(e);
+                console.log(type);
                 console.log(argument);
-                if(e === 'Table'){
+                if(type === 'Table'){
                     tuiEditor._ui._popups[2].hide();
-                } else if(e === 'Heading'){
+                } else if(type === 'Heading'){
                     tuiEditor._ui._popups[3].hide();
                 }
             })
             
-            editor.addEventListener("compositionstart", function(e) {
+            editor.addEventListener("compositionstart", function() {
                 isComposing = true;
             })
-            editor.addEventListener("compositionupdate", function(e) {
+            editor.addEventListener("compositionupdate", function() {
                 isComposing = true;
             })
             tuiEditor.eventManager.listen("wysiwygRangeChangeAfter", inputAction);
-            editor.addEventListener("compositionend", function(e) {
+            editor.addEventListener("compositionend", function() {
                 isComposing = false;
                 const [startCaret, endCaret] = Caret.getCaretPosition(editor);
                 if (startCaret !== endCaret) {
@@ -161,12 +161,17 @@
     function sendCursorPos() {
         intervalCount = 0;
         const [startCaret, endCaret] = Caret.getCaretPosition(editor);
-        stompClient.send(`/topic/${editorType}/position/${coeditId}`, {}, JSON.stringify({
-            sessionId: clientSessionId,
-            start: startCaret,
-            end: endCaret
-        }));
-        clearInterval(cursorInterval);
+        try{
+            stompClient.send(`/topic/${editorType}/position/${coeditId}`, {}, JSON.stringify({
+                sessionId: clientSessionId,
+                start: startCaret,
+                end: endCaret
+            }));
+            clearInterval(cursorInterval);
+        }catch(e){
+            // console.log("연결이 원활하지 않습니다.");
+        }
+        
     }
 
     function keydownAction(event) {
@@ -290,7 +295,7 @@
     function setCaretPositionFromDiff(source, target) {
         // innerHTML을 업데이트하면 열려있던 팝업창이 닫혀 기존에 열려있는 팝업창을 저장해야함
         const popupModal = getShownPopupModalInfo();  
-
+        const isForward = isCaretDirectionForward();
         const [startCaret, endCaret] = Caret.getCaretPosition(editor);
         const diff = dmp.diff_main(removeTags(source), removeTags(target), true);
         dmp.diff_cleanupSemantic(diff);
@@ -299,9 +304,23 @@
         const makeCustomDiffs = makeCustomDiff(diff);
         const [clacStartCaret, clacEndCaret] = Caret.calcCaret(makeCustomDiffs, startCaret, endCaret);
         Caret.setCaretPosition(editor, clacStartCaret, clacEndCaret);
-
+        // 드래그 시 드래그 방향에 맞게 설정해야함
+        setCaretDirection(isForward);
         // 저장 된 팝업창을 다시 열어줘야함.
         resetShownPopupModalInfo(popupModal);
+    }
+
+    function isCaretDirectionForward(){
+        return window.getSelection().baseOffset <  window.getSelection().focusOffset;
+    }
+
+    function setCaretDirection(isForward){
+        const selection = window.getSelection();
+        if(isForward){
+            selection.setBaseAndExtent(selection.baseNode, selection.baseOffset, selection.extentNode, selection.extentOffset);
+        } else{
+            selection.setBaseAndExtent(selection.extentNode, selection.extentOffset, selection.baseNode, selection.baseOffset);
+        }
     }
 
     function getShownPopupModalInfo(){
