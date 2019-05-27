@@ -41,7 +41,7 @@
                     tuiEditor._ui._popups[3].hide();
                 }
             })
-            
+
             editor.addEventListener("compositionstart", function() {
                 isComposing = true;
             })
@@ -78,6 +78,12 @@
                 Caret.setCaretPosition(editor, startCaret, endCaret + 1);
             } else if(isMacintosh()){
                 Caret.setCaretPosition(editor, startCaret - 1, endCaret);
+            }
+            // 테이블의 경우 줄바꿈 이후 첫 글자 작성 시 윗줄과 아랫줄을 같이 잡는 경우가 있음
+            // 해당 문제 해결 코드
+            const selection = window.getSelection();
+            if(selection.baseNode !== selection.extentNode){
+                window.getSelection().setBaseAndExtent(selection.extentNode, selection.extentOffset-1, selection.extentNode, selection.extentOffset);
             }
         }
     }
@@ -175,6 +181,23 @@
     }
 
     function keydownAction(event) {
+        if(isComposing && isMacintosh()){
+            const selection = window.getSelection();
+            const baseNode = selection.baseNode;
+            const baseOffset = selection.baseOffset;
+            const baseStr = baseNode.textContent;
+            const str = baseStr.substring(0, baseOffset) + baseStr.substring(baseOffset+1, baseStr.length);
+            if(str === '' && baseNode.nodeName === '#text'){
+                baseNode.before(document.createElement('BR'));
+                baseNode.remove();
+                
+            } else if(str.charAt(str.length - 1) === ' '){
+                baseNode.textContent = str.substring(0, str.length-1)+' ';
+            } else{
+                baseNode.textContent = str;
+            }
+            window.getSelection().setBaseAndExtent(baseNode, baseOffset, baseNode, baseOffset);
+        }
         isComposing = event.isComposing;
         if (isComposing) {
             setComposingCaret();
