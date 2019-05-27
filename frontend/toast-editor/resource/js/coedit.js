@@ -16,10 +16,11 @@
     var isComposing = false;
 
     function setEditor(tuiEditor) {
+        displayBlockLoading();
         CaretVis.init();
         editorScroll = tuiEditor.wwEditor.$editorContainerEl[0];
         editor = tuiEditor.wwEditor.editor._root;
-        getDocs();
+        connect();
         if (editor.addEventListener) {
             tuiEditor.eventManager.listen("keydown", keydownAction)
             tuiEditor.eventManager.listen("change", inputAction);
@@ -82,7 +83,7 @@
             // 테이블의 경우 줄바꿈 이후 첫 글자 작성 시 윗줄과 아랫줄을 같이 잡는 경우가 있음
             // 해당 문제 해결 코드
             const selection = window.getSelection();
-            if(selection.baseNode !== selection.extentNode){
+            if(selection.baseNode !== selection.extentNode && selection.extentOffset !== 0){
                 window.getSelection().setBaseAndExtent(selection.extentNode, selection.extentOffset-1, selection.extentNode, selection.extentOffset);
             }
         }
@@ -118,7 +119,8 @@
                 updatePrevText();
                 pprevText = content;
                 synchronized = true;
-                connect();
+                displayNoneLoading();
+                // connect();
             }
         });
     }
@@ -145,10 +147,13 @@
                 let accounts = JSON.parse(content.body);
                 setAccountTable(accounts);
             });
+            getDocs();
         }, function(message) {
             // TODO check message for disconnect
             if (!stompClient.connected) {
                 console.log(message);
+                alert("연결이 끊겼습니다.");
+                location.reload();
             }
         });
     }
@@ -190,7 +195,6 @@
             if(str === '' && baseNode.nodeName === '#text'){
                 baseNode.before(document.createElement('BR'));
                 baseNode.remove();
-                
             } else if(str.charAt(str.length - 1) === ' '){
                 baseNode.textContent = str.substring(0, str.length-1)+' ';
             } else{
@@ -484,6 +488,14 @@
             CaretVis.removeDrags(key);
         });
         tableBody.innerHTML = totalRow;
+    }
+
+    function displayBlockLoading(){
+        document.getElementsByClassName('animationload')[0].style.display = 'block';
+    }
+
+    function displayNoneLoading(){
+        document.getElementsByClassName('animationload')[0].style.display = 'none';
     }
 
     const coedit = {
