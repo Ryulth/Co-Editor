@@ -11,12 +11,20 @@ import com.ryulth.repository.DocsRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.RedisSystemException;
+import org.springframework.data.redis.connection.stream.ObjectRecord;
+import org.springframework.data.redis.connection.stream.ReadOffset;
+import org.springframework.data.redis.connection.stream.StreamOffset;
+import org.springframework.data.redis.connection.stream.StreamRecords;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StreamOperations;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayDeque;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Component
 public class SimpleEditorService implements EditorService {
@@ -28,136 +36,159 @@ public class SimpleEditorService implements EditorService {
     ObjectMapper objectMapper;
     @Autowired
     EditorAsyncService editorAsyncService;
-
-    private final Map<Long, Docs> cacheDocs = new HashMap<>();
-    private final Map<Long, ArrayDeque<PatchInfo>> cachePatches = new HashMap<>();
-    private final Map<Long,Boolean> cacheIsUpdating = new HashMap<>();
+    @Autowired
+    RedisTemplate redisTemplate;
+    private final static String DOCS_MAP = "editor:docs:";
+    private final static String PATCHES_REDIS = "editor:patches:";
+    private final static String IS_UPDATING = "editor:isUpdating:";
 
     @Override
-    public String editDocs(RequestDocsCommand requestDocsCommand,String remoteAddr) throws JsonProcessingException {
-        Docs docs;
-        ArrayDeque<PatchInfo> patchInfos;
-        Boolean IsUpdating;
+    public String editDocs(RequestDocsCommand requestDocsCommand, String remoteAddr) throws JsonProcessingException {
+        ValueOperations vop = redisTemplate.opsForValue();
+        StreamOperations sop = redisTemplate.opsForStream();
+
         Long docsId = requestDocsCommand.getDocsId();
         Long requestClientVersion = requestDocsCommand.getClientVersion();
         String patchText = requestDocsCommand.getPatchText();
-        synchronized (cacheDocs) {
-            docs = cacheDocs.get(docsId);
-        }
-        ArrayDeque<PatchInfo> tempPatchInfo;
-        Long serverVersion;
 
-        synchronized (cachePatches){
-            patchInfos = cachePatches.get(docsId);
-            tempPatchInfo = patchInfos.clone();
-            serverVersion = tempPatchInfo.getLast().getPatchVersion();
-            PatchInfo newPatchInfo = PatchInfo.builder()
-                    .patchText(patchText)
-                    .clientSessionId(requestDocsCommand.getSocketSessionId())
-                    .remoteAddress(remoteAddr)
-                    .patchVersion(serverVersion+1)
-                    .build();
-            cachePatches.get(docsId).add(newPatchInfo);
-            tempPatchInfo.add(newPatchInfo);
-            tempPatchInfo.poll();
-        }
-        if(tempPatchInfo.size()>SNAPSHOT_CYCLE && !cacheIsUpdating.get(docsId)){
-            synchronized (cacheIsUpdating){
-                cacheIsUpdating.replace(docsId,true);
+        PatchInfo newPatchInfo = PatchInfo.builder()
+                .patchText(patchText)
+                .clientSessionId(requestDocsCommand.getSocketSessionId())
+                .remoteAddress(remoteAddr)
+                .patchVersion(requestClientVersion + 1)
+                .build();
+        while (true) {
+            try {
+                xAdd(PATCHES_REDIS + docsId,
+                        docsId + "-" + newPatchInfo.getPatchVersion().toString(), newPatchInfo);
+                break;
+            } catch (RedisSystemException ignore) {
+                newPatchInfo.setPatchVersion(newPatchInfo.getPatchVersion() + 1);
             }
-            Future<Boolean> future =editorAsyncService.updateDocsSnapshot(patchInfos, docs);
+        }
+        Docs docs = (Docs) vop.get(DOCS_MAP + docsId);
+        List<PatchInfo> patchInfoList = readPatchList(docsId, docs.getVersion());
+        Long serverVersion = patchInfoList.get(patchInfoList.size() - 1).getPatchVersion();
+        if (serverVersion.equals(requestClientVersion)) {
+            patchInfoList.removeIf(p -> (p.getPatchVersion() <= requestClientVersion));
+        }
+        ResponseDocsCommand responseDocsCommand = ResponseDocsCommand.builder().docsId(docsId)
+                .patchText(patchText)
+                .patchInfos(patchInfoList)
+                .socketSessionId(requestDocsCommand.getSocketSessionId())
+                .serverVersion(serverVersion + 1).build();
+        if (patchInfoList.size() > 1) {
+            responseDocsCommand.setSnapshotText(docs.getContent());
+            responseDocsCommand.setSnapshotVersion(docs.getVersion());
+        }
+        if (patchInfoList.size() > SNAPSHOT_CYCLE) {
+            Future<Boolean> future = editorAsyncService.updateDocsSnapshot(patchInfoList, docs);
             while (true) {
                 if (future.isDone()) {
-                    synchronized (cacheIsUpdating) {
-                        cacheIsUpdating.replace(docsId, false);
-                    }
+                    vop.set(DOCS_MAP + docsId, docs);
                     docsRepository.save(docs);
+                    System.out.println("업데이트완료");
                     break;
                 }
             }
         }
-        //TODO 앞뒤변경
-        if(serverVersion.equals(requestClientVersion)){
-            tempPatchInfo.removeIf(p -> (p.getPatchVersion() <= requestClientVersion));
-        }
-        ResponseDocsCommand responseDocsCommand = ResponseDocsCommand.builder().docsId(docsId)
-                .patchText(patchText)
-                .patchInfos(tempPatchInfo)
-                .socketSessionId(requestDocsCommand.getSocketSessionId())
-                .serverVersion(serverVersion + 1).build();
-        if (tempPatchInfo.size()>1) {
-            responseDocsCommand.setSnapshotText(docs.getContent());
-            responseDocsCommand.setSnapshotVersion(docs.getVersion());
-            logger.info("버젼 충돌", requestClientVersion);
-        }
+
+
         return objectMapper.writeValueAsString(responseDocsCommand);
+
     }
 
     @Override
     public String getDocsOne(Long docsId) throws JsonProcessingException {
+        ValueOperations vop = redisTemplate.opsForValue();
         ResponseDocsInit responseDocsInit;
-        Docs docs;
-        synchronized (cacheDocs) {
-            docs = cacheDocs.get(docsId);
-        }
+        Docs docs = (Docs) vop.get(DOCS_MAP + docsId);
         if (docs == null) {
-            //TODO 나중에 null 처리
             docs = docsRepository.findById(docsId).orElse(null);
-            synchronized (cacheDocs) {
-                cacheDocs.put(docsId, docs);
-            }
+            vop.set(DOCS_MAP + docsId, docs);
         }
-        ArrayDeque<PatchInfo> patchInfoList = getPatches(docs, docsId);
-        responseDocsInit = ResponseDocsInit.builder().docs(docs).patchInfos(patchInfoList).build();
+        System.out.println(docs);
+        responseDocsInit = ResponseDocsInit.builder()
+                .docs(docs)
+                .patchInfos(getPatches(docs, docsId)).build();
         return objectMapper.writeValueAsString(responseDocsInit);
     }
 
+
     @Override
     public void patchesAll(Long docsId) {
-        Docs docs;
-        ArrayDeque<PatchInfo> patchInfos;
-        synchronized (cacheDocs) {
-            docs = cacheDocs.get(docsId);
-        }
-        synchronized (cachePatches) {
-            patchInfos = cachePatches.get(docsId);
-        }
-        Future<Boolean> future =editorAsyncService.updateDocsSnapshot(patchInfos, docs);
+        ValueOperations vop = redisTemplate.opsForValue();
+        Docs docs = (Docs) vop.get(DOCS_MAP + docsId);
+        List<PatchInfo> patchInfoList = readPatchList(docsId, docs.getVersion());
+        Future<Boolean> future = editorAsyncService.updateDocsSnapshot(patchInfoList, docs);
         while (true) {
             if (future.isDone()) {
                 docsRepository.save(docs);
+                vop.set(DOCS_MAP + docsId, docs);
                 break;
             }
         }
 
     }
 
-    private ArrayDeque<PatchInfo> getPatches(Docs finalDocs, Long docsId) {
-        ArrayDeque<PatchInfo> patchInfo;
-        synchronized (cachePatches) {
-            patchInfo = cachePatches.get(docsId);
+    private List<PatchInfo> getPatches(Docs finalDocs, Long docsId) {
+        ValueOperations vop = redisTemplate.opsForValue();
+        long startNanos = System.nanoTime();
+        List<PatchInfo> patchInfoList = readPatchList(docsId, finalDocs.getVersion());
+
+        if (patchInfoList.size() != 0 && finalDocs.getVersion() < patchInfoList.get(patchInfoList.size() - 1).getPatchVersion()) {
+            patchInfoList.removeIf(p -> (p.getPatchVersion() < finalDocs.getVersion()));
         }
-        if (patchInfo == null) {
-            patchInfo = new ArrayDeque<>();
-            patchInfo.add(PatchInfo.builder().patchText("").patchVersion(finalDocs.getVersion()).remoteAddress("").build());
-            synchronized (cachePatches) {
-                cachePatches.put(docsId, patchInfo);
-            }
-        } else {
-            patchInfo = patchInfo.clone();
+        if (vop.get(IS_UPDATING + docsId) == null) {
+            vop.set(IS_UPDATING + docsId, false);
         }
-        if (patchInfo.size() == 0) {
-            System.out.println("sadasdas");
-            return null;
-        }
-        if (finalDocs.getVersion() < patchInfo.getLast().getPatchVersion()) {
-            patchInfo.removeIf(p -> (p.getPatchVersion() < finalDocs.getVersion()));
-        }
-        synchronized (cacheIsUpdating){
-            if(cacheIsUpdating.get(docsId)== null){
-                cacheIsUpdating.put(docsId,false);
-            }
-        }
-        return patchInfo;
+        System.out.println(docsId + "TIME     " + TimeUnit.MILLISECONDS.convert(System.nanoTime() - startNanos, TimeUnit.NANOSECONDS));
+        return patchInfoList;
+    }
+
+    private List<PatchInfo> readPatchList(Long docsId, Long snapShotVersion) {
+        StreamOperations sop = redisTemplate.opsForStream();
+        List<ObjectRecord<String, PatchInfo>> objectRecords = sop
+                .read(PatchInfo.class, StreamOffset.create(PATCHES_REDIS + docsId
+                        , ReadOffset.from(docsId + "-" + (snapShotVersion - 1))));
+        return objectRecords.stream()
+                .map(o -> o.getValue())
+                .collect(Collectors.toList());
+    }
+
+//    private List<PatchInfo> getPatchesList(Docs finalDocs, Long docsId) {
+//        checkSyncMap(docsId);
+//        checkCachePatched(finalDocs, docsId);
+//        synchronized (cachePatches.get(docsId)) {
+//            List<PatchInfo> patchInfos = cachePatches.get(docsId).clone();
+//            if (finalDocs.getVersion() < patchInfos.getLast().getPatchVersion()) {
+//                patchInfos.removeIf(p -> (p.getPatchVersion() < finalDocs.getVersion()));
+//            }
+//            return patchInfos;
+//        }
+//    }
+
+    //    private void checkCachePatched(Docs finalDocs, Long docsId) {
+//        if (cachePatches.get(docsId) == null) {
+//            PatchInfo initPatchInfo = PatchInfo.builder().patchText("").patchVersion(finalDocs.getVersion()).remoteAddress("").build();
+//            List<PatchInfo> patchInfos = new ArrayList<>();
+//            patchInfos.add(initPatchInfo);
+//            cachePatches.putIfAbsent(docsId, patchInfos);
+//        }
+//    }
+//
+//    private void checkSyncMap(Long docsId) {
+//        if (syncDocs.get(docsId) == null) {
+//            syncDocs.putIfAbsent(docsId, false);
+//        }
+//    }
+    private <T> void xAdd(String key, String versionId, T data) throws RedisSystemException {
+        StreamOperations sop = redisTemplate.opsForStream();
+        ObjectRecord<String, T> record = StreamRecords.newRecord()
+                .in(key)
+                .withId(versionId)
+                .ofObject(data);
+
+        sop.add(record);
     }
 }

@@ -1,4 +1,4 @@
-(function () {
+(function() {
     const LOCATION = {
         START: 'start',
         END: 'end'
@@ -34,7 +34,7 @@
 
                 position = clonedRange.toString().length;
 
-                position += getCountOfNewLine(element, getLineNode(element, clonedRange.endContainer));
+                position += getCountOfNewLine(getFlattenElement(element), getLineNode(element, clonedRange.endContainer), 0);
             } catch (e) {
                 // console.log(e);
             }
@@ -48,55 +48,75 @@
         return (position < 0) ? 0 : position;
     }
 
+
     function getLineNode(element, node) {
         let lineNode = node;
-
+        let listNode;
         if (element === lineNode) {
-            return lineNode;
+            return [lineNode, listNode];
         }
 
         while ((lineNode.parentNode.id !== element.id) || (lineNode.parentNode.classList !== element.classList)) {
+            if (lineNode.nodeName === 'LI' || lineNode === undefined) {
+                listNode = lineNode;
+            } else if((lineNode.nodeName === 'TH' || lineNode.nodeName === 'TD') || lineNode === undefined){
+                listNode = lineNode;
+            }
             lineNode = lineNode.parentNode;
         }
-
-        return lineNode;
+        return [lineNode, listNode];
     }
 
-    function getCountOfNewLine(element, lineNode) {
-        return Array.prototype.slice.call(element.childNodes).indexOf(lineNode);
-    }
+    function getCountOfNewLine(element, nodeList, countOfNewLine) {
+        const [lineNode, listNode] = nodeList;
 
-    function getCountOfNewLineOver(element, lineNode, countOfNewLine) {
-        const list = element.childNodes;
-
-        while (lineNode !== list[countOfNewLine]) {
+        while (lineNode !== element[countOfNewLine] && listNode !== element[countOfNewLine]) {
             countOfNewLine++;
         }
 
         return countOfNewLine;
     }
 
+    function getFlattenElement(element) {
+        if (element.querySelector("LI, TH, TD") === null) {
+            return element.childNodes;
+        } else {
+            let flattenList = [];
+            element.childNodes.forEach(function(node) {
+                if (node.tagName === "OL" || node.tagName === "UL") {
+                    flattenList = flattenList.concat(Array.prototype.slice.call(node.querySelectorAll("LI")));
+                } else if(node.tagName === "TABLE"){
+                    flattenList = flattenList.concat(Array.prototype.slice.call(node.querySelectorAll("TH, TD")));
+                } else{
+                    flattenList.push(node);
+                }
+            });
+            return flattenList;
+        }
+    }
+
     function setCaretPosition(element, start, end) {
-        let childTextLength = 0, 
-            startOffset = 0, 
+        let childTextLength = 0,
+            startOffset = 0,
             endOffset = 0,
             countOfNewLine = 0,
             startElement = null,
             endElement = null;
 
-        const textNodeList = getTextNodeList(element), 
+        const textNodeList = getTextNodeList(element),
             range = document.createRange(),
             sel = window.getSelection();
 
-        textNodeList.forEach(function (textNode) {
+        const flattenElement = getFlattenElement(element);
+        textNodeList.forEach(function(textNode) {
             const nodeTextLength = textNode.textContent.length;
-            countOfNewLine = getCountOfNewLineOver(element, getLineNode(element, textNode), countOfNewLine);
+            countOfNewLine = getCountOfNewLine(flattenElement, getLineNode(element, textNode), countOfNewLine);
 
-            if (start <= childTextLength + countOfNewLine + nodeTextLength && startElement === null) {
+            if (start <= childTextLength + countOfNewLine + nodeTextLength && (startElement === null || startElement === undefined)) {
                 startOffset = start - (childTextLength + countOfNewLine);
                 startElement = textNode;
             }
-            if (end <= childTextLength + countOfNewLine + nodeTextLength && endElement === null) {
+            if (end <= childTextLength + countOfNewLine + nodeTextLength && (endElement === null || endElement === undefined)) {
                 endOffset = end - (childTextLength + countOfNewLine);
                 endElement = textNode;
             }
@@ -107,13 +127,11 @@
         const totalLength = childTextLength + countOfNewLine;
 
         if (totalLength < start) {
-            console.log("벗어남 1")
             startElement = textNodeList[textNodeList.length - 1];
             startOffset = startElement.length;
             endElement = startElement;
             endOffset = startOffset;
         } else if (totalLength < end) {
-            console.log("벗어남 2")
             endElement = textNodeList[textNodeList.length - 1];
             endOffset = endElement.length;
         }
@@ -132,7 +150,7 @@
     function getTextNodeList(element) {
         let textNodeList = [];
 
-        Array.prototype.slice.call(element.childNodes).forEach(function (childElement) {
+        Array.prototype.slice.call(element.childNodes).forEach(function(childElement) {
             if (childElement.nodeType === Node.TEXT_NODE) {
                 textNodeList.push(childElement);
             } else if (childElement.nodeName === "BR") {
@@ -146,7 +164,7 @@
     }
 
     function calcCaret(diff, startCaret, endCaret) {
-        diff.forEach(function (tempDiff, _, _) {
+        diff.forEach(function(tempDiff, _, _) {
             const startIdx = tempDiff[0];
             const inputString = tempDiff[1];
             const deleteString = tempDiff[2];
@@ -154,7 +172,7 @@
                 // delete and insert case
                 // delete 먼저하자
                 // 드래그 안 된 경우
-                
+
                 if (startCaret === endCaret) {
                     [startCaret, endCaret] = deleteNoDrag(startIdx, deleteString, startCaret, endCaret);
                     // insert 된 크기 만큼 뒤로 간다.
@@ -246,8 +264,7 @@
                 startCaret = startIdx;
                 let end_offset = endCaret - (startIdx + deleteString.length)
                 endCaret = startIdx + end_offset;
-            }
-            else if (endCaret < startIdx + deleteString.length) {
+            } else if (endCaret < startIdx + deleteString.length) {
                 // 내가 드래그 한거 다 지우는 경우
                 startCaret = startIdx;
                 endCaret = startIdx;
@@ -268,13 +285,14 @@
         getCaretPosition: getStartAndEndCaretPosition,
         setCaretPosition: setCaretPosition,
         getTextNodeList: getTextNodeList,
-        getCountOfNewLineOver: getCountOfNewLineOver,
+        getFlattenElement: getFlattenElement,
+        getCountOfNewLine: getCountOfNewLine,
         getLineNode: getLineNode,
         calcCaret: calcCaret
     };
 
     if (typeof define === 'function' && define.amd) {
-        define(function () {
+        define(function() {
             return caret;
         });
     } else if (typeof module !== 'undefined') {

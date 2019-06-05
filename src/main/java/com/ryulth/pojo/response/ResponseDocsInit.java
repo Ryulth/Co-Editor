@@ -8,12 +8,12 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 
-import java.util.ArrayDeque;
+import java.util.List;
 
 @Data
 @Builder
 @AllArgsConstructor(onConstructor = @__(@JsonIgnore)) // Lombok builder use this
 public class ResponseDocsInit {
     Docs docs;
-    ArrayDeque<PatchInfo> patchInfos;
+    List<PatchInfo> patchInfos;
 }

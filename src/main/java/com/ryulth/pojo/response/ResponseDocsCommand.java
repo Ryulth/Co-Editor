@@ -6,7 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 
-import java.util.ArrayDeque;
+import java.util.List;
 
 @Data
 @Builder
@@ -20,5 +20,5 @@ public class ResponseDocsCommand {
     Long snapshotVersion;
     String patchText;
     String snapshotText;
-    ArrayDeque<PatchInfo> patchInfos;
+    List<PatchInfo> patchInfos;
 }

@@ -1,109 +1,103 @@
-(function(){
+(function() {
     const baseUrl = "http://10.77.34.204:8080";
-    const coeditId = 2;//location.href.substr(location.href.lastIndexOf('?') + 1);
+    const coeditId = 2; //location.href.substr(location.href.lastIndexOf('?') + 1);
     const dmp = new diff_match_patch();
     const editorType = "docs";
     let editor;
     let editorScroll;
-    let synchronized = false; 
+    let synchronized = false;
     let clientVersion;
     let stompClient;
     let clientSessionId;
     let prevText = "";
     let pprevText;
-    let keycode = "";
-    let isPaste = false;
     let cursorInterval;
     let intervalCount = 0;
+    var isComposing = false;
 
-    function setEditor(tuiEditor){
+    function setEditor(tuiEditor) {
+        displayBlockLoading();
         CaretVis.init();
         editorScroll = tuiEditor.wwEditor.$editorContainerEl[0];
         editor = tuiEditor.wwEditor.editor._root;
-        getDocs();
+        connect();
         if (editor.addEventListener) {
             tuiEditor.eventManager.listen("keydown", keydownAction)
             tuiEditor.eventManager.listen("change", inputAction);
             tuiEditor.eventManager.listen("keyup", keyupAction);
-            tuiEditor.eventManager.listen("paste" , function(){
-                isPaste = true;
-            });
-            editor.addEventListener("compositionstart",function(e){
-                // console.log("compositionstart",e)
-            });
-            editor.addEventListener("compositionupdate",function(e){
-                // console.log("compositionupdate",e)
-            });
-            editor.addEventListener("compositionend",function(e){
-                console.log("compositionend ",e)
-                const [startCaret, endCaret] = Caret.getCaretPosition(editor);
-                Caret.setCaretPosition(editor,startCaret,startCaret);
-            });
-            editor.addEventListener("input", function(e){
-                console.log("input");
-                // console.log(e);
-                // console.log(Caret.getCaretPosition(editor));
-                // const range = window.getSelection().getRangeAt(0);
-                // const clonedRange = range.cloneRange();
-                // console.log("aaaaaaaa")
-                // clonedRange.selectNodeContents(editor);
-            
-                // clonedRange.setStart(range.startContainer, range.startOffset);
-                // clonedRange.setEnd(range.endContainer, range.endOffset);
-                // console.log("clonedRange.toString() : ", clonedRange.toString())
-                if(e.inputType === 'insertCompositionText'){
-                    // if(e.data === clonedRange.toString().charAt(0)){
 
-                    // }
-                    // console.log("aaaaaaaaaa")
-                    if(isHangul(e.data)){
-                        // console.log("bbbbbbbbb")
-                        const [startCaret, endCaret] = Caret.getCaretPosition(editor);
-                        // console.log(startCaret+", "+endCaret);
-                        if(startCaret == endCaret){
-                            // console.log("ccccccccccc")
-                            Caret.setCaretPosition(editor, startCaret, endCaret+1);
-                        }
-                    }
+            editor.addEventListener("input", function(e) {
+                isComposing = e.isComposing;
+                if (isComposing) {
+                    setComposingCaret();
                 }
-                // let diff = dmp.diff_main(pprevText, editor.innerHTML, true);
-                // dmp.diff_cleanupSemantic(diff);
-                // console.log("input Event Listener diff : ", diff);
-                // if ((diff.length > 1) || (diff.length == 1 && diff[0][0] != 0)) { // 1 이상이어야 변경 한 것이 있음
-                //     let res = makeCustomDiff(diff)[0];    
-                //     console.log("input Event Listener res : ", res);
-                //     // TODO :: 조건문 함수로 정의하기!
-                //     if (!(Hangul.disassemble(res[2]).length == Hangul.disassemble(res[1]).length + 1) || (keycode == "Backspace" || keycode == "Delete")) {
-                //         if(!isPaste){
-                //             setHangulSelection(res)
-                //         }
-                //     }
-                // }
-                // if(isHangul(e.data)){
-                //     console.log("t1")
-                //     let diff = dmp.diff_main(pprevText, editor.innerHTML, true);
-                //     dmp.diff_cleanupSemantic(diff);
-                //     let res = makeCustomDiff(diff)[0];
-                //     if (!(Hangul.disassemble(res[2]).length == Hangul.disassemble(res[1]).length + 1) || (keycode == "Backspace" || keycode == "Delete")) {
-                //         console.log("t2")
-                //         if(!isPaste){
-                //             setHangulSelection(res)
-                //         }
-                //     }
-                // }
+            })
+            tuiEditor.eventManager.listen('command', function(type, argument){
+                // 테이블과 헤딩태그 추가 팝업창의 경우 기능 완료 후 안닫히는 문제가 있었음
+                console.log(type);
+                console.log(argument);
+                if(type === 'Table'){
+                    tuiEditor._ui._popups[2].hide();
+                } else if(type === 'Heading'){
+                    tuiEditor._ui._popups[3].hide();
+                }
             })
 
-            editorScroll.addEventListener("scroll", function(){
+            editor.addEventListener("compositionstart", function() {
+                isComposing = true;
+            })
+            editor.addEventListener("compositionupdate", function() {
+                isComposing = true;
+            })
+            tuiEditor.eventManager.listen("wysiwygRangeChangeAfter", inputAction);
+            editor.addEventListener("compositionend", function() {
+                isComposing = false;
+                const [startCaret, endCaret] = Caret.getCaretPosition(editor);
+                if (startCaret !== endCaret) {
+                    if(isWindows()){
+                        Caret.setCaretPosition(editor, startCaret, startCaret);
+                    } else if(isMacintosh()){
+                        Caret.setCaretPosition(editor, endCaret, endCaret);
+                    }
+                    
+                }
+            })
+            editorScroll.addEventListener("scroll", function() {
                 CaretVis.getCaretContainer().style.top = `${-editorScroll.scrollTop}px`;
             })
-            document.addEventListener("scroll", function(){
+            document.addEventListener("scroll", function() {
                 CaretVis.getCaretContainer().style.top = `${-document.documentElement.scrollTop}px`;
             })
             document.addEventListener("selectionchange", selectionChangeAction);
         }
     }
 
-    function updatePrevText(){
+    function setComposingCaret() {
+        const [startCaret, endCaret] = Caret.getCaretPosition(editor);
+        if (startCaret === endCaret) {
+            if(isWindows()){
+                Caret.setCaretPosition(editor, startCaret, endCaret + 1);
+            } else if(isMacintosh()){
+                Caret.setCaretPosition(editor, startCaret - 1, endCaret);
+            }
+            // 테이블의 경우 줄바꿈 이후 첫 글자 작성 시 윗줄과 아랫줄을 같이 잡는 경우가 있음
+            // 해당 문제 해결 코드
+            const selection = window.getSelection();
+            if(selection.baseNode !== selection.extentNode && selection.extentOffset !== 0){
+                window.getSelection().setBaseAndExtent(selection.extentNode, selection.extentOffset-1, selection.extentNode, selection.extentOffset);
+            }
+        }
+    }
+
+    function isMacintosh() {
+        return navigator.platform.indexOf('Mac') > -1
+    }
+      
+    function isWindows() {
+        return navigator.platform.indexOf('Win') > -1
+    }
+
+    function updatePrevText() {
         prevText = editor.innerHTML;
     }
 
@@ -112,22 +106,22 @@
             type: "GET",
             url: `${baseUrl}/${editorType}/${coeditId}`,
             cache: false,
-            success: function (response) {
+            success: function(response) {
                 const responseBody = JSON.parse(response);
                 const responseDoc = responseBody[editorType];
                 let content = responseDoc.content;
                 clientVersion = responseDoc.version;
                 const responsePatches = responseBody.patchInfos;
+                console.log(responsePatches)
                 if (responsePatches.length >= 1) {
                     content = patchDocs(responsePatches, content, clientVersion);
                 }
-                console.log(responsePatches)
-                console.log(content)
                 editor.innerHTML = content;
                 updatePrevText();
                 pprevText = content;
                 synchronized = true;
-                connect();
+                displayNoneLoading();
+                // connect();
             }
         });
     }
@@ -135,93 +129,94 @@
     function connect() {
         let socket = new SockJS(`${baseUrl}/docs-websocket`);
         stompClient = Stomp.over(socket);
-        stompClient.connect({}, function (frame) {
+        stompClient.connect({}, function(frame) {
             clientSessionId = /\/([^\/]+)\/websocket/.exec(socket._transport.url)[1];
             setConnected(true);
-            accountLogin(baseUrl,editorType,coeditId,clientSessionId);
-            stompClient.subscribe(`/topic/${editorType}/${coeditId}`, function (content) {
+            accountLogin(baseUrl, editorType, coeditId, clientSessionId);
+            stompClient.subscribe(`/topic/${editorType}/${coeditId}`, function(content) {
                 let responseBody = JSON.parse(content.body);
-                console.log("receive");
                 receiveContent(responseBody);
             });
-            stompClient.subscribe(`/topic/${editorType}/position/${coeditId}`, function(content){
+            stompClient.subscribe(`/topic/${editorType}/position/${coeditId}`, function(content) {
                 let contentBody = JSON.parse(content.body);
-                if(contentBody.sessionId != clientSessionId){
+                if (contentBody.sessionId !== clientSessionId) {
                     CaretVis.setUserCaret(editor, editorScroll, contentBody.sessionId, contentBody.start, contentBody.end);
                 }
             });
-            stompClient.subscribe(`/topic/${editorType}/${coeditId}/accounts`, function(content){
+            stompClient.subscribe(`/topic/${editorType}/${coeditId}/accounts`, function(content) {
                 let accounts = JSON.parse(content.body);
                 setAccountTable(accounts);
             });
+            getDocs();
         }, function(message) {
             // TODO check message for disconnect
-            if(!stompClient.connected){
+            if (!stompClient.connected) {
                 console.log(message);
+                alert("연결이 끊겼습니다.");
+                location.reload();
             }
         });
     }
 
-    function selectionChangeAction(){
-        if(cursorInterval != null){
+    function selectionChangeAction() {
+        if (cursorInterval !== null && cursorInterval !== undefined) {
             clearInterval(cursorInterval);
         }
-        if(intervalCount == 50){
+        if (intervalCount === 50) {
             sendCursorPos();
         }
         cursorInterval = setInterval(sendCursorPos, 200);
         intervalCount++;
     }
 
-    function sendCursorPos(){
+    function sendCursorPos() {
         intervalCount = 0;
         const [startCaret, endCaret] = Caret.getCaretPosition(editor);
-        stompClient.send(`/topic/${editorType}/position/${coeditId}`, {}, JSON.stringify({sessionId: clientSessionId, start: startCaret, end: endCaret}));
-        clearInterval(cursorInterval);
+        try{
+            stompClient.send(`/topic/${editorType}/position/${coeditId}`, {}, JSON.stringify({
+                sessionId: clientSessionId,
+                start: startCaret,
+                end: endCaret
+            }));
+            clearInterval(cursorInterval);
+        }catch(e){
+            // console.log("연결이 원활하지 않습니다.");
+        }
+        
     }
 
-    let isKeyDown = false;
-    function keydownAction(event){
-        // console.log(event.data);
-        keycode = event.data.code;
-        console.log("keycode :", keycode);
-        // if(isKeyDown){
-        //     let diff = dmp.diff_main(pprevText, editor.innerHTML, true);
-        //     dmp.diff_cleanupSemantic(diff);
-        //     if ((diff.length > 1) || (diff.length == 1 && diff[0][0] != 0)) { // 1 이상이어야 변경 한 것이 있음
-        //         let res = makeCustomDiff(diff)[0];    
-        //         if(!isPaste){
-        //             setHangulSelection(res);
-        //         }
-        //     }
-        //     isKeyDown = false;
-        // }
+    function keydownAction(event) {
+        if(isComposing && isMacintosh()){
+            const selection = window.getSelection();
+            const baseNode = selection.baseNode;
+            const baseOffset = selection.baseOffset;
+            const baseStr = baseNode.textContent;
+            const str = baseStr.substring(0, baseOffset) + baseStr.substring(baseOffset+1, baseStr.length);
+            if(str === '' && baseNode.nodeName === '#text'){
+                baseNode.before(document.createElement('BR'));
+                baseNode.remove();
+            } else if(str.charAt(str.length - 1) === ' '){
+                baseNode.textContent = str.substring(0, str.length-1)+' ';
+            } else{
+                baseNode.textContent = str;
+            }
+            window.getSelection().setBaseAndExtent(baseNode, baseOffset, baseNode, baseOffset);
+        }
+        isComposing = event.isComposing;
+        if (isComposing) {
+            setComposingCaret();
+        }
         pprevText = editor.innerHTML;
-        isKeyDown = true;
     }
 
-    // var inputCount = 1;
-    function inputAction(){
-        // console.log(`inputAction : ${inputCount++}`)
-        // if(isKeyDown){
-        //     let diff = dmp.diff_main(pprevText, editor.innerHTML, true);
-        //     dmp.diff_cleanupSemantic(diff);
-        //     console.log("input Diff : ", diff);
-        //     if ((diff.length > 1) || (diff.length == 1 && diff[0][0] != 0)) { // 1 이상이어야 변경 한 것이 있음
-        //         let res = makeCustomDiff(diff)[0];    
-        //         if(!isPaste){
-        //             setHangulSelection(res);
-        //         }
-        //     }
-        //     isKeyDown = false;
-        // }a425906aa5e
+    function inputAction() {
         if (synchronized) {
-            sendPatch(prevText,editor.innerHTML, false);
+            sendPatch(prevText, editor.innerHTML);
         }
     }
 
-    function keyupAction(event){
-        if(event.data.code == 'Backspace'){
+    function keyupAction(event) {
+        if (event.data.code === 'Backspace') {
             selectionChangeAction();
         }
     }
@@ -240,48 +235,17 @@
             url: `${baseUrl}/${editorType}/${coeditId}`,
             data: JSON.stringify(reqBody),
             dataType: 'json',
-            success: function (response) {
-            }
+            success: function(response) {}
         });
     }
 
-    function setHangulSelection(resDiff){
-        const inputString = resDiff[1].trim();
-        const deleteString = resDiff[2].trim();
-        let [startCaret, endCaret] = Caret.getCaretPosition(editor);
-        // console.log("setHangulSelection resDiff : ", resDiff);
-        //TODO 맨앞자리 할지 맨뒬자리 할지 고민
-        // 한글 작성 시
-        // console.log("=========================================================================================")
-        // console.log(`First startCaret : ${startCaret}\tendCaret : ${endCaret}`)
-        if(isHangul(inputString) && (deleteString == '' || isHangul(deleteString))){
-            // console.log(startCaret+", "+endCaret)
-            if(startCaret == endCaret){
-                endCaret++;
-                Caret.setCaretPosition(editor, startCaret, endCaret);
-            }
-        }
-        // console.log(`Second startCaret : ${startCaret}\tendCaret : ${endCaret}`)
-        // console.log("=========================================================================================")
-    }
-
-    function isHangul(inputText){
-        const c = inputText.charCodeAt(0);
-        if( 0x1100<=c && c<=0x11FF ) return true;
-        if( 0x3130<=c && c<=0x318F ) return true;
-        if( 0xAC00<=c && c<=0xD7A3 ) return true;
-        return false;
-    }
-
-    function sendPatch(prev,current, isBuffer) {
+    function sendPatch(prev, current) {
         const diff = dmp.diff_main(prev, current, true);
         dmp.diff_cleanupSemantic(diff);
-        if ((diff.length > 1) || (diff.length == 1 && diff[0][0] != 0)) { // 1 이상이어야 변경 한 것이 있음
+        if ((diff.length > 1) || (diff.length === 1 && diff[0][0] !== 0)) { // 1 이상이어야 변경 한 것이 있음
             synchronized = false;
             sendContentPost(dmp.patch_toText(dmp.patch_make(prev, current, diff)));
             updatePrevText()
-            keycode = "";
-            isPaste = false;
         }
     }
 
@@ -291,7 +255,7 @@
         let insertString = "";
         let deleteString = "";
         let isCycle = false;
-        diff.forEach(function (element) {
+        diff.forEach(function(element) {
             switch (element[0]) {
                 case 0: // retain
                     if (isCycle) {
@@ -300,15 +264,15 @@
                         insertString = "";
                         deleteString = "";
                     }
-                    idx += removeTags(element[1]).length;
+                    idx += element[1].length;
                     break;
                 case -1: // delete
                     isCycle = true;
-                    deleteString = removeTags(element[1]);
+                    deleteString = element[1];
                     break;
                 case 1: // insert
                     isCycle = true;
-                    insertString = removeTags(element[1]);
+                    insertString = element[1];
                     break;
             }
         });
@@ -319,91 +283,121 @@
         return res;
     }
 
-    function checkValidDiff(diff) {
-        let convertedDiff = diff;
-        for(var i = 0; i < convertedDiff.length - 1; i++ ) {
-            const lastOpenTag = convertedDiff[i][1].lastIndexOf("<");
-            const lastCloseTag = convertedDiff[i][1].lastIndexOf(">");
-            // 마지막에 < 로 열렸는데 >로 닫히지 않은 경우
-            if(lastCloseTag < lastOpenTag) {
-                let nextFirstCloseTag = convertedDiff[i+1][1].indexOf(">") + 1;
-                convertedDiff[i][1] += convertedDiff[i+1][1].substring(0, nextFirstCloseTag);
-                convertedDiff[i+1][1] = convertedDiff[i+1][1].substring(nextFirstCloseTag, convertedDiff[i+1][1].length);
-
-                // 현재 마지막이 <br>로 끝나고 다음 줄 시작이 </div> 인 경우
-                const lastTag = convertedDiff[i][1].substring(convertedDiff[i][1].lastIndexOf("<"), convertedDiff[i][1].lastIndexOf(">") + 1);
-                if(lastTag == "<br>") {
-                    nextFirstCloseTag = convertedDiff[i+1][1].indexOf(">") + 1;
-                    const nextFirstTag = convertedDiff[i+1][1].substring(0, nextFirstCloseTag);
-                    if(nextFirstTag == "</div>"){
-                        convertedDiff[i][1] += "</div>";
-                        convertedDiff[i+1][1] = convertedDiff[i+1][1].substring(nextFirstCloseTag, convertedDiff[i+1][1].length);
-                    }
-                }
-            }
-
-        }
-        return convertedDiff;
-    }
-
     function receiveContent(responseBody) {
-        // console.log("emit");
-        const tempIsKeyDown = isKeyDown;
+        if (isComposing && pprevText !== editor.innerHTML) {
+            setComposingCaret();
+        }
         tuiEditor.eventManager.emit("change");
-        // console.log("emit fin");
         const receiveSessionId = responseBody.socketSessionId;
         const responsePatcheInfos = responseBody.patchInfos;
         const originHTML = editor.innerHTML;
-        let result;
-        if (receiveSessionId == clientSessionId) {
-            if(responsePatcheInfos.length > 1){ // 꼬여서 다시 부를 떄
+        let result
+        if(responseBody.serverVersion <= clientVersion){
+            return;
+        }
+        if (receiveSessionId === clientSessionId) {
+            if (responsePatcheInfos.length > 1) { // 꼬여서 다시 부를 떄
                 result = patchDocs(responsePatcheInfos, responseBody.snapshotText, responseBody.snapshotVersion);
-                if(originHTML != result){
+                if (originHTML !== result) {
                     result = dmp.patch_apply(dmp.patch_make(dmp.diff_main(prevText, originHTML, true)), result)[0];
                 }
-                setCaretPositionFromDiff(originHTML, result); 
-            } else{
+                setCaretPositionFromDiff(originHTML, result);
+            } else {
                 clientVersion = responsePatcheInfos[0].patchVersion;
             }
             synchronized = true;
-            sendPatch(prevText, originHTML, true);
+            sendPatch(prevText, originHTML);
             updatePrevText();
-        } else if(synchronized){
-            if(responsePatcheInfos.length > 1){ // 꼬여서 다시 부를 떄
+        } else if (synchronized) {
+            if (responsePatcheInfos.length > 1) { // 꼬여서 다시 부를 떄
                 result = patchDocs(responsePatcheInfos, responseBody.snapshotText, responseBody.snapshotVersion);
-            }
-            else{
+            } else {
                 result = patchDocs(responsePatcheInfos, originHTML, clientVersion);
             }
             setCaretPositionFromDiff(originHTML, result);
             updatePrevText();
         }
-        isKeyDown = tempIsKeyDown;
-        if(isKeyDown){
-            pprevText = editor.innerHTML;
-        }
     }
 
     function setCaretPositionFromDiff(source, target) {
+        // innerHTML을 업데이트하면 열려있던 팝업창이 닫혀 기존에 열려있는 팝업창을 저장해야함
+        const popupModal = getShownPopupModalInfo();  
+        const isForward = isCaretDirectionForward();
         const [startCaret, endCaret] = Caret.getCaretPosition(editor);
-        const diff = dmp.diff_main(source, target, true);
+        const diff = dmp.diff_main(removeTags(source), removeTags(target), true);
         dmp.diff_cleanupSemantic(diff);
         editor.innerHTML = target;
-        const convertedDiff = checkValidDiff(diff);
-        const makeCustomDiffs = makeCustomDiff(convertedDiff);
+        Caret.setCaretPosition(editor, startCaret, endCaret);
+        const makeCustomDiffs = makeCustomDiff(diff);
         const [clacStartCaret, clacEndCaret] = Caret.calcCaret(makeCustomDiffs, startCaret, endCaret);
         Caret.setCaretPosition(editor, clacStartCaret, clacEndCaret);
+        // 드래그 시 드래그 방향에 맞게 설정해야함
+        setCaretDirection(isForward);
+        // 저장 된 팝업창을 다시 열어줘야함.
+        resetShownPopupModalInfo(popupModal);
     }
 
-    function patchDocs(responsePatches,content,startClientVersion) {
+    function isCaretDirectionForward(){
+        return window.getSelection().baseOffset <  window.getSelection().focusOffset;
+    }
+
+    function setCaretDirection(isForward){
+        const selection = window.getSelection();
+        if(isForward){
+            selection.setBaseAndExtent(selection.baseNode, selection.baseOffset, selection.extentNode, selection.extentOffset);
+        } else{
+            selection.setBaseAndExtent(selection.extentNode, selection.extentOffset, selection.baseNode, selection.baseOffset);
+        }
+    }
+
+    function getShownPopupModalInfo(){
+        const popupModal = {};
+        for(tempPopupModal of tuiEditor._ui._popups){
+            if(tempPopupModal.isShow()){
+                popupModal.$el = tempPopupModal;
+                if(tempPopupModal._id === 25){
+                    // URL 링크
+                    popupModal.$data.$linkText = tempPopupModal._inputText.value;
+                    popupModal.$data.$linkUrl = tempPopupModal._inputURL.value;
+                } else if(tempPopupModal.id === 26){
+                    // 이미지
+                    popupModal.$data.$imageUrl = tempPopupModal._$imageUrlInput.val();
+                    popupModal.$data.$description = tempPopupModal._$altTextInput.val();
+                }
+                if(tempPopupModal._id !== 28){
+                    const sel = window.getSelection();
+                    sel.removeAllRanges();
+                    sel.addRange(tuiEditor.wwEditor.getEditor().getSelection());
+                }
+            }
+        }
+        return popupModal;
+    }
+
+    function resetShownPopupModalInfo(popupModal){
+        if(popupModal.$el !== undefined){
+            popupModal.$el.show();
+            if(popupModal.$el._id === 25){
+                // URL 링크
+                popupModal.$el._inputText.value = popupModal.$data.$linkText;
+                popupModal.$el._inputURL.value = popupModal.$data.$linkUrl;
+            } else if(popupModal.$el.id === 26){
+                // 이미지
+                popupModal.$el._$imageUrlInput.val(popupModal.$data.$imageUrl);
+                popupModal.$el._$altTextInput.val(popupModal.$data.$description);
+            }
+        }
+    }
+
+    function patchDocs(responsePatches, content, startClientVersion) {
         let result = content;
-        responsePatches.forEach(function (item, index, array) {
+        responsePatches.forEach(function(item, index, array) {
             const patches = dmp.patch_fromText(item.patchText);
             if (startClientVersion < item.patchVersion) {
                 result = dmp.patch_apply(patches, result)[0];
                 startClientVersion += 1;
             }
-            if (index == (array.length - 1) && patches.length != 0) {
+            if (index === (array.length - 1) && patches.length !== 0) {
                 clientVersion = item.patchVersion;
             }
 
@@ -411,14 +405,18 @@
         return result;
     }
 
-    function removeTags(text){
-        return text.replace(/<\/div>/ig, " ")
-        .replace(/&nbsp;/gi," ")
-        .replace(/<(\/)?([a-zA-Z]*)(\s[a-zA-Z]*=[^>]*)?(\s)*(\/)?>/ig, "");
+    function removeTags(text) {
+        return $('<textarea/>').html(text.replace(/<\/div>/ig, " ")
+            .replace(/<\/th>/ig, " ")
+            .replace(/<\/td>/ig, " ")
+            .replace(/<\/li>/ig, " ")
+            .replace(/&nbsp;/gi, " ")
+            .replace(/<(\/)?([a-zA-Z]*)(\s[a-zA-Z]*=[^>]*)?(\s)*(\/)?>/ig, "")
+            .replace(/(<([^>]+)>)/ig,"")).text();
     }
 
     function disconnect() {
-        if (stompClient !== null) {
+        if (stompClient !== null && stompClient !== undefined) {
             stompClient.disconnect();
         }
         setConnected(false);
@@ -435,55 +433,53 @@
     /*
     TODO : account 파일로 추출;
     */
-    function accountLogout(baseUrl,type,id,clientSessionId){
+    function accountLogout(baseUrl, type, id, clientSessionId) {
         $.ajax({
             async: true, // false 일 경우 동기 요청으로 변경
             type: "DELETE",
             contentType: "application/json",
             url: `${baseUrl}/${type}/${id}/accounts/${clientSessionId}`,
-            success: function (response) {
-            }
+            success: function(response) {}
         });
     }
 
-    function accountLogin(baseUrl,type,id,clientSessionId){
-            let reqBody = {
-                "clientSessionId": clientSessionId,
-                "remoteAddress": ""
-            }
-            $.ajax({
-                async: true, // false 일 경우 동기 요청으로 변경
-                type: "POST",
-                contentType: "application/json",
-                url: `${baseUrl}/${type}/${id}/accounts`,
-                data: JSON.stringify(reqBody),
-                dataType: 'json',
-                success: function (response) {
-                }
-            });
+    function accountLogin(baseUrl, type, id, clientSessionId) {
+        let reqBody = {
+            "clientSessionId": clientSessionId,
+            "remoteAddress": ""
+        }
+        $.ajax({
+            async: true, // false 일 경우 동기 요청으로 변경
+            type: "POST",
+            contentType: "application/json",
+            url: `${baseUrl}/${type}/${id}/accounts`,
+            data: JSON.stringify(reqBody),
+            dataType: 'json',
+            success: function(response) {}
+        });
     }
 
-    function getAccounts(baseUrl,type,id){
+    function getAccounts(baseUrl, type, id) {
         $.ajax({
             type: "GET",
             cache: false,
             url: `${baseUrl}/${type}/${id}/accounts`,
-            success: function (response) {
+            success: function(response) {
                 console.log(JSON.parse(response))
                 setAccountTable(JSON.parse(response));
             }
         });
     }
 
-    function setAccountTable(accounts){
+    function setAccountTable(accounts) {
         tableBody = document.getElementById("accounts-table-body");
         totalRow = "";
         let currentCaretUser = {};
         Object.assign(currentCaretUser, CaretVis.getCaretWrappers());
-        accounts.forEach(function (account){
-            row  = `<tr><td>${account.clientSessionId}</td><td>${account.remoteAddress}</td></tr>`
+        accounts.forEach(function(account) {
+            row = `<tr><td>${account.clientSessionId}</td><td>${account.remoteAddress}</td></tr>`
             totalRow += row;
-            if(account.clientSessionId in currentCaretUser){
+            if (account.clientSessionId in currentCaretUser) {
                 delete currentCaretUser[account.clientSessionId];
             }
         });
@@ -494,18 +490,26 @@
         tableBody.innerHTML = totalRow;
     }
 
+    function displayBlockLoading(){
+        document.getElementsByClassName('animationload')[0].style.display = 'block';
+    }
+
+    function displayNoneLoading(){
+        document.getElementsByClassName('animationload')[0].style.display = 'none';
+    }
+
     const coedit = {
-        setEditor : setEditor,
-        disconnect : disconnect
+        setEditor: setEditor,
+        disconnect: disconnect,
     };
 
-    if (typeof define == 'function' && define.amd) {
-        define(function(){
-          return coedit;
+    if (typeof define === 'function' && define.amd) {
+        define(function() {
+            return coedit;
         });
-      } else if (typeof module !== 'undefined') {
+    } else if (typeof module !== 'undefined') {
         module.exports = coedit;
-      } else {
+    } else {
         window.Coedit = coedit;
-      }
+    }
 })();

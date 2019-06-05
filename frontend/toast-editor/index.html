@@ -7,10 +7,11 @@ For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
 <head>
     <meta charset="utf-8">
     
-    <link rel="stylesheet" href="https://uicdn.toast.com/tui-editor/latest/tui-editor.css"></link>
-    <link rel="stylesheet" href="https://uicdn.toast.com/tui-editor/latest/tui-editor-contents.css"></link>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.33.0/codemirror.css"></link>
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css"></link>
+    <link rel="stylesheet" href="https://uicdn.toast.com/tui-editor/latest/tui-editor.css">
+    <link rel="stylesheet" href="https://uicdn.toast.com/tui-editor/latest/tui-editor-contents.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.33.0/codemirror.css">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+	<link rel="stylesheet" href="./resource/css/loading.css">
 	<script type="text/javascript" src="./resource/js/jquery-1.11.1.min.js"></script>
 	<script src="https://uicdn.toast.com/tui-editor/latest/tui-editor-Editor-full.js"></script>
 	<!-- <script src="./resource/js/tui-editor-Editor-full.js"></script> -->
@@ -23,6 +24,7 @@ For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
 <body>
 
 <div id="editSection"></div>
+<div id="editSection2"></div>
 
 <div style="float: right; width: 33%;">
 	<div id = "account">
@@ -34,13 +36,14 @@ For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
 				<th>IP Address</th>
 			</tr>
 			</thead>
-			<br>
 			<tbody id="accounts-table-body">
 			</tbody>
 		</table>
 	</div>
 </div>
-
+<div class="animationload">
+	<div class="osahanloading"></div>
+</div>
 <!-- <script src="ckeditor.js"></script> -->
 <script type="text/javascript" src="./resource/js/diff_match_patch.js"></script>
 <script type="text/javascript" src="./resource/js/hangul.js"></script>
