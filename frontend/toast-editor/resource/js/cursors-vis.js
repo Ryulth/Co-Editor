@@ -145,7 +145,9 @@
                     createdRange.selectNodeContents(element);
                     createdRange.setStart(startElement, startOffset);
                     createdRange.setEnd(endElement, endOffset);
-                    createDrag(key, createdRange.getBoundingClientRect(), editorScroll);
+                    Array.prototype.slice.call(createdRange.getClientRects()).forEach(function(clientRect){
+                        createDrag(key, clientRect, editorScroll);
+                    })
                 } catch (e) {
 
                 }
